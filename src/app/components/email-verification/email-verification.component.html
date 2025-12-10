@@ -1,0 +1,27 @@
+<div id="verification-container">
+    <div id="container1">
+        <div id="container2">
+            <h2>Verifique seu Email</h2>
+            <div id="container3">
+                <p class="info-text">
+                    Enviamos um link de verificação para:
+                </p>
+                <p class="email-text">{{ userEmail }}</p>
+                <p class="info-text">
+                    Por favor, verifique sua caixa de entrada e clique no link para ativar sua conta.
+                </p>
+                
+                <div *ngIf="message" class="success-message">
+                    {{ message }}
+                </div>
+                
+                <div *ngIf="errorMessage" class="error-message">
+                    {{ errorMessage }}
+                </div>
+                
+                <button (click)="resendEmail()" id="botao-reenviar">Reenviar Email</button>
+                <button (click)="goToLogin()" id="botao-login">Ir para Login</button>
+            </div>
+        </div>
+    </div>
+</div>

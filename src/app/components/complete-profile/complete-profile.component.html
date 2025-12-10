@@ -1,0 +1,29 @@
+<div id="profile-container">
+    <div id="container1">
+        <div id="container2">
+            <h2>Complete seu Perfil</h2>
+            <p class="info-text">Escolha um nome de usuário para sua conta</p>
+            <p class="email-text">{{ userEmail }}</p>
+            
+            <div id="container3">
+                <input 
+                    type="text" 
+                    placeholder="Nome de usuário" 
+                    id="input-username" 
+                    [(ngModel)]="username"
+                    [disabled]="loading">
+                
+                <div *ngIf="errorMessage" class="error-message">
+                    {{ errorMessage }}
+                </div>
+                
+                <button 
+                    (click)="salvarUsername()" 
+                    [disabled]="loading"
+                    id="botao-salvar">
+                    {{ loading ? 'Salvando...' : 'Continuar' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

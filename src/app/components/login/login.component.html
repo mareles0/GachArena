@@ -1,0 +1,37 @@
+<div id="login-container">
+    <div id="container1">
+        <button 
+        (click)="voltar()"
+        id="voltar">Voltar</button>
+        <div id="container2">
+            <h2>Login</h2>
+            <div id="container3">
+                <input type="email" placeholder="Email" id="input-email" [(ngModel)]="email">
+                <input type="password" placeholder="Senha" id="input-senha" [(ngModel)]="password">
+                
+                <div *ngIf="errorMessage" class="error-message">
+                    {{ errorMessage }}
+                </div>
+                
+                <p class="cadastro-container">Não tem conta?<button (click)="irParaRegistrar()" id="botao-registrar">Registre-se</button>
+                </p>
+                <p class="esqueceu-senha">
+                    Esqueceu a senha? 
+                    <button (click)="recuperarSenha()" id="botao-recuperar">Clique aqui</button>
+                </p>
+                
+                <button (click)="login()" [disabled]="loading" id="botao-login">
+                    {{ loading ? 'Entrando...' : 'Entrar' }}
+                </button>
+                
+                <div class="divider">
+                    <span>ou</span>
+                </div>
+                
+                <button (click)="loginComGoogle()" [disabled]="loading" id="botao-google" class="google-button">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

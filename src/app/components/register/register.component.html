@@ -1,0 +1,33 @@
+<div id="login-container">
+    <div id="container1">
+        <button 
+        (click)="voltar()"
+        id="voltar">Voltar</button>
+        <div id="container2">
+            <h2>Registrar</h2>
+            <div id="container3">
+                <input type="text" placeholder="Usuário" id="input-usuario" [(ngModel)]="username">
+                <input type="text" placeholder="Email" id="input-email" [(ngModel)]="email">
+                <input type="password" placeholder="Senha" id="input-senha" [(ngModel)]="password">
+                <input type="password" placeholder="Confirmar Senha" id="input-confirmar-senha" [(ngModel)]="confirmPassword">
+                
+                <div *ngIf="errorMessage" class="error-message">
+                    {{ errorMessage }}
+                </div>
+                
+                <button 
+                (click)="Registrar()"
+                [disabled]="loading"
+                id="botao-login">{{ loading ? 'Registrando...' : 'Registrar' }}</button>
+                
+                <div class="divider">
+                    <span>ou</span>
+                </div>
+                
+                <button (click)="registrarComGoogle()" [disabled]="loading" class="google-button">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

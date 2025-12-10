@@ -1,0 +1,71 @@
+<div class="inventory-container">
+  <div class="inventory-header">
+    <h2><i class="bi bi-backpack"></i> Meu Inventário</h2>
+    <div class="stats-card">
+      <div class="stat-item">
+        <i class="bi bi-box"></i>
+        <div>
+          <span class="stat-label">Total de Itens</span>
+          <span class="stat-value">{{ userItems.length }}</span>
+        </div>
+      </div>
+      <div class="stat-item">
+        <i class="bi bi-lightning-fill"></i>
+        <div>
+          <span class="stat-label">Poder Total</span>
+          <span class="stat-value">{{ getTotalPower() }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filter-section">
+    <button *ngFor="let rarity of rarities" 
+            class="filter-btn" 
+            [class.active]="selectedRarity === rarity"
+            [ngClass]="getRarityClass(rarity)"
+            (click)="filterByRarity(rarity)">
+      {{ rarity }}
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Carregando...</span>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && filteredItems.length === 0" class="empty-state">
+    <i class="bi bi-inbox"></i>
+    <h3>Nenhum item encontrado</h3>
+    <p>Abra caixas no Gacha para conseguir itens!</p>
+    <a routerLink="/gacha" class="btn btn-primary">
+      <i class="bi bi-box-seam"></i> Ir para Gacha
+    </a>
+  </div>
+
+  <!-- Items Grid -->
+  <div class="items-grid" *ngIf="!loading && filteredItems.length > 0">
+    <div class="item-card" *ngFor="let userItem of filteredItems" 
+         [style.border-color]="getRarityColor(userItem.item.rarity)">
+      <div class="item-quantity" *ngIf="userItem.quantity > 1">
+        x{{ userItem.quantity }}
+      </div>
+      <div class="rarity-badge" [ngClass]="getRarityClass(userItem.item.rarity)">
+        {{ userItem.item.rarity }}
+      </div>
+      <img [src]="userItem.item.imageUrl" [alt]="userItem.item.name" class="item-image">
+      <div class="item-info">
+        <h4>{{ userItem.item.name }}</h4>
+        <p class="item-box">{{ userItem.item.boxName }}</p>
+        <p class="item-description">{{ userItem.item.description }}</p>
+        <div class="item-power">
+          <i class="bi bi-lightning-fill"></i> {{ userItem.item.power }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

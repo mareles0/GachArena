@@ -1,0 +1,94 @@
+#login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-image: url('/assets/welcome.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+#container1 {
+    background-color:rgba(0, 0, 0, 0.15);
+    padding: 60px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    width: 350px;
+    text-align: center;
+    height: 500px;
+    margin-top: 15%;
+    margin-bottom: 10%;
+    position: relative;
+}
+#container2 {
+    text-align: center;
+    margin-top: 25%;
+}
+
+#container3 {
+    margin-top: 20px;
+    text-align: center;
+}
+
+#botao-login {
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px;   
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: rgba(0, 0, 0, 0.1);
+    border: 2px solid black;
+}
+
+input {
+    background-color: rgba(0, 0, 0, 0.1); 
+    border: 2px solid rgba(255, 255, 255, 0.5); 
+    color: #ffffff; 
+    border-radius: 4px;
+    padding: 10px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+input::placeholder {
+    color: rgba(255, 255, 255, 0.7); 
+}
+
+input:focus {
+    background-color: rgba(0, 0, 0, 0.5); 
+    border-color: #ffffff;
+    outline: none;
+}
+
+#botao-esqueceu-senha{
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px;   
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: rgba(0, 0, 0, 0.1);
+    border: 1px solid black;;
+}
+
+#subtitulo {
+    color: black;
+    margin-top: 10px;
+    font-weight: normal;
+    font-size: 11px;
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.35);
+}
+
+#voltar {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background-color: transparent;
+    border: 2px solid black;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
