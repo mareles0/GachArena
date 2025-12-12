@@ -1,0 +1,111 @@
+.friends-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  h1 {
+    font-size: 2rem;
+    color: #1f2937;
+    margin-bottom: 2rem;
+    i { margin-right: 0.5rem; color: #8b5cf6; }
+  }
+
+  h2 {
+    font-size: 1.25rem;
+    color: #374151;
+    margin: 2rem 0 1rem;
+  }
+}
+
+.search-section {
+  margin-bottom: 2rem;
+
+  .search-input {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    &:focus {
+      outline: none;
+      border-color: #8b5cf6;
+    }
+  }
+
+  .search-results {
+    margin-top: 1rem;
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    .user-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+  }
+}
+
+.friend-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: white;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.btn-add, &.btn-accept {
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    color: white;
+    &:hover { transform: scale(1.05); }
+  }
+
+  &.btn-reject, &.btn-remove {
+    background: #ef4444;
+    color: white;
+    margin-left: 0.5rem;
+    &:hover { background: #dc2626; }
+  }
+}
+
+.empty {
+  text-align: center;
+  color: #9ca3af;
+  padding: 2rem;
+}
+
+.notification-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+.notification {
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  color: white;
+  font-weight: 500;
+  min-width: 300px;
+
+  &.success { background: linear-gradient(135deg, #10b981, #059669); }
+  &.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+  &.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+}

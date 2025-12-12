@@ -1,0 +1,37 @@
+<div class="friends-container">
+  <div class="notification-container" *ngIf="notification.show">
+    <div class="notification" [ngClass]="notification.type">{{ notification.message }}</div>
+  </div>
+
+  <h1><i class="bi bi-people-fill"></i> Amigos</h1>
+
+  <div class="search-section">
+    <input [(ngModel)]="searchTerm" (input)="searchUsers()" placeholder="Buscar usuários..." class="search-input">
+    <div class="search-results" *ngIf="searchResults.length > 0">
+      <div class="user-item" *ngFor="let user of searchResults">
+        <span>{{ user.username }}</span>
+        <button (click)="sendRequest(user)" class="btn-add">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <section *ngIf="pendingRequests.length > 0">
+    <h2>Solicitações Pendentes</h2>
+    <div class="friend-card" *ngFor="let req of pendingRequests">
+      <span>{{ req.friendUsername }}</span>
+      <div>
+        <button (click)="acceptRequest(req.id || '')" class="btn-accept">Aceitar</button>
+        <button (click)="rejectRequest(req.id || '')" class="btn-reject">Rejeitar</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Meus Amigos</h2>
+    <div class="friend-card" *ngFor="let friend of friends">
+      <span>{{ getFriendName(friend) || friend.friendUsername }}</span>
+      <button (click)="removeFriend(friend.id || '')" class="btn-remove">Remover</button>
+    </div>
+    <p *ngIf="friends.length === 0" class="empty">Nenhum amigo ainda</p>
+  </section>
+</div>

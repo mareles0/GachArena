@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo - Componente de Loading Animado</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .demo-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .demo-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .demo-title {
+            color: white;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .note {
+            color: #ffeb3b;
+            font-style: italic;
+            margin-top: 10px;
+        }
+
+        .features-list {
+            text-align: left;
+            color: white;
+            margin: 20px 0;
+        }
+
+        .features-list li {
+            margin: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .features-list li:before {
+            content: "✨";
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🎭 Componente de Loading Animado</h1>
+
+        <div class="demo-section">
+            <div class="demo-title">📋 Visão Geral</div>
+            <p style="color: white; line-height: 1.6;">
+                Este componente cria uma animação envolvente de abertura de caixa Gacha com efeitos visuais impressionantes.
+                Perfeito para manter os usuários engajados durante processos de loading.
+            </p>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">✨ Funcionalidades</div>
+            <ul class="features-list">
+                <li>Caixa se abrindo com animação 3D</li>
+                <li>Estrelas piscando ao redor</li>
+                <li>Barra de progresso animada</li>
+                <li>Partículas flutuantes</li>
+                <li>Texto com efeito de brilho</li>
+                <li>Totalmente responsivo</li>
+                <li>Altamente customizável</li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">🚀 Como Usar</div>
+            <div class="code-block">
+// Uso básico
+&lt;app-loading&gt;&lt;/app-loading&gt;
+
+// Com propriedades customizadas
+&lt;app-loading
+  [title]="'Abrindo caixa lendária...'"
+  [subtitle]="'Algo incrível está vindo!'"
+  [showParticles]="true"
+  [showSparkles]="true"&gt;
+&lt;/app-loading&gt;
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">🎨 Propriedades Disponíveis</div>
+            <div class="code-block">
+Propriedade     | Tipo    | Padrão                    | Descrição
+---------------|---------|---------------------------|-----------
+title          | string  | 'Abrindo caixa...'       | Título principal
+subtitle       | string  | 'Preparando seu item!'   | Subtítulo animado
+showParticles  | boolean | true                     | Partículas flutuantes
+showSparkles   | boolean | true                     | Estrelas piscando
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">📱 Responsividade</div>
+            <p style="color: white; line-height: 1.6;">
+                O componente se adapta automaticamente aos diferentes tamanhos de tela:
+            </p>
+            <ul class="features-list">
+                <li><strong>Desktop:</strong> 150x150px (tamanho completo)</li>
+                <li><strong>Tablet:</strong> 120x120px (médio)</li>
+                <li><strong>Mobile:</strong> 100x100px (compacto)</li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">🎯 Exemplos Práticos</div>
+            <div class="code-block">
+// No sistema Gacha (já implementado)
+&lt;app-loading
+  [title]="openMode === 'single' ? 'Abrindo caixa...' : 'Abrindo múltiplas...'"
+  [subtitle]="openMode === 'single' ? 'Preparando seu item!' : 'Preparando seus itens!'"&gt;
+&lt;/app-loading&gt;
+
+// Para loading de página
+&lt;app-loading
+  [title]="'Carregando...'"
+  [subtitle]="'Aguarde um momento'"&gt;
+&lt;/app-loading&gt;
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">🎨 Personalização de Cores</div>
+            <div class="code-block">
+.box-lid {
+  background: linear-gradient(45deg, #YOUR_COLOR_1, #YOUR_COLOR_2);
+}
+
+.sparkle {
+  color: #YOUR_SPARKLE_COLOR;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, #YOUR_COLOR_1, #YOUR_COLOR_2);
+}
+            </div>
+            <p class="note">💡 Dica: Use cores diferentes baseadas na raridade da caixa!</p>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">🔧 Arquivos do Componente</div>
+            <ul class="features-list">
+                <li><code>loading.component.ts</code> - Lógica e propriedades</li>
+                <li><code>loading.component.html</code> - Estrutura da animação</li>
+                <li><code>loading.component.scss</code> - Estilos e animações</li>
+                <li><code>README.md</code> - Documentação completa</li>
+            </ul>
+        </div>
+
+        <p style="color: rgba(255, 255, 255, 0.7); margin-top: 30px; font-size: 0.9em;">
+            🎉 Pronto para criar experiências de loading incríveis no seu projeto Angular!
+        </p>
+    </div>
+</body>
+</html>

@@ -4,7 +4,7 @@ export interface Box {
   description: string;
   imageUrl: string;
   type: 'NORMAL' | 'PREMIUM';
-  theme: string; // Ex: 'bleach', 'one-piece', 'naruto'
+  theme: string;
   active: boolean;
   createdAt: Date;
 }

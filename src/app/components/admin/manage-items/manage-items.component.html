@@ -1,1 +1,183 @@
-<p>manage-items works!</p>
+<div class="container-fluid mt-4">
+  <!-- Notificação Toast -->
+  <div class="notification-toast" *ngIf="notification.show" 
+       [class.success]="notification.type === 'success'"
+       [class.error]="notification.type === 'error'"
+       [class.info]="notification.type === 'info'">
+    <i class="bi" [class.bi-check-circle-fill]="notification.type === 'success'"
+                   [class.bi-x-circle-fill]="notification.type === 'error'"
+                   [class.bi-info-circle-fill]="notification.type === 'info'"></i>
+    <span>{{ notification.message }}</span>
+    <button class="close-btn" (click)="notification.show = false">
+      <i class="bi bi-x"></i>
+    </button>
+  </div>
+
+  <h2 class="mb-4"><i class="bi bi-card-image"></i> Gerenciar Itens</h2>
+
+  <div class="row">
+    <!-- Lista de Caixas -->
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Selecione uma Caixa</h5>
+        </div>
+        <div class="list-group list-group-flush" style="max-height: 70vh; overflow-y: auto;">
+          <button *ngFor="let box of boxes" 
+                  class="list-group-item list-group-item-action"
+                  [class.active]="selectedBox?.id === box.id"
+                  (click)="selectBox(box)">
+            <div class="d-flex align-items-center">
+              <img [src]="box.imageUrl" [alt]="box.name" 
+                   style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" class="me-3">
+              <div>
+                <strong>{{ box.name }}</strong>
+                <br>
+                <small class="text-muted">{{ box.theme }}</small>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Itens -->
+    <div class="col-md-9">
+      <div *ngIf="!selectedBox" class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Selecione uma caixa para ver seus itens
+      </div>
+
+      <div *ngIf="selectedBox">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4>Itens de {{ selectedBox.name }}</h4>
+          <button class="btn btn-primary" (click)="openCreateForm()">
+            <i class="bi bi-plus-circle"></i> Novo Item
+          </button>
+        </div>
+
+        <div *ngIf="loading" class="text-center py-5">
+          <div class="spinner-border text-primary"></div>
+        </div>
+
+        <div *ngIf="!loading && items.length === 0" class="alert alert-warning">
+          Nenhum item nesta caixa. Clique em "Novo Item" para adicionar.
+        </div>
+
+        <div class="row" *ngIf="!loading && items.length > 0">
+          <div class="col-md-4 mb-3" *ngFor="let item of items">
+            <div class="card h-100">
+              <img [src]="item.imageUrl" class="card-img-top" [alt]="item.name" 
+                   style="height: 350px; object-fit: cover;">
+              <div class="card-body">
+                <h5 class="card-title" [class]="getRarityClass(item.rarity)">
+                  {{ item.name }}
+                  <span class="badge bg-secondary float-end">{{ item.power }}</span>
+                </h5>
+                <div class="mt-auto">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge" [class]="getRarityClass(item.rarity)">
+                      {{ item.rarity }}
+                    </span>
+                  </div>
+                  <div class="d-grid gap-2">
+                    <button class="btn btn-sm btn-outline-primary" (click)="openEditForm(item)">
+                      <i class="bi bi-pencil"></i> Editar
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="deleteItem(item)">
+                      <i class="bi bi-trash"></i> Deletar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Criar/Editar Item -->
+  <div class="modal" [class.show]="showForm" [style.display]="showForm ? 'block' : 'none'">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-card-image"></i> {{ editingItem ? 'Editar Item' : 'Novo Item' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closeForm()"></button>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="mb-3">
+              <label class="form-label">Nome do Personagem *</label>
+              <input type="text" class="form-control" [(ngModel)]="itemForm.name" name="name"
+                     placeholder="Ex: Ichigo Kurosaki">
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Raridade *</label>
+                <select class="form-select" [(ngModel)]="itemForm.rarity" name="rarity">
+                  <option value="COMUM">Comum</option>
+                  <option value="RARO">Raro</option>
+                  <option value="EPICO">Épico</option>
+                  <option value="LENDARIO">Lendário</option>
+                  <option value="MITICO">Mítico</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Poder (1-100) *</label>
+                <input type="number" class="form-control" [(ngModel)]="itemForm.power" name="power"
+                       min="1" max="100">
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Pontos *</label>
+                <input type="number" class="form-control" [(ngModel)]="itemForm.points" name="points"
+                       min="1" max="1000">
+                <small class="text-muted">Pontos que o item vale</small>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Taxa de Drop (%) *</label>
+              <input type="number" class="form-control" [(ngModel)]="itemForm.dropRate" name="dropRate"
+                     min="0.01" max="100" step="0.01"
+                     placeholder="Ex: 5.5">
+              <small class="text-muted">Porcentagem de chance deste item aparecer (0.01% - 100%)</small>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Imagem do Personagem</label>
+              <input type="file" class="form-control" (change)="onFileSelected($event)" accept="image/*">
+              <small class="text-muted">Deixe em branco para manter a imagem atual (ao editar)</small>
+            </div>
+
+            <div class="mb-3" *ngIf="itemForm.imageUrl && !selectedFile">
+              <label class="form-label">Imagem Atual</label>
+              <div>
+                <img [src]="itemForm.imageUrl" alt="Preview" class="img-thumbnail" style="max-width: 200px;">
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeForm()">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="saveItem()" [disabled]="uploadingImage">
+            <span *ngIf="!uploadingImage">
+              <i class="bi bi-save"></i> {{ editingItem ? 'Atualizar' : 'Criar' }}
+            </span>
+            <span *ngIf="uploadingImage">
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Salvando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="showForm" *ngIf="showForm"></div>
+</div>

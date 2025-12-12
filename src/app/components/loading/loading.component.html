@@ -1,1 +1,37 @@
-<p>loading works!</p>
+<div class="loading-container">
+  <div class="loading-animation">
+    <!-- Caixa se abrindo -->
+    <div class="box-opening">
+      <div class="box-lid">
+        <div class="lid-shadow"></div>
+      </div>
+      <div class="box-body">
+        <div class="question-mark">?</div>
+        <!-- Estrelas piscando -->
+        <ng-container *ngIf="showSparkles">
+          <div class="sparkle" *ngFor="let sparkle of sparkles">
+            <i class="bi bi-star-fill"></i>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Texto e progresso -->
+    <div class="loading-text">
+      <h3>{{ title }}</h3>
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <p class="loading-subtitle">{{ subtitle }}</p>
+    </div>
+
+    <!-- Partículas flutuantes -->
+    <ng-container *ngIf="showParticles">
+      <div class="floating-particles">
+        <div class="particle" *ngFor="let particle of particles">
+          <i class="bi bi-circle-fill"></i>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

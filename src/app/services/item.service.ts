@@ -55,28 +55,67 @@ export class ItemService {
     await deleteDoc(docRef);
   }
 
-  async addItemToUser(userId: string, itemId: string): Promise<void> {
+  async deleteAllItems(): Promise<void> {
+    console.log('Deletando todos os itens...');
+    const items = await this.getAllItems();
+    console.log(`Encontrados ${items.length} itens para deletar`);
+    
+    for (const item of items) {
+      console.log(`Deletando ${item.name}...`);
+      await this.deleteItem(item.id);
+    }
+    
+    console.log('Todos os itens foram deletados!');
+  }
+
+  async addItemToUser(userId: string, itemId: string): Promise<number> {
     const item = await this.getItemById(itemId);
     if (!item) throw new Error('Item não encontrado');
 
-    const userItemId = `${userId}_${itemId}`;
-    const docRef = doc(this.db, 'userItems', userItemId);
-    const docSnap = await getDoc(docRef);
+    // Gerar nível de raridade aleatório (1-1000)
+    const rarityLevel = Math.floor(Math.random() * 1000) + 1;
 
-    if (docSnap.exists()) {
-      const currentData = docSnap.data();
-      await updateDoc(docRef, {
-        quantity: currentData['quantity'] + 1
-      });
-    } else {
+    // Para itens lendários e míticos, cada cópia é tratada como item único
+    if (item.rarity === 'LENDARIO' || item.rarity === 'MITICO') {
+      // Criar entrada única para cada item lendário/mítico
+      const uniqueId = `${userId}_${itemId}_${Date.now()}_${rarityLevel}`;
+      const docRef = doc(this.db, 'userItems', uniqueId);
+
       const userItemData: Omit<UserItem, 'id'> = {
         userId,
         itemId,
         item,
         obtainedAt: new Date(),
-        quantity: 1
+        quantity: 1,
+        rarityLevel
       };
       await setDoc(docRef, userItemData);
+      return rarityLevel;
+    } else {
+      // Para itens comuns, raros e épicos, manter o sistema atual
+      const userItemId = `${userId}_${itemId}`;
+      const docRef = doc(this.db, 'userItems', userItemId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const currentData = docSnap.data();
+        await updateDoc(docRef, {
+          quantity: currentData['quantity'] + 1,
+          rarityLevel: Math.max(currentData['rarityLevel'] || 0, rarityLevel)
+        });
+        return rarityLevel;
+      } else {
+        const userItemData: Omit<UserItem, 'id'> = {
+          userId,
+          itemId,
+          item,
+          obtainedAt: new Date(),
+          quantity: 1,
+          rarityLevel
+        };
+        await setDoc(docRef, userItemData);
+        return rarityLevel;
+      }
     }
   }
 
@@ -109,23 +148,27 @@ export class ItemService {
   async drawRandomItem(boxId: string): Promise<Item> {
     const items = await this.getItemsByBox(boxId);
     if (items.length === 0) throw new Error('Nenhum item disponível nesta caixa');
-    const rarityWeights = {
-      'COMUM': 50,
-      'RARO': 30,
-      'EPICO': 15,
-      'LENDARIO': 4,
-      'MITICO': 1
-    };
+    
+    // Usar as taxas de drop configuradas para cada item
+    const totalDropRate = items.reduce((sum, item) => sum + (item.dropRate || 0), 0);
+    
+    if (totalDropRate === 0) {
+      throw new Error('As taxas de drop dos itens não foram configuradas corretamente');
+    }
 
-    const weightedItems: Item[] = [];
-    items.forEach(item => {
-      const weight = rarityWeights[item.rarity];
-      for (let i = 0; i < weight; i++) {
-        weightedItems.push(item);
+    // Gerar número aleatório entre 0 e o total de taxas
+    const random = Math.random() * totalDropRate;
+    
+    // Selecionar item baseado na taxa de drop
+    let currentSum = 0;
+    for (const item of items) {
+      currentSum += (item.dropRate || 0);
+      if (random <= currentSum) {
+        return item;
       }
-    });
+    }
 
-    const randomIndex = Math.floor(Math.random() * weightedItems.length);
-    return weightedItems[randomIndex];
+    // Fallback (não deveria acontecer, mas por segurança)
+    return items[items.length - 1];
   }
 }

@@ -1,4 +1,18 @@
 <div class="gacha-home-container">
+  <!-- Notificação Toast -->
+  <div class="notification-toast" *ngIf="notification.show" 
+       [class.success]="notification.type === 'success'"
+       [class.error]="notification.type === 'error'"
+       [class.info]="notification.type === 'info'">
+    <i class="bi" [class.bi-check-circle-fill]="notification.type === 'success'"
+                   [class.bi-x-circle-fill]="notification.type === 'error'"
+                   [class.bi-info-circle-fill]="notification.type === 'info'"></i>
+    <span>{{ notification.message }}</span>
+    <button class="close-btn" (click)="notification.show = false">
+      <i class="bi bi-x"></i>
+    </button>
+  </div>
+
   <!-- Loading -->
   <div *ngIf="loading && !selectedBox" class="loading-container">
     <div class="spinner-border text-primary" role="status">
@@ -39,21 +53,50 @@
     <div class="modal-content" (click)="$event.stopPropagation()">
       
       <!-- Resultado -->
-      <div class="box-result" *ngIf="showResult && drawnItem">
-        <div class="result-card" [style.border-color]="getRarityColor(drawnItem.rarity)">
+      <div class="box-result" *ngIf="showResult">
+        <!-- Resultado Único -->
+        <div class="result-card" *ngIf="openMode === 'single' && drawnItem" [style.border-color]="getRarityColor(drawnItem.rarity)">
           <div class="rarity-glow" [style.background]="getRarityColor(drawnItem.rarity)"></div>
           <img [src]="drawnItem.imageUrl" [alt]="drawnItem.name" class="item-image">
           <h2>{{ drawnItem.name }}</h2>
           <div class="rarity-badge" [ngClass]="getRarityClass(drawnItem.rarity)">
             {{ drawnItem.rarity }}
           </div>
-          <p class="item-description">{{ drawnItem.description }}</p>
           <div class="item-stats">
             <span class="power-stat">
               <i class="bi bi-lightning-fill"></i> Poder: {{ drawnItem.power }}
             </span>
           </div>
           <button class="btn btn-success mt-3" (click)="closeModal()">
+            <i class="bi bi-check-circle"></i> Continuar
+          </button>
+        </div>
+
+        <!-- Resultado Múltiplo -->
+        <div class="multi-result" *ngIf="openMode === 'multi'">
+          <h2 class="multi-title">
+            <i class="bi bi-trophy-fill"></i>
+            Multi Abertura Concluída!
+          </h2>
+          <p class="multi-subtitle">Você ganhou {{ multiResults.length }} itens!</p>
+          
+          <div class="multi-items-grid">
+            <div class="multi-item-card" *ngFor="let item of multiResults" [style.border-color]="getRarityColor(item.rarity)">
+              <div class="rarity-glow" [style.background]="getRarityColor(item.rarity)"></div>
+              <img [src]="item.imageUrl" [alt]="item.name" class="multi-item-image">
+              <div class="multi-item-info">
+                <h4 [ngClass]="getRarityClass(item.rarity)">{{ item.name }}</h4>
+                <span class="rarity-badge" [ngClass]="getRarityClass(item.rarity)">
+                  {{ item.rarity }}
+                </span>
+                <span class="power-stat">
+                  <i class="bi bi-lightning-fill"></i> {{ item.power }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-success mt-4" (click)="closeModal()">
             <i class="bi bi-check-circle"></i> Continuar
           </button>
         </div>
@@ -83,17 +126,84 @@
           <span>Requer 1 Ticket {{ selectedBox.type === 'NORMAL' ? 'Normal' : 'Premium' }}</span>
         </div>
 
+        <!-- Opções de Abertura -->
+        <div class="open-options">
+          <div class="option-tabs">
+            <button class="option-tab" 
+                    [class.active]="openMode === 'single'"
+                    (click)="setOpenMode('single')">
+              <i class="bi bi-box"></i>
+              <span>1</span>
+              <small>
+                <img src="https://static.wikitide.net/cravesagawiki/{{ selectedBox.type === 'NORMAL' ? '4/46/Platinum_Gacha_Ticket.png' : 'f/fe/SR_or_Higher_Gacha_Ticket.png' }}" 
+                     alt="Ticket" class="ticket-icon-small">
+              </small>
+            </button>
+            <button class="option-tab" 
+                    [class.active]="openMode === 'multi'"
+                    (click)="setOpenMode('multi')">
+              <i class="bi bi-boxes"></i>
+              <span>{{ selectedBox.type === 'NORMAL' ? '10' : '5' }}</span>
+              <small>
+                <img src="https://static.wikitide.net/cravesagawiki/{{ selectedBox.type === 'NORMAL' ? '4/46/Platinum_Gacha_Ticket.png' : 'f/fe/SR_or_Higher_Gacha_Ticket.png' }}" 
+                     alt="Ticket" class="ticket-icon-small">
+              </small>
+            </button>
+          </div>
+
+          <div class="ticket-requirement" [class]="openMode === 'multi' ? 'multi-requirement' : ''">
+            <i class="bi bi-ticket-perforated-fill"></i>
+            <span *ngIf="openMode === 'single'">
+              Requer {{ getRequiredTickets().normal + getRequiredTickets().premium }} Ticket{{ getRequiredTickets().normal + getRequiredTickets().premium > 1 ? 's' : '' }}
+            </span>
+            <span *ngIf="openMode === 'multi'">
+              Requer {{ getRequiredTickets().normal || getRequiredTickets().premium }} Ticket{{ (getRequiredTickets().normal || getRequiredTickets().premium) > 1 ? 's' : '' }} {{ selectedBox.type === 'NORMAL' ? 'Normais' : 'Premium' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Botão para ver taxas de drop -->
+        <button class="btn btn-outline-info mb-3" (click)="toggleDropRates()">
+          <i class="bi bi-{{ showDropRates ? 'eye-slash' : 'eye' }}"></i>
+          {{ showDropRates ? 'Ocultar' : 'Ver' }} Taxas de Drop
+        </button>
+
+        <!-- Lista de itens com taxas de drop -->
+        <div class="drop-rates-container" *ngIf="showDropRates">
+          <h5 class="mb-3"><i class="bi bi-percent"></i> Chances de Drop</h5>
+          <div class="drop-rates-list">
+            <div class="drop-rate-item" *ngFor="let item of boxItems">
+              <img [src]="item.imageUrl" [alt]="item.name" class="drop-item-img">
+              <div class="drop-item-info">
+                <span class="drop-item-name" [class]="getRarityClass(item.rarity)">{{ item.name }}</span>
+                <span class="badge" [class]="getRarityClass(item.rarity)">{{ item.rarity }}</span>
+              </div>
+              <span class="drop-rate-percentage">{{ (item.dropRate || 0).toFixed(2) }}%</span>
+            </div>
+          </div>
+        </div>
+
         <button class="btn btn-lg btn-primary open-btn" 
-                [disabled]="loading"
+                [disabled]="loading || !hasEnoughTickets()"
                 (click)="openBox()">
           <span *ngIf="!loading">
-            <i class="bi bi-box-seam"></i> Abrir Caixa
+            <i class="bi bi-{{ openMode === 'single' ? 'box-seam' : 'boxes' }}"></i>
+            {{ openMode === 'single' ? 'Abrir 1 Caixa' : ('Abrir ' + (selectedBox.type === 'NORMAL' ? '10' : '5') + ' Caixas') }}
           </span>
-          <span *ngIf="loading">
-            <span class="spinner-border spinner-border-sm me-2"></span>
-            Abrindo...
+          <span *ngIf="loading" class="loading-text">
+            <i class="bi bi-arrow-repeat"></i> Abrindo...
           </span>
         </button>
+
+        <!-- Card de Loading Separado -->
+        <div *ngIf="loading" class="loading-card-container">
+          <app-loading-card
+            [title]="isMultiOpening ? 'Abrindo múltiplas caixas...' : 'Abrindo caixa...'"
+            [subtitle]="isMultiOpening ? 'Preparando seus itens especiais!' : 'Preparando seu item especial!'"
+            [showParticles]="true"
+            [showSparkles]="true">
+          </app-loading-card>
+        </div>
       </div>
     </div>
   </div>

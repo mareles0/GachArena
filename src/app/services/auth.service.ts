@@ -1,8 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { initializeApp } from 'firebase/app';
 import { 
-  getAuth, 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut, 
@@ -10,25 +8,20 @@ import {
   sendEmailVerification,
   signInWithPopup,
   GoogleAuthProvider,
-  Auth,
   User,
   onAuthStateChanged
 } from 'firebase/auth';
-import { environment } from '../../environments/environment';
-import { Observable } from 'rxjs';
+import { auth } from '../firebase.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private auth: Auth;
   public currentUser: User | null = null;
 
   constructor(private router: Router) {
-    const app = initializeApp(environment.firebaseConfig);
-    this.auth = getAuth(app);
-    
-    onAuthStateChanged(this.auth, (user) => {
+    onAuthStateChanged(auth, (user) => {
+      console.log('[AuthService] Estado de autenticação mudou:', user?.uid);
       this.currentUser = user;
     });
   }
@@ -36,7 +29,7 @@ export class AuthService {
   // Registrar novo usuário
   async register(email: string, password: string) {
     try {
-      const result = await createUserWithEmailAndPassword(this.auth, email, password);
+      const result = await createUserWithEmailAndPassword(auth, email, password);
       if (result.user) {
         await sendEmailVerification(result.user);
       }
@@ -49,12 +42,14 @@ export class AuthService {
   // Login
   async login(email: string, password: string) {
     try {
-      const result = await signInWithEmailAndPassword(this.auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email, password);
       // Verificar se o email foi verificado
       if (result.user && !result.user.emailVerified) {
-        await signOut(this.auth);
+        await signOut(auth);
         throw 'Por favor, verifique seu email antes de fazer login.';
       }
+      this.currentUser = result.user;
+      console.log('[AuthService] Login bem-sucedido:', result.user.uid);
       return result;
     } catch (error: any) {
       if (typeof error === 'string') {
@@ -66,14 +61,15 @@ export class AuthService {
 
   // Logout
   async logout() {
-    await signOut(this.auth);
+    await signOut(auth);
+    this.currentUser = null;
     this.router.navigate(['/login']);
   }
 
   // Recuperar senha
   async resetPassword(email: string) {
     try {
-      await sendPasswordResetEmail(this.auth, email);
+      await sendPasswordResetEmail(auth, email);
       return 'E-mail de recuperação enviado com sucesso!';
     } catch (error: any) {
       throw this.handleError(error);
@@ -108,8 +104,9 @@ export class AuthService {
       if (this.currentUser) {
         resolve(this.currentUser);
       } else {
-        const unsubscribe = onAuthStateChanged(this.auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
           unsubscribe();
+          this.currentUser = user;
           resolve(user);
         });
       }
@@ -120,7 +117,9 @@ export class AuthService {
   async loginWithGoogle() {
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(this.auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      this.currentUser = result.user;
+      console.log('[AuthService] Login com Google bem-sucedido:', result.user.uid);
       return result;
     } catch (error: any) {
       throw this.handleError(error);

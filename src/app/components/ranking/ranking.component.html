@@ -1,0 +1,189 @@
+<div class="ranking-container">
+  <!-- Notificações -->
+  <div class="notification-container" *ngIf="notification.show">
+    <div class="notification" [ngClass]="notification.type">
+      <span>{{ notification.message }}</span>
+    </div>
+  </div>
+
+  <div class="ranking-header">
+    <h1><i class="bi bi-trophy-fill"></i> Ranking</h1>
+    
+    <div class="view-toggle">
+      <button 
+        [class.active]="viewMode === 'global'" 
+        (click)="viewMode = 'global'; loadGlobalRanking()">
+        <i class="bi bi-globe"></i> Global
+      </button>
+      <button 
+        [class.active]="viewMode === 'box'" 
+        (click)="viewMode = 'box'">
+        <i class="bi bi-box"></i> Por Caixa
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtro por caixa -->
+  <div class="box-filter" *ngIf="viewMode === 'box'">
+    <select [(ngModel)]="selectedBoxId" (change)="onBoxChange()" class="form-select">
+      <option value="">Selecione uma caixa</option>
+      <option *ngFor="let box of boxes" [value]="box.id">{{ box.name }}</option>
+    </select>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Carregando ranking...</p>
+  </div>
+
+  <!-- Ranking Global -->
+  <div class="ranking-list" *ngIf="!isLoading && viewMode === 'global' && globalRanking.length > 0">
+    <div class="ranking-item" *ngFor="let entry of globalRanking; let i = index">
+      <div class="rank-position">
+        <span class="medal" *ngIf="i < 3">{{ getMedalIcon(i + 1) }}</span>
+        <span class="number" *ngIf="i >= 3">#{{ i + 1 }}</span>
+      </div>
+      
+      <div class="player-info">
+        <img 
+          [src]="entry.photoURL || 'assets/default-avatar.png'" 
+          alt="Avatar"
+          class="player-avatar">
+        <div class="player-details">
+          <h3>{{ entry.username }}</h3>
+          <p>{{ entry.totalItems }} items coletados</p>
+        </div>
+      </div>
+
+      <div class="rarest-item">
+        <img [src]="entry.rarestItem.imageUrl" 
+             alt="{{ entry.rarestItem.name }}"
+             (click)="showItemDetailsModal(entry.rarestItem)"
+             class="item-image clickable">
+        <div class="item-info">
+          <span class="item-name">{{ entry.rarestItem.name }}</span>
+          <span class="item-rarity" [style.color]="getRarityColor(entry.rarestItem.rarity)">
+            {{ entry.rarestItem.rarity }}
+          </span>
+        </div>
+      </div>
+
+      <div class="score">
+        <span class="score-value">{{ entry.score | number:'1.0-0' }}</span>
+        <span class="score-label">pontos</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ranking por Caixa -->
+  <div class="ranking-list" *ngIf="!isLoading && viewMode === 'box' && boxRanking.length > 0">
+    <div class="ranking-item" *ngFor="let entry of boxRanking; let i = index">
+      <div class="rank-position">
+        <span class="medal" *ngIf="i < 3">{{ getMedalIcon(i + 1) }}</span>
+        <span class="number" *ngIf="i >= 3">#{{ i + 1 }}</span>
+      </div>
+      
+      <div class="player-info">
+        <img 
+          [src]="entry.photoURL || 'assets/default-avatar.png'" 
+          alt="Avatar"
+          class="player-avatar">
+        <div class="player-details">
+          <h3>{{ entry.username }}</h3>
+        </div>
+      </div>
+
+      <div class="rarest-item">
+        <img [src]="entry.rarestItem.imageUrl" 
+             alt="{{ entry.rarestItem.name }}"
+             (click)="showItemDetailsModal(entry.rarestItem)"
+             class="item-image clickable">
+        <div class="item-info">
+          <span class="item-name">{{ entry.rarestItem.name }}</span>
+          <span class="item-rarity" [style.color]="getRarityColor(entry.rarestItem.rarity)">
+            {{ entry.rarestItem.rarity }}
+          </span>
+        </div>
+      </div>
+
+      <div class="score">
+        <span class="score-value">{{ entry.score }}</span>
+        <span class="score-label">pontos</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" *ngIf="!isLoading && viewMode === 'global' && globalRanking.length === 0">
+    <i class="bi bi-trophy"></i>
+    <p>Nenhum jogador no ranking ainda</p>
+  </div>
+
+  <div class="empty-state" *ngIf="!isLoading && viewMode === 'box' && boxRanking.length === 0 && selectedBoxId">
+    <i class="bi bi-trophy"></i>
+    <p>Nenhum jogador no ranking desta caixa</p>
+  </div>
+
+  <div class="empty-state" *ngIf="!isLoading && viewMode === 'box' && !selectedBoxId">
+    <i class="bi bi-box"></i>
+    <p>Selecione uma caixa para ver o ranking</p>
+  </div>
+</div>
+
+<!-- Modal de Detalhes do Item -->
+<div class="item-details-overlay" *ngIf="showItemDetails" (click)="closeItemDetailsModal()">
+  <div class="item-details-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h5 class="modal-title">Detalhes do Item</h5>
+      <button type="button" class="close-btn" (click)="closeItemDetailsModal()">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+    <div class="modal-body" *ngIf="selectedItemForDetails">
+      <div class="item-details-container">
+        <div class="item-image-large">
+          <img [src]="selectedItemForDetails.imageUrl" 
+               [alt]="selectedItemForDetails.name"
+               class="item-image-modal">
+        </div>
+        
+        <div class="item-info-details">
+          <h4 class="item-name-modal">{{ selectedItemForDetails.name }}</h4>
+          <div class="rarity-badge" [style.background-color]="getRarityColor(selectedItemForDetails.rarity)">
+            {{ selectedItemForDetails.rarity }}
+          </div>
+          
+          <div class="item-stats">
+            <div class="stat-row">
+              <span class="stat-label">Poder:</span>
+              <span class="stat-value">{{ selectedItemForDetails.power }}</span>
+            </div>
+            
+            <div class="stat-row" *ngIf="selectedItemForDetails.rarityLevel">
+              <span class="stat-label">Nível de Raridade:</span>
+              <span class="stat-value">{{ selectedItemForDetails.rarityLevel }}/1000</span>
+            </div>
+            
+            <div class="stat-row">
+              <span class="stat-label">Caixa:</span>
+              <span class="stat-value">{{ selectedItemForDetails.boxName }}</span>
+            </div>
+            
+            <div class="stat-row">
+              <span class="stat-label">Drop Rate:</span>
+              <span class="stat-value">{{ selectedItemForDetails.dropRate }}%</span>
+            </div>
+          </div>
+          
+          <div class="item-description" *ngIf="selectedItemForDetails.description">
+            <p>{{ selectedItemForDetails.description }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeItemDetailsModal()">Fechar</button>
+    </div>
+  </div>
+</div>

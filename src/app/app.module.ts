@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -12,6 +13,7 @@ import { GachaComponent } from './components/player/gacha/gacha.component';
 import { MyItemsComponent } from './components/player/my-items/my-items.component';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { LoadingComponent } from './components/loading/loading.component';
+import { LoadingCardComponent } from './components/loading-card/loading-card.component';
 import { RarityPipe } from './pipes/rarity.pipe';
 import { WelcomeComponent } from './components/welcome/welcome.component';
 import { RecuperarSenhaComponent } from './components/recuperar-senha/recuperar-senha.component';
@@ -19,13 +21,13 @@ import { EmailVerificationComponent } from './components/email-verification/emai
 import { CompleteProfileComponent } from './components/complete-profile/complete-profile.component';
 import { GachaHomeComponent } from './components/player/gacha-home/gacha-home.component';
 import { InventoryComponent } from './components/player/inventory/inventory.component';
-import { RankingComponent } from './components/player/ranking/ranking.component';
-import { FriendsComponent } from './components/player/friends/friends.component';
-import { MissionsComponent } from './components/player/missions/missions.component';
+import { RankingComponent } from './components/ranking/ranking.component';
+import { FriendsComponent } from './components/friends/friends.component';
+import { MissionsComponent } from './components/missions/missions.component';
 import { ManageBoxesComponent } from './components/admin/manage-boxes/manage-boxes.component';
 import { ManageItemsComponent } from './components/admin/manage-items/manage-items.component';
-import { ManageUsersComponent } from './components/admin/manage-users/manage-users.component';
-import { ManageMissionsComponent } from './components/admin/manage-missions/manage-missions.component';
+import { ManageUsersComponent } from './components/manage-users/manage-users.component';
+import { ManageMissionsComponent } from './components/manage-missions/manage-missions.component';
 
 @NgModule({
   declarations: [
@@ -38,6 +40,7 @@ import { ManageMissionsComponent } from './components/admin/manage-missions/mana
     MyItemsComponent,
     NavbarComponent,
     LoadingComponent,
+    LoadingCardComponent,
     RarityPipe,
     WelcomeComponent,
     RecuperarSenhaComponent,
@@ -55,6 +58,7 @@ import { ManageMissionsComponent } from './components/admin/manage-missions/mana
   ],
   imports: [
     BrowserModule,
+    CommonModule,
     AppRoutingModule,
     FormsModule
   ],

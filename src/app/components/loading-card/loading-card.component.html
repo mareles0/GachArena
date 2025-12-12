@@ -1,0 +1,38 @@
+<div class="loading-card">
+  <div class="loading-card-header">
+    <h4 class="loading-title">{{ title }}</h4>
+    <p class="loading-subtitle">{{ subtitle }}</p>
+  </div>
+
+  <div class="loading-card-body">
+    <div class="box-opening">
+      <div class="box-container">
+        <div class="box-lid">
+          <span class="question-mark">?</span>
+        </div>
+        <div class="box-base"></div>
+      </div>
+
+      <!-- Estrelas -->
+      <ng-container *ngIf="showSparkles">
+        <div class="sparkle" *ngFor="let sparkle of [1,2,3,4,5,6,7,8]">
+          <i class="bi bi-star-fill"></i>
+        </div>
+      </ng-container>
+
+      <!-- Barra de progresso -->
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+      </div>
+
+      <!-- Partículas -->
+      <ng-container *ngIf="showParticles">
+        <div class="floating-particle" *ngFor="let particle of [1,2,3,4,5,6]">
+          <i class="bi bi-circle-fill"></i>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

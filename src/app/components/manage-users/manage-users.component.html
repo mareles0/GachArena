@@ -1,0 +1,96 @@
+<div class="manage-container">
+  <div class="notification-container" *ngIf="notification.show">
+    <div class="notification" [ngClass]="notification.type">{{ notification.message }}</div>
+  </div>
+
+  <h1><i class="bi bi-person-gear"></i> Gerenciar Usuários</h1>
+
+  <input [(ngModel)]="searchTerm" (input)="filterUsers()" placeholder="Buscar usuários..." class="search-input">
+
+  <div class="loading" *ngIf="isLoading">Carregando...</div>
+
+  <table *ngIf="!isLoading">
+    <thead>
+      <tr>
+        <th>Usuário</th>
+        <th>Email</th>
+        <th>Tipo</th>
+        <th>Tickets Normais</th>
+        <th>Tickets Premium</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let user of filteredUsers">
+        <td>{{ user.username }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.userType }}</td>
+        <td>{{ user.normalTickets || 0 }}</td>
+        <td>{{ user.premiumTickets || 0 }}</td>
+        <td>
+          <span class="badge" [class.banned]="user.isBanned">
+            {{ user.isBanned ? 'Banido' : 'Ativo' }}
+          </span>
+        </td>
+        <td>
+          <button (click)="toggleBan(user)" class="btn-action">
+            {{ user.isBanned ? 'Desbanir' : 'Banir' }}
+          </button>
+          <button (click)="addTickets(user)" class="btn-action">+ Tickets</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal de Adicionar Tickets -->
+<div class="modal-overlay" *ngIf="showTicketModal" (click)="closeTicketModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Adicionar Tickets</h3>
+      <button class="close-btn" (click)="closeTicketModal()">×</button>
+    </div>
+    
+    <div class="modal-body">
+      <p><strong>Usuário:</strong> {{ selectedUser?.username }}</p>
+      
+      <div class="form-group">
+        <label>Tipo de Ticket:</label>
+        <div class="ticket-type-selector">
+          <button 
+            [class.active]="ticketType === 'normal'" 
+            (click)="ticketType = 'normal'"
+            class="ticket-type-btn normal">
+            🎫 Normal
+          </button>
+          <button 
+            [class.active]="ticketType === 'premium'" 
+            (click)="ticketType = 'premium'"
+            class="ticket-type-btn premium">
+            💎 Premium
+          </button>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Quantidade:</label>
+        <input 
+          type="number" 
+          [(ngModel)]="ticketAmount" 
+          min="1" 
+          placeholder="Digite a quantidade"
+          class="ticket-input">
+      </div>
+      
+      <div class="ticket-preview">
+        <p>Adicionando: <strong>{{ ticketAmount }} tickets {{ ticketType === 'normal' ? 'normais' : 'premium' }}</strong></p>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button (click)="closeTicketModal()" class="btn-cancel">Cancelar</button>
+      <button (click)="confirmAddTickets()" [disabled]="ticketAmount <= 0" class="btn-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>

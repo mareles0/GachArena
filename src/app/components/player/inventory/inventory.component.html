@@ -1,4 +1,18 @@
 <div class="inventory-container">
+  <!-- Notificação Toast -->
+  <div class="notification-toast" *ngIf="notification.show" 
+       [class.success]="notification.type === 'success'"
+       [class.error]="notification.type === 'error'"
+       [class.info]="notification.type === 'info'">
+    <i class="bi" [class.bi-check-circle-fill]="notification.type === 'success'"
+                   [class.bi-x-circle-fill]="notification.type === 'error'"
+                   [class.bi-info-circle-fill]="notification.type === 'info'"></i>
+    <span>{{ notification.message }}</span>
+    <button class="close-btn" (click)="notification.show = false">
+      <i class="bi bi-x"></i>
+    </button>
+  </div>
+
   <div class="inventory-header">
     <h2><i class="bi bi-backpack"></i> Meu Inventário</h2>
     <div class="stats-card">
@@ -57,15 +71,84 @@
       <div class="rarity-badge" [ngClass]="getRarityClass(userItem.item.rarity)">
         {{ userItem.item.rarity }}
       </div>
-      <img [src]="userItem.item.imageUrl" [alt]="userItem.item.name" class="item-image">
+      <img [src]="userItem.item.imageUrl" 
+           [alt]="userItem.item.name" 
+           class="item-image clickable"
+           (click)="showItemDetailsModal(userItem)">
       <div class="item-info">
         <h4>{{ userItem.item.name }}</h4>
         <p class="item-box">{{ userItem.item.boxName }}</p>
-        <p class="item-description">{{ userItem.item.description }}</p>
         <div class="item-power">
           <i class="bi bi-lightning-fill"></i> {{ userItem.item.power }}
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Detalhes do Item -->
+<div class="item-details-overlay" *ngIf="showItemDetails" (click)="closeItemDetailsModal()">
+  <div class="item-details-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h5 class="modal-title">Detalhes do Item</h5>
+      <button type="button" class="close-btn" (click)="closeItemDetailsModal()">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+    <div class="modal-body" *ngIf="selectedItemForDetails">
+      <div class="item-details-container">
+        <div class="item-image-large">
+          <img [src]="selectedItemForDetails.item.imageUrl" 
+               [alt]="selectedItemForDetails.item.name"
+               class="item-image-modal">
+        </div>
+        
+        <div class="item-info-details">
+          <h4 class="item-name-modal">{{ selectedItemForDetails.item.name }}</h4>
+          <div class="rarity-badge" [style.background-color]="getRarityColor(selectedItemForDetails.item.rarity)">
+            {{ selectedItemForDetails.item.rarity }}
+          </div>
+          
+          <div class="item-stats">
+            <div class="stat-row">
+              <span class="stat-label">Poder:</span>
+              <span class="stat-value">{{ selectedItemForDetails.item.power }}</span>
+            </div>
+
+            <div class="stat-row">
+              <span class="stat-label">Pontos:</span>
+              <span class="stat-value">{{ selectedItemForDetails.item.points }}</span>
+            </div>
+            
+            <div class="stat-row" *ngIf="selectedItemForDetails.rarityLevel">
+              <span class="stat-label">Nível de Raridade:</span>
+              <span class="stat-value">{{ selectedItemForDetails.rarityLevel }}/1000</span>
+            </div>
+            
+            <div class="stat-row">
+              <span class="stat-label">Caixa:</span>
+              <span class="stat-value">{{ selectedItemForDetails.item.boxName }}</span>
+            </div>
+            
+            <div class="stat-row">
+              <span class="stat-label">Drop Rate:</span>
+              <span class="stat-value">{{ selectedItemForDetails.item.dropRate }}%</span>
+            </div>
+
+            <div class="stat-row" *ngIf="selectedItemForDetails.quantity > 1">
+              <span class="stat-label">Quantidade:</span>
+              <span class="stat-value">{{ selectedItemForDetails.quantity }}</span>
+            </div>
+          </div>
+          
+          <div class="item-description" *ngIf="selectedItemForDetails.item.description">
+            <p>{{ selectedItemForDetails.item.description }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeItemDetailsModal()">Fechar</button>
     </div>
   </div>
 </div>

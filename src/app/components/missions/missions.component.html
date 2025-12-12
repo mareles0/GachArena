@@ -1,0 +1,63 @@
+<div class="missions-container">
+  <div class="notification-container" *ngIf="notification.show">
+    <div class="notification" [ngClass]="notification.type">{{ notification.message }}</div>
+  </div>
+
+  <h1><i class="bi bi-list-check"></i> Missões</h1>
+
+  <div class="loading" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Carregando missões...</p>
+  </div>
+
+  <div *ngIf="!isLoading">
+    <!-- Missões em Progresso -->
+    <section *ngIf="userMissions.length > 0">
+      <h2>Minhas Missões</h2>
+      <div class="missions-grid">
+        <div class="mission-card" *ngFor="let um of userMissions">
+          <div class="mission-header">
+            <i class="bi" [ngClass]="getMissionIcon(um.mission?.type || '')"></i>
+            <h3>{{ um.mission?.title }}</h3>
+          </div>
+          <p>{{ um.mission?.description }}</p>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="getProgressPercentage(um)"></div>
+          </div>
+          <div class="mission-footer">
+            <span class="reward"><i class="bi bi-ticket-perforated"></i> {{ um.mission?.rewardNormal }} tickets</span>
+            <button 
+              *ngIf="um.completed" 
+              (click)="claimReward(um)"
+              class="btn-claim">
+              Coletar
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Missões Disponíveis -->
+    <section *ngIf="availableMissions.length > 0">
+      <h2>Disponíveis</h2>
+      <div class="missions-grid">
+        <div class="mission-card available" *ngFor="let mission of availableMissions">
+          <div class="mission-header">
+            <i class="bi" [ngClass]="getMissionIcon(mission.type)"></i>
+            <h3>{{ mission.title }}</h3>
+          </div>
+          <p>{{ mission.description }}</p>
+          <div class="mission-footer">
+            <span class="reward"><i class="bi bi-ticket-perforated"></i> {{ mission.rewardNormal }} tickets</span>
+            <button (click)="startMission(mission.id || '')" class="btn-start">Iniciar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="empty-state" *ngIf="userMissions.length === 0 && availableMissions.length === 0">
+      <i class="bi bi-list-check"></i>
+      <p>Nenhuma missão disponível no momento</p>
+    </div>
+  </div>
+</div>

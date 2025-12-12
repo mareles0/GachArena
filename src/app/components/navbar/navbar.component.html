@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
     <a class="navbar-brand" routerLink="/">
       <i class="bi bi-box-seam"></i> GachArena
@@ -10,28 +10,27 @@
 
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
-        <!-- Player Menu -->
-        <li class="nav-item" *ngIf="isLoggedIn && !isAdmin">
+        <li class="nav-item" *ngIf="isLoggedIn">
           <a class="nav-link" routerLink="/gacha" routerLinkActive="active">
             <i class="bi bi-box"></i> Gacha
           </a>
         </li>
-        <li class="nav-item" *ngIf="isLoggedIn && !isAdmin">
+        <li class="nav-item" *ngIf="isLoggedIn">
           <a class="nav-link" routerLink="/inventario" routerLinkActive="active">
             <i class="bi bi-backpack"></i> Inventário
           </a>
         </li>
-        <li class="nav-item" *ngIf="isLoggedIn && !isAdmin">
+        <li class="nav-item" *ngIf="isLoggedIn">
           <a class="nav-link" routerLink="/ranking" routerLinkActive="active">
             <i class="bi bi-trophy"></i> Ranking
           </a>
         </li>
-        <li class="nav-item" *ngIf="isLoggedIn && !isAdmin">
+        <li class="nav-item" *ngIf="isLoggedIn">
           <a class="nav-link" routerLink="/missoes" routerLinkActive="active">
             <i class="bi bi-list-task"></i> Missões
           </a>
         </li>
-        <li class="nav-item" *ngIf="isLoggedIn && !isAdmin">
+        <li class="nav-item" *ngIf="isLoggedIn">
           <a class="nav-link" routerLink="/amigos" routerLinkActive="active">
             <i class="bi bi-people"></i> Amigos
           </a>
@@ -59,15 +58,15 @@
         </li>
       </ul>
 
-      <!-- Tickets Display (Apenas para jogadores) -->
-      <ul class="navbar-nav mx-3" *ngIf="isLoggedIn && !isAdmin">
+      <!-- Tickets Display (Disponível para todos os usuários logados) -->
+      <ul class="navbar-nav mx-3" *ngIf="isLoggedIn">
         <li class="nav-item d-flex align-items-center gap-3">
           <div class="ticket-display normal">
-            <img src="https://img.icons8.com/fluency/48/ticket.png" alt="Ticket Normal" class="ticket-icon">
+            <img src="https://static.wikitide.net/cravesagawiki/4/46/Platinum_Gacha_Ticket.png" alt="Ticket Normal" class="ticket-icon">
             <span class="ticket-amount">{{ tickets.normalTickets }}</span>
           </div>
           <div class="ticket-display premium">
-            <img src="https://img.icons8.com/fluency/48/star--v1.png" alt="Ticket Premium" class="ticket-icon">
+            <img src="https://static.wikitide.net/cravesagawiki/f/fe/SR_or_Higher_Gacha_Ticket.png" alt="Ticket Premium" class="ticket-icon">
             <span class="ticket-amount">{{ tickets.premiumTickets }}</span>
           </div>
         </li>

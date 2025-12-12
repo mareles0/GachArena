@@ -1,12 +1,22 @@
 <div class="container mt-4">
+  <!-- Notificação Toast -->
+  <div class="notification-toast" *ngIf="notification.show" 
+       [class.success]="notification.type === 'success'"
+       [class.error]="notification.type === 'error'"
+       [class.info]="notification.type === 'info'">
+    <i class="bi" [class.bi-check-circle-fill]="notification.type === 'success'"
+                   [class.bi-x-circle-fill]="notification.type === 'error'"
+                   [class.bi-info-circle-fill]="notification.type === 'info'"></i>
+    <span>{{ notification.message }}</span>
+    <button class="close-btn" (click)="notification.show = false">
+      <i class="bi bi-x"></i>
+    </button>
+  </div>
+
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-box-seam"></i> Gerenciar Caixas</h2>
-    <button class="btn btn-success" (click)="seedDatabase()" [disabled]="seeding">
-      <span *ngIf="!seeding"><i class="bi bi-database-fill-add"></i> Popular Banco de Dados</span>
-      <span *ngIf="seeding">
-        <span class="spinner-border spinner-border-sm me-2"></span>
-        Populando...
-      </span>
+    <button class="btn btn-primary" (click)="openCreateForm()">
+      <i class="bi bi-plus-circle"></i> Nova Caixa
     </button>
   </div>
 
@@ -32,21 +42,107 @@
             </span>
           </div>
           <p class="card-text text-muted small">{{ box.description }}</p>
-          <div class="d-flex justify-content-between align-items-center">
-            <span class="badge" [class.bg-success]="box.active" [class.bg-secondary]="!box.active">
-              {{ box.active ? 'Ativa' : 'Inativa' }}
-            </span>
-            <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-primary" (click)="toggleBoxStatus(box)" title="Ativar/Desativar">
-                <i class="bi bi-toggle-on"></i>
+          <div class="mt-auto">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="badge" [class.bg-success]="box.active" [class.bg-secondary]="!box.active">
+                {{ box.active ? 'Ativa' : 'Inativa' }}
+              </span>
+            </div>
+            <div class="d-grid gap-2">
+              <button class="btn btn-sm btn-outline-primary" (click)="openEditForm(box)">
+                <i class="bi bi-pencil"></i> Editar
               </button>
-              <button class="btn btn-outline-danger" (click)="deleteBox(box)" title="Deletar">
-                <i class="bi bi-trash"></i>
-              </button>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" (click)="toggleBoxStatus(box)">
+                  <i class="bi bi-toggle-on"></i> {{ box.active ? 'Desativar' : 'Ativar' }}
+                </button>
+                <button class="btn btn-outline-danger" (click)="deleteBox(box)">
+                  <i class="bi bi-trash"></i> Deletar
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Modal de Criar/Editar Caixa -->
+  <div class="modal" [class.show]="showForm" [style.display]="showForm ? 'block' : 'none'">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-box-seam"></i> {{ editingBox ? 'Editar Caixa' : 'Nova Caixa' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closeForm()"></button>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="mb-3">
+              <label class="form-label">Nome da Caixa *</label>
+              <input type="text" class="form-control" [(ngModel)]="boxForm.name" name="name" 
+                     placeholder="Ex: Bleach Collection">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Descrição *</label>
+              <textarea class="form-control" [(ngModel)]="boxForm.description" name="description" rows="2"
+                        placeholder="Descreva a caixa..."></textarea>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Tema *</label>
+                <input type="text" class="form-control" [(ngModel)]="boxForm.theme" name="theme"
+                       placeholder="Ex: bleach">
+                <small class="text-muted">Use apenas letras minúsculas e hífens</small>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Tipo *</label>
+                <select class="form-select" [(ngModel)]="boxForm.type" name="type">
+                  <option value="NORMAL">Normal</option>
+                  <option value="PREMIUM">Premium</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Imagem da Caixa</label>
+              <input type="file" class="form-control" (change)="onFileSelected($event)" accept="image/*">
+              <small class="text-muted">Deixe em branco para manter a imagem atual (ao editar)</small>
+            </div>
+
+            <div class="mb-3" *ngIf="boxForm.imageUrl && !selectedFile">
+              <label class="form-label">Imagem Atual</label>
+              <div>
+                <img [src]="boxForm.imageUrl" alt="Preview" class="img-thumbnail" style="max-width: 200px;">
+              </div>
+            </div>
+
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="boxForm.active" name="active" id="activeCheck">
+              <label class="form-check-label" for="activeCheck">
+                Caixa Ativa
+              </label>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeForm()">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="saveBox()" [disabled]="uploadingImage">
+            <span *ngIf="!uploadingImage">
+              <i class="bi bi-save"></i> {{ editingBox ? 'Atualizar' : 'Criar' }}
+            </span>
+            <span *ngIf="uploadingImage">
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Salvando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="showForm" *ngIf="showForm"></div>
 </div>

@@ -20,6 +20,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   tickets: Ticket = { normalTickets: 0, premiumTickets: 0 };
   userId: string = '';
   private routerSubscription?: Subscription;
+  private ticketsSubscription?: Subscription;
 
   constructor(
     private authService: AuthService,
@@ -32,6 +33,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
     console.log('[Navbar] Inicializando...');
     await this.checkUserStatus();
     
+    // Inscrever-se nas atualizações de tickets
+    this.ticketsSubscription = this.ticketService.tickets$.subscribe(tickets => {
+      console.log('[Navbar] Tickets atualizados:', tickets);
+      this.tickets = tickets;
+    });
+    
     this.routerSubscription = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => {
@@ -43,6 +50,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.routerSubscription) {
       this.routerSubscription.unsubscribe();
+    }
+    if (this.ticketsSubscription) {
+      this.ticketsSubscription.unsubscribe();
     }
   }
 
@@ -64,7 +74,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.isAdmin = userData.userType === 'ADMINISTRADOR';
         console.log('[Navbar] Username:', this.username, 'IsAdmin:', this.isAdmin);
       }
-      await this.loadTickets();
+      // Os tickets serão carregados automaticamente pelo observable
     } else {
       console.log('[Navbar] Nenhum usuário autenticado');
       this.isLoggedIn = false;
@@ -77,10 +87,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   async loadTickets() {
+    // Método mantido para compatibilidade, mas os tickets são atualizados automaticamente
     if (this.userId) {
-      console.log('[Navbar] Carregando tickets para:', this.userId);
-      this.tickets = await this.ticketService.getUserTickets(this.userId);
-      console.log('[Navbar] Tickets carregados:', this.tickets);
+      console.log('[Navbar] Forçando atualização de tickets para:', this.userId);
+      await this.ticketService.refreshTickets(this.userId);
     }
   }
 

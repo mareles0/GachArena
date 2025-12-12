@@ -18,6 +18,17 @@ export class InventoryComponent implements OnInit {
 
   rarities = ['ALL', 'COMUM', 'RARO', 'EPICO', 'LENDARIO', 'MITICO'];
 
+  // Modal de detalhes do item
+  showItemDetails: boolean = false;
+  selectedItemForDetails: any = null;
+
+  // Sistema de notificações
+  notification = {
+    show: false,
+    message: '',
+    type: 'success' as 'success' | 'error' | 'info'
+  };
+
   constructor(
     private authService: AuthService,
     private itemService: ItemService,
@@ -35,6 +46,13 @@ export class InventoryComponent implements OnInit {
     await this.loadInventory();
   }
 
+  showNotification(message: string, type: 'success' | 'error' | 'info' = 'success') {
+    this.notification = { show: true, message, type };
+    setTimeout(() => {
+      this.notification.show = false;
+    }, 4000);
+  }
+
   async loadInventory() {
     this.loading = true;
     try {
@@ -43,7 +61,7 @@ export class InventoryComponent implements OnInit {
       this.sortByRarity();
     } catch (error) {
       console.error('Erro ao carregar inventário:', error);
-      alert('Erro ao carregar inventário');
+      this.showNotification('❌ Erro ao carregar inventário', 'error');
     } finally {
       this.loading = false;
     }
@@ -92,5 +110,15 @@ export class InventoryComponent implements OnInit {
 
   getTotalPower(): number {
     return this.userItems.reduce((sum, ui) => sum + ui.item.power, 0);
+  }
+
+  showItemDetailsModal(item: any) {
+    this.selectedItemForDetails = item;
+    this.showItemDetails = true;
+  }
+
+  closeItemDetailsModal() {
+    this.showItemDetails = false;
+    this.selectedItemForDetails = null;
   }
 }

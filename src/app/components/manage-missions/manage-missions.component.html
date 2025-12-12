@@ -1,0 +1,66 @@
+<div class="manage-container">
+  <div class="notification-container" *ngIf="notification.show">
+    <div class="notification" [ngClass]="notification.type">{{ notification.message }}</div>
+  </div>
+
+  <div class="header">
+    <h1><i class="bi bi-list-task"></i> Gerenciar Missões</h1>
+    <button (click)="startCreate()" class="btn-create" *ngIf="!isEditing">+ Nova Missão</button>
+  </div>
+
+  <div class="form-section" *ngIf="isEditing">
+    <h2>{{ editingMission.id ? 'Editar' : 'Nova' }} Missão</h2>
+    <input [(ngModel)]="editingMission.title" placeholder="Título">
+    <textarea [(ngModel)]="editingMission.description" placeholder="Descrição"></textarea>
+    <select [(ngModel)]="editingMission.type">
+      <option value="DAILY">Diária</option>
+      <option value="WEEKLY">Semanal</option>
+      <option value="SPECIAL">Especial</option>
+    </select>
+    <input [(ngModel)]="editingMission.requirement" placeholder="Requisito">
+    <div class="reward-section">
+      <h4>Recompensas</h4>
+      <div class="reward-inputs">
+        <div class="reward-input">
+          <label>🎫 Tickets Normais:</label>
+          <input type="number" [(ngModel)]="editingMission.rewardNormal" placeholder="0" min="0">
+        </div>
+        <div class="reward-input">
+          <label>💎 Tickets Premium:</label>
+          <input type="number" [(ngModel)]="editingMission.rewardPremium" placeholder="0" min="0">
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button (click)="saveMission()" class="btn-save">Salvar</button>
+      <button (click)="cancelEdit()" class="btn-cancel">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="missions-list" *ngIf="!isEditing">
+    <div class="mission-item" *ngFor="let mission of missions">
+      <div class="mission-info">
+        <h3>{{ mission.title }}</h3>
+        <p>{{ mission.description }}</p>
+        <span class="badge">{{ mission.type }}</span>
+        <div class="rewards-display">
+          <div class="reward-item" *ngIf="mission.rewardNormal > 0">
+            <span class="reward-icon">🎫</span>
+            <span class="reward-text">{{ mission.rewardNormal }} Normais</span>
+          </div>
+          <div class="reward-item" *ngIf="mission.rewardPremium > 0">
+            <span class="reward-icon">💎</span>
+            <span class="reward-text">{{ mission.rewardPremium }} Premium</span>
+          </div>
+        </div>
+      </div>
+      <div class="mission-actions">
+        <button (click)="toggleActive(mission)" [class.active]="mission.active" class="btn-toggle">
+          {{ mission.active ? 'Ativa' : 'Inativa' }}
+        </button>
+        <button (click)="startEdit(mission)" class="btn-edit">Editar</button>
+        <button (click)="deleteMission(mission.id || '')" class="btn-delete">Deletar</button>
+      </div>
+    </div>
+  </div>
+</div>

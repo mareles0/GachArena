@@ -10,15 +10,15 @@ import { CompleteProfileComponent } from './components/complete-profile/complete
 // Player Components
 import { GachaHomeComponent } from './components/player/gacha-home/gacha-home.component';
 import { InventoryComponent } from './components/player/inventory/inventory.component';
-import { RankingComponent } from './components/player/ranking/ranking.component';
-import { FriendsComponent } from './components/player/friends/friends.component';
-import { MissionsComponent } from './components/player/missions/missions.component';
+import { RankingComponent } from './components/ranking/ranking.component';
+import { FriendsComponent } from './components/friends/friends.component';
+import { MissionsComponent } from './components/missions/missions.component';
 
 // Admin Components
 import { ManageBoxesComponent } from './components/admin/manage-boxes/manage-boxes.component';
 import { ManageItemsComponent } from './components/admin/manage-items/manage-items.component';
-import { ManageUsersComponent } from './components/admin/manage-users/manage-users.component';
-import { ManageMissionsComponent } from './components/admin/manage-missions/manage-missions.component';
+import { ManageUsersComponent } from './components/manage-users/manage-users.component';
+import { ManageMissionsComponent } from './components/manage-missions/manage-missions.component';
 
 const routes: Routes = [
   { path: '', component: WelcomeComponent },
