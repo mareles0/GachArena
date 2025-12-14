@@ -195,14 +195,40 @@
           </span>
         </button>
 
-        <!-- Card de Loading Separado -->
-        <div *ngIf="loading" class="loading-card-container">
-          <app-loading-card
-            [title]="isMultiOpening ? 'Abrindo múltiplas caixas...' : 'Abrindo caixa...'"
-            [subtitle]="isMultiOpening ? 'Preparando seus itens especiais!' : 'Preparando seu item especial!'"
-            [showParticles]="true"
-            [showSparkles]="true">
-          </app-loading-card>
+        <!-- Modal de Animação do Portal -->
+        <div *ngIf="loading" class="portal-animation-overlay">
+          <div class="portal-animation-modal">
+            <div class="portal-header">
+              <h3>Revelando Cartas Mágicas...</h3>
+              <div class="portal-subtitle">
+                <i class="bi bi-card-text"></i>
+                <span>{{ selectedBox.name }}</span>
+              </div>
+            </div>
+
+            <div class="portal-animation-container">
+              <app-card-gacha
+                [config]="getCardGachaConfig()"
+                (animationComplete)="onGachaComplete($event)"
+                (itemRevealed)="onItemRevealed($event)">
+              </app-card-gacha>
+            </div>
+
+            <div class="portal-footer">
+              <div class="loading-indicator" *ngIf="!isAnimating">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                  <span class="visually-hidden">Carregando...</span>
+                </div>
+                <span class="loading-message">Preparando itens...</span>
+              </div>
+
+              <div class="loading-indicator" *ngIf="isAnimating">
+                <i class="bi bi-star-fill text-warning"></i>
+                <span class="loading-message">Revelando cartas...</span>
+              </div>
+              <!-- debug button removed from production UI -->
+            </div>
+          </div>
         </div>
       </div>
     </div>

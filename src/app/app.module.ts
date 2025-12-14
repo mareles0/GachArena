@@ -12,9 +12,8 @@ import { ItemFormComponent } from './components/admin/item-form/item-form.compon
 import { GachaComponent } from './components/player/gacha/gacha.component';
 import { MyItemsComponent } from './components/player/my-items/my-items.component';
 import { NavbarComponent } from './components/navbar/navbar.component';
-import { LoadingComponent } from './components/loading/loading.component';
-import { LoadingCardComponent } from './components/loading-card/loading-card.component';
 import { RarityPipe } from './pipes/rarity.pipe';
+import { CardGachaComponent } from './components/card-gacha/card-gacha.component';
 import { WelcomeComponent } from './components/welcome/welcome.component';
 import { RecuperarSenhaComponent } from './components/recuperar-senha/recuperar-senha.component';
 import { EmailVerificationComponent } from './components/email-verification/email-verification.component';
@@ -39,8 +38,6 @@ import { ManageMissionsComponent } from './components/manage-missions/manage-mis
     GachaComponent,
     MyItemsComponent,
     NavbarComponent,
-    LoadingComponent,
-    LoadingCardComponent,
     RarityPipe,
     WelcomeComponent,
     RecuperarSenhaComponent,
@@ -51,6 +48,7 @@ import { ManageMissionsComponent } from './components/manage-missions/manage-mis
     RankingComponent,
     FriendsComponent,
     MissionsComponent,
+    CardGachaComponent,
     ManageBoxesComponent,
     ManageItemsComponent,
     ManageUsersComponent,
@@ -58,9 +56,9 @@ import { ManageMissionsComponent } from './components/manage-missions/manage-mis
   ],
   imports: [
     BrowserModule,
+    FormsModule,
     CommonModule,
-    AppRoutingModule,
-    FormsModule
+    AppRoutingModule
   ],
   providers: [],
   bootstrap: [AppComponent]

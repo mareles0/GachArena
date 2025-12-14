@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { BoxService } from 'src/app/services/box.service';
@@ -7,6 +7,7 @@ import { TicketService } from 'src/app/services/ticket.service';
 import { Box } from 'src/app/models/box.model';
 import { Ticket } from 'src/app/models/ticket.model';
 import { Item } from 'src/app/models/item.model';
+import { CardGachaConfig, CardGachaResult, CardGachaComponent } from '../../card-gacha/card-gacha.component';
 
 @Component({
   selector: 'app-gacha-home',
@@ -29,6 +30,10 @@ export class GachaHomeComponent implements OnInit {
   openMode: 'single' | 'multi' = 'single';
   multiResults: Item[] = [];
   isMultiOpening: boolean = false;
+  isAnimating: boolean = false;
+  
+  // Referência ao componente de animação para controlá-lo diretamente
+  @ViewChild(CardGachaComponent) cardGacha?: CardGachaComponent;
 
   // Sistema de notificações
   notification = {
@@ -43,6 +48,7 @@ export class GachaHomeComponent implements OnInit {
     private itemService: ItemService,
     private ticketService: TicketService,
     private router: Router
+    , private cd: ChangeDetectorRef
   ) { }
 
   async ngOnInit() {
@@ -169,8 +175,30 @@ export class GachaHomeComponent implements OnInit {
     } catch (error) {
       console.error('Erro ao abrir caixa:', error);
       this.showNotification('❌ Erro ao abrir caixa', 'error');
-    } finally {
-      this.loading = false;
+    }
+  }
+
+  // DEBUG: Forçar um play com uma configuração mock para testar o CardGacha isoladamente
+  debugPlayMock() {
+    const mock: CardGachaConfig = {
+      mode: 'x5',
+      results: [
+        { rarity: 'rare', color: '#4fc3f7' },
+        { rarity: 'epic', color: '#ba68c8' },
+        { rarity: 'legendary', color: '#ffd54f' },
+        { rarity: 'common', color: '#9e9e9e' },
+        { rarity: 'mythic', color: '#ff6f00' }
+      ]
+    };
+
+    console.log('[GachaHome] debugPlayMock: applying mock config', mock);
+    this.cd.detectChanges();
+    if (this.cardGacha) {
+      this.cardGacha.setConfig(mock);
+      this.cardGacha.play();
+      this.isAnimating = true;
+    } else {
+      console.warn('[GachaHome] debugPlayMock: cardGacha not found');
     }
   }
 
@@ -187,7 +215,27 @@ export class GachaHomeComponent implements OnInit {
     this.drawnItem = await this.itemService.drawRandomItem(this.selectedBox.id);
     this.drawnRarityLevel = await this.itemService.addItemToUser(this.userId, this.drawnItem.id);
     await this.ticketService.refreshTickets(this.userId); // Atualizar tickets na navbar
-    this.showResult = true;
+    console.log('[GachaHome] openSingleBox: drawnItem=', this.drawnItem);
+    // Garantir que o componente de animação receba os novos dados e inicie
+    setTimeout(() => {
+      // Garantir que bindings de @Input foram aplicados
+      this.cd.detectChanges();
+      const cfg = this.getCardGachaConfig();
+      console.log('[GachaHome] getCardGachaConfig:', cfg);
+      if (!cfg || !cfg.results || cfg.results.length === 0) {
+        console.warn('[GachaHome] Nenhum resultado no config, abortando animação');
+        this.showNotification('❌ Falha ao preparar itens para animação', 'error');
+        this.loading = false;
+        return;
+      }
+
+      if (this.cardGacha) {
+        console.log('[GachaHome] setting config and calling cardGacha.play()');
+        this.cardGacha.setConfig(cfg);
+        this.isAnimating = true;
+        this.cardGacha.play();
+      }
+    }, 40);
   }
 
   async openMultiBox() {
@@ -223,8 +271,28 @@ export class GachaHomeComponent implements OnInit {
       }
 
       this.tickets = await this.ticketService.getUserTickets(this.userId);
-      this.showResult = true;
       this.showNotification(`🎉 Você abriu ${totalOpens} caixas e ganhou ${this.multiResults.length} itens!`, 'success');
+
+      // Iniciar animação do componente de cards
+      setTimeout(() => {
+        // Garantir que bindings de @Input foram aplicados
+        this.cd.detectChanges();
+        const cfg = this.getCardGachaConfig();
+        console.log('[GachaHome] getCardGachaConfig (multi):', cfg);
+        if (!cfg || !cfg.results || cfg.results.length === 0) {
+          console.warn('[GachaHome] Nenhum resultado no config (multi), abortando animação');
+          this.showNotification('❌ Falha ao preparar itens para animação', 'error');
+          this.loading = false;
+          return;
+        }
+
+        if (this.cardGacha) {
+          console.log('[GachaHome] setting config and calling cardGacha.play() for multi-results');
+          this.cardGacha.setConfig(cfg);
+          this.isAnimating = true;
+          this.cardGacha.play();
+        }
+      }, 40);
 
     } catch (error) {
       console.error('Erro na abertura múltipla:', error);
@@ -254,5 +322,42 @@ export class GachaHomeComponent implements OnInit {
       'MITICO': '#ff6f00'
     };
     return colors[rarity] || '#fff';
+  }
+
+  onGachaComplete(results: CardGachaResult[]) {
+    // Animação completa, mostrar resultados
+    console.log('[GachaHome] onGachaComplete: results=', results);
+    this.showResult = true;
+    this.loading = false;
+    this.isAnimating = false;
+  }
+
+  onItemRevealed(event: { item: CardGachaResult; index: number }) {
+    // Item foi revelado, podemos adicionar efeitos adicionais aqui se necessário
+    console.log('Item revelado:', event.item, 'índice:', event.index);
+  }
+
+  // Método para converter configuração do portal para configuração dos cards
+  getCardGachaConfig(): CardGachaConfig {
+    const results: CardGachaResult[] = [];
+
+    if (this.openMode === 'single' && this.drawnItem) {
+      results.push({
+        rarity: this.drawnItem.rarity.toLowerCase() as any,
+        color: this.getRarityColor(this.drawnItem.rarity)
+      });
+    } else if (this.openMode === 'multi' && this.multiResults.length > 0) {
+      this.multiResults.forEach(item => {
+        results.push({
+          rarity: item.rarity.toLowerCase() as any,
+          color: this.getRarityColor(item.rarity)
+        });
+      });
+    }
+
+    return {
+      mode: this.openMode === 'single' ? 'x1' : (this.openMode === 'multi' ? (this.selectedBox?.type === 'NORMAL' ? 'x10' : 'x5') : 'x1'),
+      results: results
+    };
   }
 }

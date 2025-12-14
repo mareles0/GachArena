@@ -866,4 +866,193 @@
       transform: translateY(0);
     }
   }
+
+  // Ajustes específicos para o componente gacha-animation
+  app-gacha-animation {
+    .gacha-animation {
+      width: 250px;
+      height: 250px;
+
+      @media (max-width: 768px) {
+        width: 200px;
+        height: 200px;
+      }
+
+      @media (max-width: 480px) {
+        width: 180px;
+        height: 180px;
+      }
+    }
+  }
+}
+
+// Portal Animation Overlay
+.portal-animation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: overlayFadeIn 0.8s ease-out;
+
+  @keyframes overlayFadeIn {
+    from {
+      opacity: 0;
+      backdrop-filter: blur(0px);
+    }
+    to {
+      opacity: 1;
+      backdrop-filter: blur(8px);
+    }
+  }
+}
+
+.portal-animation-modal {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  border-radius: 20px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.5),
+    0 0 60px rgba(138, 43, 226, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  animation: modalSlideIn 1s ease-out;
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: scale(0.8) translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    max-width: 95%;
+  }
+
+  @media (max-width: 480px) {
+    padding: 1rem;
+    max-width: 98%;
+  }
+}
+
+.portal-header {
+  text-align: center;
+  margin-bottom: 2rem;
+
+  h3 {
+    color: #ffffff;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+    animation: titleGlow 2s ease-in-out infinite alternate;
+
+    @keyframes titleGlow {
+      from { text-shadow: 0 0 20px rgba(138, 43, 226, 0.5); }
+      to { text-shadow: 0 0 30px rgba(138, 43, 226, 0.8), 0 0 40px rgba(138, 43, 226, 0.4); }
+    }
+
+    @media (max-width: 480px) {
+      font-size: 1.5rem;
+    }
+  }
+}
+
+.portal-subtitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #b794f6;
+  font-size: 1.1rem;
+  font-weight: 500;
+
+  i {
+    font-size: 1.2rem;
+    animation: magicSparkle 1.5s ease-in-out infinite;
+  }
+
+  span {
+    background: linear-gradient(45deg, #b794f6, #9f7aea);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  @keyframes magicSparkle {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.2); opacity: 1; }
+  }
+}
+
+.portal-animation-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2rem 0;
+  min-height: 400px;
+
+  @media (max-width: 768px) {
+    min-height: 300px;
+    margin: 1.5rem 0;
+  }
+
+  @media (max-width: 480px) {
+    min-height: 250px;
+    margin: 1rem 0;
+  }
+
+  // Ajustes específicos para o componente gacha-animation no modal
+  app-gacha-animation {
+    .gacha-animation {
+      width: 350px;
+      height: 350px;
+
+      @media (max-width: 768px) {
+        width: 280px;
+        height: 280px;
+      }
+
+      @media (max-width: 480px) {
+        width: 220px;
+        height: 220px;
+      }
+    }
+  }
+}
+
+.portal-footer {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: #e2e8f0;
+  font-size: 1rem;
+
+  .loading-message {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
 }

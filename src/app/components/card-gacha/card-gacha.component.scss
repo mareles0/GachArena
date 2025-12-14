@@ -1,0 +1,552 @@
+.card-gacha-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.background-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  z-index: 5;
+}
+.cards-container {
+  position: relative;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  will-change: transform;
+  perspective: 1400px; // Para efeito 3D do flip (mais pronunciado)
+  z-index: 20; // garantir sobreposição acima do fundo
+  min-height: 420px; // garante espaço vertical para o card central
+  width: calc(100% - 28px);
+  height: var(--slot-height, 64px);
+  margin: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 800;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12));
+  transition: transform 0.28s ease;
+  z-index: 10;
+  pointer-events: none;
+
+  .loading-card-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(40,40,40,0.95), rgba(22,22,22,0.95));
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(255,255,255,0.03);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 18px;
+    overflow: hidden;
+  }
+
+  .loading-pattern {
+    width: 70%;
+    height: 36%;
+    border-radius: 8px;
+    background: conic-gradient(from 0deg, #4fc3f7 0deg, #ba68c8 120deg, #ffd54f 240deg, #ff6f00 320deg, #4fc3f7 360deg);
+    opacity: 0.15;
+    filter: blur(18px);
+    animation: loadingSpin 6s linear infinite, loadingPulse 3s ease-in-out infinite;
+  }
+
+  .loading-text {
+    color: rgba(255,255,255,0.9);
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 14px;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+  }
+}
+
+@keyframes loadingSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes loadingPulse {
+  0%,100% { opacity: 0.12; transform: scale(1); }
+  50% { opacity: 0.28; transform: scale(1.08); }
+}
+
+// Cards individuais
+.gacha-card {
+  position: relative;
+  width: 140px;
+  height: 200px;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.6s;
+  transform-origin: center center;
+  display: inline-block;
+  box-sizing: border-box; // garantir que bordas e padding estejam incluídos nas dimensões
+  flex: 0 0 auto; // evitar que o card encolha dentro de um container flex
+  will-change: transform, box-shadow;
+
+  // Bordas por raridade
+  &.rarity-common {
+    --rarity-color: #9e9e9e;
+  }
+
+  &.rarity-rare {
+    --rarity-color: #4fc3f7;
+  }
+
+  &.rarity-epic {
+    --rarity-color: #ba68c8;
+  }
+
+  &.rarity-legendary {
+    --rarity-color: #ffd54f;
+  }
+
+  &.rarity-mythic {
+    --rarity-color: #ff6f00;
+  }
+}
+
+/* Reel area styles */
+.reel {
+  position: absolute;
+  inset: 12px; // ocupa o espaço interno com padding
+  width: calc(100% - 24px);
+  height: calc(100% - 24px);
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  border-radius: 14px;
+  box-shadow: inset 0 6px 30px rgba(0,0,0,0.25);
+  background: linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.08));
+  --slot-height: 64px; // altura do slot visível (padrão)
+}
+
+.reel-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(0px);
+  will-change: transform;
+}
+
+.reel-item {
+  width: calc(100% - 28px);
+  height: var(--slot-height, 64px);
+  margin: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 800;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12));
+  transition: transform 0.28s ease;
+}
+
+.reel-item .reel-label { padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.06); color: #fff; }
+
+.reel-item.rarity-common { --rarity-color: #9e9e9e; }
+.reel-item.rarity-rare { --rarity-color: #4fc3f7; }
+.reel-item.rarity-epic { --rarity-color: #ba68c8; }
+.reel-item.rarity-legendary { --rarity-color: #ffd54f; }
+.reel-item.rarity-mythic { --rarity-color: #ff6f00; }
+
+/* Aplicar cor de fundo por raridade para diferenciar visualmente */
+.reel-item.rarity-common { background: linear-gradient(180deg, var(--rarity-color), rgba(0,0,0,0.16)); }
+.reel-item.rarity-rare { background: linear-gradient(180deg, var(--rarity-color), rgba(0,0,0,0.14)); }
+.reel-item.rarity-epic { background: linear-gradient(180deg, var(--rarity-color), rgba(0,0,0,0.14)); }
+.reel-item.rarity-legendary { background: linear-gradient(180deg, var(--rarity-color), rgba(0,0,0,0.12)); }
+.reel-item.rarity-mythic { background: linear-gradient(180deg, var(--rarity-color), rgba(0,0,0,0.14)); }
+
+.reel::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  height: var(--slot-height, 64px);
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.03), 0 8px 30px rgba(0,0,0,0.6);
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
+}
+
+// Verso do card - foco nas cores das raridades
+.card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  background: linear-gradient(135deg,
+    rgba(42, 42, 42, 0.9) 0%,
+    rgba(26, 26, 26, 0.9) 50%,
+    rgba(42, 42, 42, 0.9) 100%);
+  border: 3px solid var(--rarity-color);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px var(--rarity-color),
+    0 0 0 1px var(--rarity-color);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(
+      circle at center,
+      transparent 30%,
+      var(--rarity-color) 70%,
+      transparent 100%
+    );
+    opacity: 0.3;
+    animation: rarityPulse 3s ease-in-out infinite;
+  }
+}
+
+@keyframes rarityPulse {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.1);
+  }
+}
+
+.card-pattern {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.pattern-line {
+  width: 70px;
+  height: 3px;
+  background: var(--rarity-color);
+  border-radius: 2px;
+  opacity: 0.8;
+  box-shadow: 0 0 8px var(--rarity-color);
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: var(--rarity-color);
+    border-radius: 2px;
+    opacity: 0.3;
+    filter: blur(2px);
+  }
+}
+
+// Frente do card - revelação dramática da raridade
+.card-front {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(248, 248, 248, 0.95) 50%,
+    rgba(255, 255, 255, 0.95) 100%);
+  border: 3px solid var(--rarity-color);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  transform: rotateY(180deg);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    inset 0 0 30px var(--rarity-color),
+    0 0 0 1px var(--rarity-color);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(
+      ellipse at center,
+      var(--rarity-color) 0%,
+      transparent 70%
+    );
+    opacity: 0.15;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 120%;
+    height: 120%;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      var(--rarity-color) 45deg,
+      transparent 90deg,
+      var(--rarity-color) 135deg,
+      transparent 180deg,
+      var(--rarity-color) 225deg,
+      transparent 270deg,
+      var(--rarity-color) 315deg,
+      transparent 360deg
+    );
+    opacity: 0.1;
+    transform: translate(-50%, -50%);
+    animation: rarityRotate 8s linear infinite;
+  }
+}
+
+@keyframes rarityRotate {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.rarity-icon {
+  font-size: 36px;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+  position: relative;
+  z-index: 2;
+  text-shadow:
+    0 0 10px var(--rarity-color),
+    0 0 20px var(--rarity-color),
+    0 0 30px var(--rarity-color);
+}
+
+.rarity-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--rarity-color);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    0 0 8px var(--rarity-color);
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--rarity-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+// Layouts por modo
+.mode-x1 {
+  .gacha-card {
+    /* Tornar responsivo mas sempre quadrado e evitar shrink em flex containers */
+    width:520px;
+    height: 520px;
+    aspect-ratio: 1 / 1;
+    box-shadow: 0 28px 100px rgba(0,0,0,0.6), inset 0 0 40px rgba(255,255,255,0.02);
+    border-radius: 20px;
+    transition: transform 0.8s cubic-bezier(.2,.8,.2,1), box-shadow 0.6s;
+  }
+
+  .mode-x1 .card-back, .mode-x1 .card-front {
+    border-radius: 16px;
+  }
+
+  .rarity-icon {
+    font-size: 76px;
+  }
+
+  .rarity-label {
+    font-size: 20px;
+  }
+
+  .pattern-line {
+    width: 140px;
+    height: 8px;
+  }
+
+  .reel-item { height: 120px; }
+  .reel-item .reel-label { font-size: 22px; padding: 14px 18px; }
+}
+
+.mode-x5 {
+  max-width: 900px;
+
+  .gacha-card {
+    width: 140px;
+    height: 190px;
+  }
+
+  .rarity-icon {
+    font-size: 32px;
+  }
+
+  .rarity-label {
+    font-size: 12px;
+  }
+
+  .pattern-line {
+    width: 70px;
+    height: 70px;
+  }
+}
+
+.mode-x10 {
+  max-width: 1100px;
+
+  .gacha-card {
+    width: 120px;
+    height: 160px;
+  }
+
+  .rarity-icon {
+    font-size: 28px;
+  }
+
+  .rarity-label {
+    font-size: 11px;
+  }
+
+  .pattern-line {
+    width: 65px;
+    height: 65px;
+  }
+}
+
+// Responsividade
+@media (max-width: 768px) {
+  .mode-x1 .gacha-card {
+    width: 160px;
+    height: 220px;
+  }
+
+  .mode-x5 .gacha-card {
+    width: 120px;
+    height: 160px;
+  }
+
+  .mode-x10 .gacha-card {
+    width: 100px;
+    height: 130px;
+  }
+
+  .cards-container {
+    gap: 16px;
+  }
+
+  .rarity-icon {
+    font-size: 32px;
+  }
+
+  .rarity-label {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mode-x1 .gacha-card {
+    width: 140px;
+    height: 190px;
+  }
+
+  .mode-x5 .gacha-card {
+    width: 100px;
+    height: 130px;
+  }
+
+  .mode-x10 .gacha-card {
+    width: 80px;
+    height: 105px;
+  }
+
+  .cards-container {
+    gap: 12px;
+  }
+
+  .rarity-icon {
+    font-size: 28px;
+  }
+
+  .rarity-label {
+    font-size: 10px;
+  }
+
+  .pattern-line {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+// Animações de hover (opcional)
+.gacha-card:hover {
+  transform: scale(1.04) rotateY(4deg);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.gacha-card.revealed {
+  transform: rotateY(180deg) scale(1.02);
+  box-shadow: 0 26px 80px rgba(0,0,0,0.6), 0 0 40px rgba(255,255,255,0.03);
+}
+
+.gacha-status {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  max-width: 360px;
+  text-align: center;
+  .status-line { margin: 2px 0; opacity: 0.95; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
