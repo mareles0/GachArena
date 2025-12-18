@@ -4,14 +4,16 @@ import { db } from '../firebase.config';
 import { UserService } from './user.service';
 import { ItemService } from './item.service';
 import { User } from '../models/user.model';
+import { UserItem } from '../models/item.model';
 
 export interface RankingEntry {
   userId: string;
   username: string;
   photoURL: string;
+  profileBackground?: string;
   rarestItem: any;
   totalItems: number;
-  score: number; // Calculado baseado em raridade
+  score: number; // Calculado baseado nos pontos dos itens
 }
 
 @Injectable({
@@ -33,51 +35,26 @@ export class RankingService {
       const rankingEntries: RankingEntry[] = [];
 
       for (const user of users) {
-        if (user.userType === 'admin') continue; // Pular admins
-
         if (!user.id) continue;
 
         const userItems = await this.itemService.getUserItems(user.id);
         
         if (userItems.length === 0) continue;
 
-        // Calcular score baseado em raridade
-        const rarityScores: any = {
-          'COMUM': 1,
-          'RARO': 5,
-          'EPICO': 15,
-          'LENDARIO': 50,
-          'MITICO': 200
-        };
-
+        // Calcular score baseado nos pontos dos itens
         let totalScore = 0;
         let rarestItem = userItems[0];
-        let maxRarityScore = 0;
+        let maxPoints = 0;
 
         userItems.forEach(ui => {
-          let score = 0;
+          // Calcular pontos totais do item (pontos * quantidade)
+          const itemPoints = (ui.item.points || 0) * ui.quantity;
+          totalScore += itemPoints;
 
-          // Para itens lendários e míticos, cada entrada é única (quantity sempre 1)
-          // Para outros itens, multiplicar pela quantidade
-          if (ui.item.rarity === 'LENDARIO' || ui.item.rarity === 'MITICO') {
-            score = rarityScores[ui.item.rarity];
-            // Aplicar multiplicador baseado no rarityLevel
-            if (ui.rarityLevel) {
-              const rarityMultiplier = 1 + ((1000 - ui.rarityLevel) / 1000); // 1.0 a 2.0
-              score = score * rarityMultiplier;
-            }
-          } else {
-            score = rarityScores[ui.item.rarity] * ui.quantity;
-          }
-
-          totalScore += score;
-
-          const itemScore = (ui.item.rarity === 'LENDARIO' || ui.item.rarity === 'MITICO') && ui.rarityLevel
-            ? rarityScores[ui.item.rarity] * (1 + ((1000 - ui.rarityLevel) / 1000))
-            : rarityScores[ui.item.rarity];
-
-          if (itemScore > maxRarityScore) {
-            maxRarityScore = itemScore;
+          // Encontrar o item com mais pontos (para mostrar como "mais raro")
+          const singleItemPoints = ui.item.points || 0;
+          if (singleItemPoints > maxPoints) {
+            maxPoints = singleItemPoints;
             rarestItem = ui;
           }
         });
@@ -85,7 +62,8 @@ export class RankingService {
         rankingEntries.push({
           userId: user.id || '',
           username: user.username || 'Jogador',
-          photoURL: user.photoURL || '',
+          photoURL: (user as any).profileIcon || user.photoURL || '',
+          profileBackground: (user as any).profileBackground || '',
           rarestItem: rarestItem.item,
           totalItems: userItems.length,
           score: totalScore
@@ -110,29 +88,34 @@ export class RankingService {
       const rankingEntries: RankingEntry[] = [];
 
       for (const user of users) {
-        if (user.userType === 'admin') continue;
-
         if (!user.id) continue;
 
         const rarestItem = await this.itemService.getUserRarestItemInBox(user.id, boxId);
         
         if (!rarestItem) continue;
 
-        const rarityScores: any = {
-          'COMUM': 1,
-          'RARO': 5,
-          'EPICO': 15,
-          'LENDARIO': 50,
-          'MITICO': 200
-        };
-
-        let score = rarityScores[rarestItem.item.rarity] + rarestItem.item.power;
+        let score = (rarestItem.item.points || 0) + rarestItem.item.power;
 
         // Para itens lendários e míticos, multiplicar pelo rarityLevel
         if ((rarestItem.item.rarity === 'LENDARIO' || rarestItem.item.rarity === 'MITICO') && rarestItem.rarityLevel) {
           const rarityMultiplier = 1 + ((1000 - rarestItem.rarityLevel) / 1000); // 1.0 a 2.0
           score = score * rarityMultiplier;
         }
+
+        // contar quantos itens o usuário tem nessa caixa
+        const userItems = await this.itemService.getUserItems(user.id);
+        const itemsInBox = userItems.filter((ui: UserItem) => ui.item.boxId === boxId);
+        const totalItemsInBox = itemsInBox.length;
+
+        rankingEntries.push({
+          userId: user.id || '',
+          username: user.username || 'Jogador',
+          photoURL: (user as any).profileIcon || user.photoURL || '',
+          profileBackground: (user as any).profileBackground || '',
+          rarestItem: rarestItem.item,
+          totalItems: totalItemsInBox,
+          score
+        });
       }
 
       rankingEntries.sort((a, b) => b.score - a.score);

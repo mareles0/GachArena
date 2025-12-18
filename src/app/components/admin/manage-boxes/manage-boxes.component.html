@@ -1,5 +1,12 @@
 <div class="container mt-4">
-  <!-- Notificação Toast -->
+
+<img src="https://i.pinimg.com/originals/1b/3c/58/1b3c5821c4ef798f196b30cc3eb46ac2.gif" class="bg-gif" alt="" aria-hidden="true">
+     
+    <video autoplay muted loop class="bg-video">
+        <source src="assets/backgrounds/welcome.webm" type="video/webm">
+        <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
+    </video>
+
   <div class="notification-toast" *ngIf="notification.show" 
        [class.success]="notification.type === 'success'"
        [class.error]="notification.type === 'error'"
@@ -32,12 +39,14 @@
 
   <div class="row" *ngIf="!loading && boxes.length > 0">
     <div class="col-md-4 mb-4" *ngFor="let box of boxes">
-      <div class="card h-100">
-        <img [src]="box.imageUrl" class="card-img-top" [alt]="box.name" style="height: 200px; object-fit: cover;">
+      <div class="card h-100 box-card" [ngClass]="{ 'normal': box.type === 'NORMAL', 'premium': box.type === 'PREMIUM' }" [style.--box-accent]="box.themeColor || null">
+        <img [src]="box.imageUrl" class="card-img-top box-img" [alt]="box.name">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start mb-2">
-            <h5 class="card-title mb-0">{{ box.name }}</h5>
-            <span class="badge" [class.bg-primary]="box.type === 'NORMAL'" [class.bg-danger]="box.type === 'PREMIUM'">
+            <div class="d-flex align-items-center gap-2 header-left">
+              <h5 class="card-title mb-0">{{ box.name }}</h5>
+            </div>
+            <span class="badge box-type-badge" [class.bg-primary]="box.type === 'NORMAL'" [class.bg-danger]="box.type === 'PREMIUM'">
               {{ box.type }}
             </span>
           </div>
@@ -100,6 +109,15 @@
               </div>
 
               <div class="col-md-6 mb-3">
+                <label class="form-label">Cor do Cartão (hex)</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="text" class="form-control" [(ngModel)]="boxForm.themeColor" name="themeColor" placeholder="#b50000">
+                  <div class="form-color-preview" [style.background]="boxForm.themeColor || 'transparent'" title="Preview"></div>
+                </div>
+                <small class="text-muted">Opcional: cor hexadecimal para o cartão (ex: #b50000)</small>
+              </div>
+
+              <div class="col-md-6 mb-3">
                 <label class="form-label">Tipo *</label>
                 <select class="form-select" [(ngModel)]="boxForm.type" name="type">
                   <option value="NORMAL">Normal</option>
@@ -117,7 +135,7 @@
             <div class="mb-3" *ngIf="boxForm.imageUrl && !selectedFile">
               <label class="form-label">Imagem Atual</label>
               <div>
-                <img [src]="boxForm.imageUrl" alt="Preview" class="img-thumbnail" style="max-width: 200px;">
+                <img [src]="boxForm.imageUrl" alt="Preview" class="img-thumbnail box-preview-img">
               </div>
             </div>
 
@@ -127,17 +145,73 @@
                 Caixa Ativa
               </label>
             </div>
+
+            <!-- Configuração da Animação de Abertura -->
+            <div class="animation-card border rounded p-3 mb-3">
+              <h6 class="mb-3"><i class="bi bi-film"></i> Animação de Abertura</h6>
+              
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Tipo de Animação</label>
+                  <select class="form-select" [(ngModel)]="boxForm.openingAnimationType" name="openingAnimationType">
+                    <option value="auto">Automático (detecta pela extensão)</option>
+                    <option value="video">Vídeo</option>
+                    <option value="gif">GIF</option>
+                  </select>
+                </div>
+
+                <div class="col-md-8 mb-3">
+                  <label class="form-label">Arquivo de Animação</label>
+                  
+                  <!-- Input de arquivo -->
+                  <input type="file" class="form-control mb-2" 
+                         (change)="onAnimationFileSelected($event)" 
+                         accept=".mp4,.webm,.gif,.avi,.mov"
+                         [disabled]="uploadingAnimation">
+                  
+                  <!-- Campo de URL (mostrar apenas se não houver arquivo selecionado) -->
+                  <input type="text" class="form-control" 
+                         [(ngModel)]="boxForm.openingAnimationSrc" 
+                         name="openingAnimationSrc"
+                         placeholder="Ou digite o caminho/URL do arquivo"
+                         *ngIf="!selectedAnimationFile">
+                  
+                  <!-- Preview do arquivo selecionado -->
+                  <div *ngIf="selectedAnimationFile" class="mt-2 p-2 bg-dark rounded small">
+                    <i class="bi bi-file-earmark-play"></i> 
+                    <strong>{{ selectedAnimationFile.name }}</strong> 
+                    ({{ (selectedAnimationFile.size / 1024 / 1024).toFixed(1) }} MB)
+                    <button type="button" class="btn btn-sm btn-outline-danger ms-2" 
+                            (click)="selectedAnimationFile = null; boxForm.openingAnimationSrc = ''">
+                      <i class="bi bi-x"></i>
+                    </button>
+                  </div>
+                  
+                  <small class="text-muted">
+                    Selecione um arquivo ou digite o caminho/URL. Deixe vazio para usar animação padrão.
+                  </small>
+                </div>
+              </div>
+
+              <div class="alert alert-info small mb-0">
+                <i class="bi bi-info-circle"></i>
+                <strong>Dicas:</strong> Use MP4/WebM para vídeos e GIF para animações curtas. 
+                Arquivos grandes podem afetar o tempo de carregamento.
+              </div>
+            </div>
           </form>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" (click)="closeForm()">Cancelar</button>
-          <button type="button" class="btn btn-primary" (click)="saveBox()" [disabled]="uploadingImage">
-            <span *ngIf="!uploadingImage">
+          <button type="button" class="btn btn-primary" (click)="saveBox()" [disabled]="uploadingImage || uploadingAnimation">
+            <span *ngIf="!uploadingImage && !uploadingAnimation">
               <i class="bi bi-save"></i> {{ editingBox ? 'Atualizar' : 'Criar' }}
             </span>
-            <span *ngIf="uploadingImage">
+            <span *ngIf="uploadingImage || uploadingAnimation">
               <span class="spinner-border spinner-border-sm me-2"></span>
-              Salvando...
+              <span *ngIf="uploadingImage && uploadingAnimation">Salvando imagem e animação...</span>
+              <span *ngIf="uploadingImage && !uploadingAnimation">Salvando imagem...</span>
+              <span *ngIf="!uploadingImage && uploadingAnimation">Salvando animação...</span>
             </span>
           </button>
         </div>

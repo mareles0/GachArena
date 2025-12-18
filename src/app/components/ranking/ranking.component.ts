@@ -60,7 +60,9 @@ export class RankingComponent implements OnInit {
     
     this.isLoading = true;
     try {
+      console.log('[Ranking] Loading box ranking for boxId:', this.selectedBoxId);
       this.boxRanking = await this.rankingService.getRankingByBox(this.selectedBoxId, 20);
+      console.log('[Ranking] Loaded box ranking count:', this.boxRanking.length);
     } catch (error) {
       this.showNotification('Erro ao carregar ranking da caixa', 'error');
     } finally {
@@ -70,6 +72,19 @@ export class RankingComponent implements OnInit {
 
   onBoxChange() {
     this.loadBoxRanking();
+  }
+
+  async selectView(mode: 'global' | 'box') {
+    this.viewMode = mode;
+    if (mode === 'global') {
+      await this.loadGlobalRanking();
+    } else if (mode === 'box' && this.selectedBoxId) {
+      await this.loadBoxRanking();
+    } else if (mode === 'box' && !this.selectedBoxId && this.boxes.length > 0) {
+      // auto-select first box when switching to box view if none selected
+      this.selectedBoxId = this.boxes[0].id;
+      await this.loadBoxRanking();
+    }
   }
 
   showItemDetailsModal(item: any) {
@@ -98,6 +113,16 @@ export class RankingComponent implements OnInit {
     if (position === 2) return '🥈';
     if (position === 3) return '🥉';
     return '';
+  }
+
+  isVideoUrl(url?: string | null): boolean {
+    if (!url) return false;
+    return /\.(webm|mp4)$/i.test(url);
+  }
+
+  isGifUrl(url?: string | null): boolean {
+    if (!url) return false;
+    return /\.(gif)$/i.test(url);
   }
 
   showNotification(message: string, type: 'success' | 'error' | 'info') {

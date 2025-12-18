@@ -1,5 +1,16 @@
-<div id="tela-inicial">
-    <div id="bem-vindo"></div>
-        <p>GachArena</p>
+<div id="tela-inicial">  
+    <img src="https://i.pinimg.com/originals/ac/14/37/ac14370bea79c03f800761812cbfb5eb.gif" class="bg-gif" alt="" aria-hidden="true">
+     
+    <video autoplay muted loop class="bg-video">
+        <source src="assets/backgrounds/welcome.webm" type="video/webm">
+        <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
+    </video>
+    
+    <div class="welcome-content">
+        <div id="bem-vindo"></div>
+        <p class="logo-wrapper">
+            <img src="assets/logo.png" alt="GachArena Logo" id="logo-inicial">
+        </p>
         <button (click)="irParaLogin()" class="botao-inicial btn-outline-primary">Entrar</button>
+    </div>
 </div>

@@ -1,4 +1,11 @@
 <div class="manage-container">
+<img src="https://i.pinimg.com/originals/1b/3c/58/1b3c5821c4ef798f196b30cc3eb46ac2.gif" class="bg-gif" alt="" aria-hidden="true">
+     
+    <video autoplay muted loop class="bg-video">
+        <source src="assets/backgrounds/welcome.webm" type="video/webm">
+        <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
+    </video><img src="https://i.pinimg.com/originals/1b/3c/58/1b3c5821c4ef798f196b30cc3eb46ac2.gif" class="bg-gif" alt="" aria-hidden="true">
+
   <div class="notification-container" *ngIf="notification.show">
     <div class="notification" [ngClass]="notification.type">{{ notification.message }}</div>
   </div>
@@ -38,6 +45,8 @@
             {{ user.isBanned ? 'Desbanir' : 'Banir' }}
           </button>
           <button (click)="addTickets(user)" class="btn-action">+ Tickets</button>
+          <button (click)="changeRole(user)" class="btn-action">Alterar Cargo</button>
+          <button (click)="viewInventory(user)" class="btn-action">Ver Inventário</button>
         </td>
       </tr>
     </tbody>
@@ -91,6 +100,101 @@
     <div class="modal-footer">
       <button (click)="closeTicketModal()" class="btn-cancel">Cancelar</button>
       <button (click)="confirmAddTickets()" [disabled]="ticketAmount <= 0" class="btn-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Alterar Cargo -->
+<div class="modal-overlay" *ngIf="showRoleModal" (click)="closeRoleModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Alterar Cargo</h3>
+      <button class="close-btn" (click)="closeRoleModal()">×</button>
+    </div>
+    
+    <div class="modal-body">
+      <p><strong>Usuário:</strong> {{ selectedUser?.username }}</p>
+      
+      <div class="form-group">
+        <label>Novo Cargo:</label>
+        <select [(ngModel)]="newUserType" class="role-select">
+          <option value="PLAYER">Player</option>
+          <option value="VIP">VIP</option>
+          <option value="ADMINISTRADOR">Administrador</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button (click)="closeRoleModal()" class="btn-cancel">Cancelar</button>
+      <button (click)="confirmChangeRole()" class="btn-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Ver Inventário -->
+<div class="modal-overlay" *ngIf="showInventoryModal" (click)="closeInventoryModal()">
+  <div class="modal-content large-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Inventário de {{ selectedUser?.username }}</h3>
+      <button class="close-btn" (click)="closeInventoryModal()">×</button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="inventory-actions">
+        <button (click)="openAddItemModal()" class="btn-action">+ Adicionar Item</button>
+      </div>
+      
+      <div class="inventory-list" *ngIf="userItems.length > 0; else noItems">
+        <div class="item-card" *ngFor="let userItem of userItems">
+          <img [src]="userItem.item.imageUrl" [alt]="userItem.item.name" class="item-image">
+          <div class="item-info">
+            <h4>{{ userItem.item.name }}</h4>
+            <p>Raridade: {{ userItem.item.rarity }}</p>
+            <div *ngIf="userItem.item.rarity === 'LENDARIO' || userItem.item.rarity === 'MITICO'">
+              <p>Nível de Raridade: {{ userItem.rarityLevel }}</p>
+            </div>
+            <p>Poder: {{ userItem.item.power }}</p>
+            <p *ngIf="userItem.quantity > 1">Quantidade: {{ userItem.quantity }}</p>
+          </div>
+          <div *ngIf="userItem.quantity > 1" class="quantity-remove">
+            <input type="number" [(ngModel)]="removeQuantities[userItem.id]" min="1" [max]="userItem.quantity" placeholder="Qtd" class="quantity-input">
+          </div>
+          <button (click)="removeItem(userItem)" class="btn-remove">Remover</button>
+        </div>
+      </div>
+      <ng-template #noItems>
+        <p>Este usuário não possui itens.</p>
+      </ng-template>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Adicionar Item -->
+<div class="modal-overlay" *ngIf="showAddItemModal" (click)="closeAddItemModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Adicionar Item</h3>
+      <button class="close-btn" (click)="closeAddItemModal()">×</button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Selecionar Item:</label>
+        <select [(ngModel)]="selectedItemId" (change)="onItemSelected()" class="item-select">
+          <option value="">Selecione um item</option>
+          <option *ngFor="let item of allItems" [value]="item.id">{{ item.name }}</option>
+        </select>
+      </div>
+      <div *ngIf="selectedItem && (selectedItem.rarity === 'LENDARIO' || selectedItem.rarity === 'MITICO')">
+        <label>Nível de Raridade:</label>
+        <input type="number" [(ngModel)]="rarityLevel" min="1" max="1000" placeholder="1-1000">
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button (click)="closeAddItemModal()" class="btn-cancel">Cancelar</button>
+      <button (click)="confirmAddItem()" [disabled]="!selectedItemId" class="btn-confirm">Adicionar</button>
     </div>
   </div>
 </div>

@@ -1,5 +1,13 @@
 <div class="gacha-home-container">
-  <!-- Notificação Toast -->
+
+    <img src="https://i.pinimg.com/originals/c6/a1/c9/c6a1c9f91f82c3fe5af6c5d83cc0bf7e.gif" class="bg-gif" alt="" aria-hidden="true">
+     
+    <video autoplay muted loop class="bg-video">
+        <source src="assets/backgrounds/welcome.webm" type="video/webm">
+        <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
+    </video>
+
+
   <div class="notification-toast" *ngIf="notification.show" 
        [class.success]="notification.type === 'success'"
        [class.error]="notification.type === 'error'"
@@ -80,8 +88,8 @@
           </h2>
           <p class="multi-subtitle">Você ganhou {{ multiResults.length }} itens!</p>
           
-          <div class="multi-items-grid">
-            <div class="multi-item-card" *ngFor="let item of multiResults" [style.border-color]="getRarityColor(item.rarity)">
+          <div class="multi-items-grid" #multiGrid>
+            <div class="multi-item-card" *ngFor="let item of revealedMultiResults; let i = index" [style.border-color]="getRarityColor(item.rarity)" [style.animationDelay]="(i * 0.08) + 's'">
               <div class="rarity-glow" [style.background]="getRarityColor(item.rarity)"></div>
               <img [src]="item.imageUrl" [alt]="item.name" class="multi-item-image">
               <div class="multi-item-info">
@@ -121,10 +129,7 @@
 
         <p class="preview-description">{{ selectedBox.description }}</p>
 
-        <div class="ticket-requirement">
-          <i class="bi bi-{{ selectedBox.type === 'NORMAL' ? 'ticket-perforated' : 'star-fill' }}"></i>
-          <span>Requer 1 Ticket {{ selectedBox.type === 'NORMAL' ? 'Normal' : 'Premium' }}</span>
-        </div>
+        
 
         <!-- Opções de Abertura -->
         <div class="open-options">
@@ -132,7 +137,6 @@
             <button class="option-tab" 
                     [class.active]="openMode === 'single'"
                     (click)="setOpenMode('single')">
-              <i class="bi bi-box"></i>
               <span>1</span>
               <small>
                 <img src="https://static.wikitide.net/cravesagawiki/{{ selectedBox.type === 'NORMAL' ? '4/46/Platinum_Gacha_Ticket.png' : 'f/fe/SR_or_Higher_Gacha_Ticket.png' }}" 
@@ -142,7 +146,6 @@
             <button class="option-tab" 
                     [class.active]="openMode === 'multi'"
                     (click)="setOpenMode('multi')">
-              <i class="bi bi-boxes"></i>
               <span>{{ selectedBox.type === 'NORMAL' ? '10' : '5' }}</span>
               <small>
                 <img src="https://static.wikitide.net/cravesagawiki/{{ selectedBox.type === 'NORMAL' ? '4/46/Platinum_Gacha_Ticket.png' : 'f/fe/SR_or_Higher_Gacha_Ticket.png' }}" 
@@ -196,10 +199,10 @@
         </button>
 
         <!-- Modal de Animação do Portal -->
-        <div *ngIf="loading" class="portal-animation-overlay">
+        <div *ngIf="isAnimating" class="portal-animation-overlay">
           <div class="portal-animation-modal">
             <div class="portal-header">
-              <h3>Revelando Cartas Mágicas...</h3>
+              <h3>Revelando...</h3>
               <div class="portal-subtitle">
                 <i class="bi bi-card-text"></i>
                 <span>{{ selectedBox.name }}</span>
@@ -207,26 +210,47 @@
             </div>
 
             <div class="portal-animation-container">
-              <app-card-gacha
-                [config]="getCardGachaConfig()"
-                (animationComplete)="onGachaComplete($event)"
-                (itemRevealed)="onItemRevealed($event)">
-              </app-card-gacha>
+              <!-- Vídeo ou GIF de abertura personalizado -->
+              <div class="custom-opening-animation">
+                <video *ngIf="effectiveAnimationType === 'video' && effectiveAnimationSrc" 
+                       autoplay 
+                       muted 
+                       volume="0"
+                       playsinline
+                       preload="metadata"
+                       class="opening-video"
+                       (ended)="onAnimationComplete()"
+                       (error)="onVideoError()"
+                       (loadeddata)="startAnimationTimeout()"
+                       (loadedmetadata)="ensureMuted($event)">
+                  <source [src]="effectiveAnimationSrc" type="video/mp4">
+                  <source [src]="effectiveAnimationSrc!.replace('.mp4', '.webm')" type="video/webm">
+                  <source [src]="effectiveAnimationSrc!.replace('.mp4', '.avi')" type="video/avi">
+                  Seu navegador não suporta vídeos.
+                </video>
+                
+                <img *ngIf="effectiveAnimationType === 'gif' && effectiveAnimationSrc" 
+                     [src]="effectiveAnimationSrc" 
+                     alt="Animação de abertura" 
+                     class="opening-gif"
+                     (load)="onGifLoaded()"
+                     (error)="onGifError()">
+                     
+                <!-- Fallback para quando não há animação específica da caixa -->
+                <div *ngIf="!effectiveAnimationSrc" class="animation-fallback">
+                  <div class="fallback-spinner">
+                    <i class="bi bi-stars text-warning"></i>
+                    <div class="fallback-text">Revelando...</div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="portal-footer">
-              <div class="loading-indicator" *ngIf="!isAnimating">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                  <span class="visually-hidden">Carregando...</span>
-                </div>
-                <span class="loading-message">Preparando itens...</span>
-              </div>
-
-              <div class="loading-indicator" *ngIf="isAnimating">
+              <div class="loading-indicator">
                 <i class="bi bi-star-fill text-warning"></i>
-                <span class="loading-message">Revelando cartas...</span>
+                <span class="loading-message">Revelando Itens...</span>
               </div>
-              <!-- debug button removed from production UI -->
             </div>
           </div>
         </div>

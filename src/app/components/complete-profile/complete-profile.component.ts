@@ -49,8 +49,7 @@ export class CompleteProfileComponent implements OnInit {
         uid: user.uid,
         username: this.username,
         email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
+        photoURL: (user as any).profileIcon || user.photoURL,
         createdAt: new Date().toISOString(),
         userType: 'JOGADOR'
       });

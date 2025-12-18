@@ -1,14 +1,14 @@
 export interface Trade {
-  id: string;
+  id?: string;
   fromUserId: string;
-  fromUsername: string;
+  fromUsername?: string;
   toUserId: string;
-  toUsername: string;
-  offeredItemId: string;
-  offeredItem: any; // Item oferecido
-  requestedItemId: string;
-  requestedItem: any; // Item solicitado
+  toUsername?: string;
+  // IDs dos userItems (documentos em userItems) que o remetente oferece
+  offeredUserItemIds: string[];
+  // IDs dos userItems que o destinatário deverá oferecer
+  requestedUserItemIds: string[];
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED';
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

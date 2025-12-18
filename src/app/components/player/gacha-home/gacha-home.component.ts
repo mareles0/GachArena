@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectorRef, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { BoxService } from 'src/app/services/box.service';
@@ -7,7 +7,6 @@ import { TicketService } from 'src/app/services/ticket.service';
 import { Box } from 'src/app/models/box.model';
 import { Ticket } from 'src/app/models/ticket.model';
 import { Item } from 'src/app/models/item.model';
-import { CardGachaConfig, CardGachaResult, CardGachaComponent } from '../../card-gacha/card-gacha.component';
 
 @Component({
   selector: 'app-gacha-home',
@@ -29,12 +28,64 @@ export class GachaHomeComponent implements OnInit {
   // Modo de abertura
   openMode: 'single' | 'multi' = 'single';
   multiResults: Item[] = [];
+  revealedMultiResults: Item[] = [];
+  private revealTimers: any[] = [];
   isMultiOpening: boolean = false;
   isAnimating: boolean = false;
-  
-  // Referência ao componente de animação para controlá-lo diretamente
-  @ViewChild(CardGachaComponent) cardGacha?: CardGachaComponent;
+  resultsReady: boolean = false;
 
+  @ViewChild('multiGrid') multiGrid?: ElementRef<HTMLDivElement>;
+  
+  openingAnimationType: 'video' | 'gif' | 'auto' = 'auto'; // 'auto' detecta pela extensão
+  openingAnimationSrc: string = 'assets/backgrounds/1bb90899170e8e1c2a8888dce944bd99.gif'; // caminho para o vídeo/gif
+
+  // Getter que determina o tipo de animação a ser usado (da caixa ou fallback global)
+  get currentAnimationType(): 'video' | 'gif' | null {
+    // Só usa animação se a caixa específica tiver uma configurada
+    const animationType = this.selectedBox?.openingAnimationType;
+    const animationSrc = this.selectedBox?.openingAnimationSrc;
+
+    // Se não há animação específica da caixa, retorna null
+    if (!animationSrc) {
+      return null;
+    }
+
+    if (animationType === 'auto') {
+      // Detecta automaticamente pela extensão do arquivo ou pelo tipo MIME
+      const extension = animationSrc.split('.').pop()?.toLowerCase();
+      const fileName = animationSrc.split('/').pop()?.toLowerCase() || '';
+
+      // Verifica extensão
+      if (extension === 'gif' || fileName.includes('.gif')) {
+        return 'gif';
+      }
+
+      // Verifica se é uma URL do Firebase Storage (geralmente sem extensão clara)
+      if (animationSrc.includes('firebasestorage.googleapis.com')) {
+        // Para Firebase Storage, tenta detectar pelo nome do arquivo
+        if (fileName.includes('gif') || fileName.includes('animation') && !fileName.includes('mp4') && !fileName.includes('webm')) {
+          return 'gif';
+        }
+        return 'video'; // assume vídeo por padrão no Firebase
+      }
+
+      // Assume vídeo para outras extensões (mp4, webm, avi, mov, etc.)
+      return 'video';
+    } else if (animationType === 'video') {
+      return 'video';
+    } else if (animationType === 'gif') {
+      return 'gif';
+    } else {
+      return null;
+    }
+  }
+
+  // Getter que retorna o caminho da animação atual (da caixa ou fallback global)
+  get currentAnimationSrc(): string | null {
+    // Só retorna animação se a caixa específica tiver uma configurada
+    return this.selectedBox?.openingAnimationSrc || null;
+  }
+  
   // Sistema de notificações
   notification = {
     show: false,
@@ -154,6 +205,14 @@ export class GachaHomeComponent implements OnInit {
     this.showResult = false;
     this.drawnItem = null;
     this.drawnRarityLevel = 0;
+    this.isAnimating = false;
+    this.resultsReady = false;
+    this.multiResults = [];
+    this.revealedMultiResults = [];
+    // limpar reveals pendentes
+    this.revealTimers.forEach(t => clearTimeout(t));
+    this.revealTimers = [];
+    this.clearAnimationTimeout();
   }
 
   async openBox() {
@@ -178,37 +237,25 @@ export class GachaHomeComponent implements OnInit {
     }
   }
 
-  // DEBUG: Forçar um play com uma configuração mock para testar o CardGacha isoladamente
-  debugPlayMock() {
-    const mock: CardGachaConfig = {
-      mode: 'x5',
-      results: [
-        { rarity: 'rare', color: '#4fc3f7' },
-        { rarity: 'epic', color: '#ba68c8' },
-        { rarity: 'legendary', color: '#ffd54f' },
-        { rarity: 'common', color: '#9e9e9e' },
-        { rarity: 'mythic', color: '#ff6f00' }
-      ]
-    };
-
-    console.log('[GachaHome] debugPlayMock: applying mock config', mock);
-    this.cd.detectChanges();
-    if (this.cardGacha) {
-      this.cardGacha.setConfig(mock);
-      this.cardGacha.play();
-      this.isAnimating = true;
-    } else {
-      console.warn('[GachaHome] debugPlayMock: cardGacha not found');
-    }
-  }
-
   async openSingleBox() {
     if (!this.selectedBox) return;
 
+    // Verificar se há animação específica da caixa
+    const hasAnimation = !!this.selectedBox?.openingAnimationSrc;
+
+    if (hasAnimation) {
+      // Iniciar animação imediatamente como loading
+      this.isAnimating = true;
+      this.startAnimationTimeout(); // Inicia timeout de segurança
+      this.cd.detectChanges();
+    }
+
+    // Fazer o processamento em paralelo ou depois
     const boxType = this.selectedBox.type;
     const used = await this.ticketService.useTicket(this.userId, boxType);
     if (!used) {
       this.showNotification('❌ Erro ao usar ticket', 'error');
+      this.isAnimating = false; // Parar animação se erro
       return;
     }
 
@@ -216,26 +263,18 @@ export class GachaHomeComponent implements OnInit {
     this.drawnRarityLevel = await this.itemService.addItemToUser(this.userId, this.drawnItem.id);
     await this.ticketService.refreshTickets(this.userId); // Atualizar tickets na navbar
     console.log('[GachaHome] openSingleBox: drawnItem=', this.drawnItem);
-    // Garantir que o componente de animação receba os novos dados e inicie
-    setTimeout(() => {
-      // Garantir que bindings de @Input foram aplicados
-      this.cd.detectChanges();
-      const cfg = this.getCardGachaConfig();
-      console.log('[GachaHome] getCardGachaConfig:', cfg);
-      if (!cfg || !cfg.results || cfg.results.length === 0) {
-        console.warn('[GachaHome] Nenhum resultado no config, abortando animação');
-        this.showNotification('❌ Falha ao preparar itens para animação', 'error');
-        this.loading = false;
-        return;
-      }
 
-      if (this.cardGacha) {
-        console.log('[GachaHome] setting config and calling cardGacha.play()');
-        this.cardGacha.setConfig(cfg);
-        this.isAnimating = true;
-        this.cardGacha.play();
-      }
-    }, 40);
+    if (hasAnimation) {
+      // Marcar que os resultados estão prontos
+      this.resultsReady = true;
+      // A animação continuará e chamará onAnimationComplete quando terminar
+    } else {
+      // Não há animação, mostrar resultados imediatamente
+      setTimeout(() => {
+        this.showResult = true;
+        this.loading = false;
+      }, 500);
+    }
   }
 
   async openMultiBox() {
@@ -245,6 +284,16 @@ export class GachaHomeComponent implements OnInit {
     this.multiResults = [];
     const required = this.getRequiredTickets();
     const totalOpens = required.normal + required.premium;
+
+    // Verificar se há animação específica da caixa
+    const hasAnimation = !!this.selectedBox?.openingAnimationSrc;
+
+    if (hasAnimation) {
+      // Iniciar animação imediatamente como loading
+      this.isAnimating = true;
+      this.startAnimationTimeout(); // Inicia timeout de segurança
+      this.cd.detectChanges();
+    }
 
     try {
       // Abrir caixas baseado no tipo selecionado
@@ -273,30 +322,24 @@ export class GachaHomeComponent implements OnInit {
       this.tickets = await this.ticketService.getUserTickets(this.userId);
       this.showNotification(`🎉 Você abriu ${totalOpens} caixas e ganhou ${this.multiResults.length} itens!`, 'success');
 
-      // Iniciar animação do componente de cards
-      setTimeout(() => {
-        // Garantir que bindings de @Input foram aplicados
-        this.cd.detectChanges();
-        const cfg = this.getCardGachaConfig();
-        console.log('[GachaHome] getCardGachaConfig (multi):', cfg);
-        if (!cfg || !cfg.results || cfg.results.length === 0) {
-          console.warn('[GachaHome] Nenhum resultado no config (multi), abortando animação');
-          this.showNotification('❌ Falha ao preparar itens para animação', 'error');
+      if (hasAnimation) {
+        // Marcar que os resultados estão prontos
+        this.resultsReady = true;
+        // A animação continuará e chamará onAnimationComplete quando terminar
+      } else {
+        // Não há animação específica, mostrar resultados imediatamente
+        setTimeout(() => {
+          this.showResult = true;
           this.loading = false;
-          return;
-        }
-
-        if (this.cardGacha) {
-          console.log('[GachaHome] setting config and calling cardGacha.play() for multi-results');
-          this.cardGacha.setConfig(cfg);
-          this.isAnimating = true;
-          this.cardGacha.play();
-        }
-      }, 40);
+          // Iniciar reveal sequencial dos itens
+          this.revealMultiResults();
+        }, 500);
+      }
 
     } catch (error) {
       console.error('Erro na abertura múltipla:', error);
       this.showNotification('❌ Erro durante abertura múltipla', 'error');
+      this.isAnimating = false; // Parar animação se erro
     } finally {
       this.isMultiOpening = false;
     }
@@ -324,40 +367,170 @@ export class GachaHomeComponent implements OnInit {
     return colors[rarity] || '#fff';
   }
 
-  onGachaComplete(results: CardGachaResult[]) {
-    // Animação completa, mostrar resultados
-    console.log('[GachaHome] onGachaComplete: results=', results);
-    this.showResult = true;
-    this.loading = false;
-    this.isAnimating = false;
-  }
-
-  onItemRevealed(event: { item: CardGachaResult; index: number }) {
-    // Item foi revelado, podemos adicionar efeitos adicionais aqui se necessário
-    console.log('Item revelado:', event.item, 'índice:', event.index);
-  }
-
-  // Método para converter configuração do portal para configuração dos cards
-  getCardGachaConfig(): CardGachaConfig {
-    const results: CardGachaResult[] = [];
-
-    if (this.openMode === 'single' && this.drawnItem) {
-      results.push({
-        rarity: this.drawnItem.rarity.toLowerCase() as any,
-        color: this.getRarityColor(this.drawnItem.rarity)
-      });
-    } else if (this.openMode === 'multi' && this.multiResults.length > 0) {
-      this.multiResults.forEach(item => {
-        results.push({
-          rarity: item.rarity.toLowerCase() as any,
-          color: this.getRarityColor(item.rarity)
-        });
-      });
+  onAnimationComplete() {
+    // Animação completa, verificar se resultados estão prontos
+    console.log('[GachaHome] Animação de abertura completa');
+    this.clearAnimationTimeout();
+    
+    if (this.resultsReady) {
+      // Resultados prontos, mostrar
+      this.showResult = true;
+      this.loading = false;
+      this.isAnimating = false;
+      this.resultsReady = false; // Resetar para próximas aberturas
+      // Iniciar reveal sequencial dos itens **somente se ainda não começou**
+      if (!this.revealedMultiResults || this.revealedMultiResults.length === 0) {
+        this.revealMultiResults();
+      }
+    } else {
+      // Resultados ainda não prontos, esperar um pouco
+      console.log('[GachaHome] Resultados ainda não prontos, esperando...');
+      setTimeout(() => {
+        if (this.resultsReady) {
+          this.showResult = true;
+          this.loading = false;
+          this.isAnimating = false;
+          this.resultsReady = false;
+          if (!this.revealedMultiResults || this.revealedMultiResults.length === 0) {
+            this.revealMultiResults();
+          }
+        } else {
+          // Se ainda não estiver pronto, forçar mostrar (fallback)
+          console.warn('[GachaHome] Forçando mostrar resultados após timeout');
+          this.showResult = true;
+          this.loading = false;
+          this.isAnimating = false;
+          this.resultsReady = false;
+          if (!this.revealedMultiResults || this.revealedMultiResults.length === 0) {
+            this.revealMultiResults();
+          }
+        }
+      }, 500);
     }
-
-    return {
-      mode: this.openMode === 'single' ? 'x1' : (this.openMode === 'multi' ? (this.selectedBox?.type === 'NORMAL' ? 'x10' : 'x5') : 'x1'),
-      results: results
-    };
   }
+
+  onVideoError() {
+    console.warn('[GachaHome] Erro ao carregar vídeo, tentando fallback...');
+    // Se o vídeo falhar, tenta usar GIF ou animação padrão
+    if (this.currentAnimationType === 'video' && this.currentAnimationSrc) {
+      // Tenta converter para GIF se possível
+      const gifSrc = this.currentAnimationSrc.replace(/\.(mp4|webm|avi|mov)$/i, '.gif');
+      if (gifSrc !== this.currentAnimationSrc) {
+        console.log('[GachaHome] Tentando fallback para GIF:', gifSrc);
+        // Força mudança temporária para GIF
+        this.forceAnimationType = 'gif';
+        this.forceAnimationSrc = gifSrc;
+        this.cd.detectChanges();
+        return;
+      }
+    }
+    // Se não conseguir fallback, força completar em 3 segundos
+    this.forceCompleteAnimation();
+  }
+
+  onGifError() {
+    console.warn('[GachaHome] Erro ao carregar GIF, usando animação padrão...');
+    this.forceCompleteAnimation();
+  }
+
+  onGifLoaded() {
+    console.log('[GachaHome] GIF carregado, iniciando timeout');
+    this.startAnimationTimeout();
+    
+    // Para GIFs, definir um timeout menor (3 segundos) já que não temos evento de fim
+    setTimeout(() => {
+      if (this.isAnimating) {
+        console.log('[GachaHome] Timeout do GIF atingido, completando animação');
+        this.onAnimationComplete();
+      }
+    }, 3000);
+  }
+
+  ensureMuted(event: Event) {
+    const video = event.target as HTMLVideoElement;
+    if (video) {
+      video.muted = true;
+      video.volume = 0;
+      console.log('[GachaHome] Vídeo garantido como mudo');
+    }
+  }
+
+  private animationTimeout: any;
+  private forceAnimationType: 'video' | 'gif' | null = null;
+  private forceAnimationSrc: string | null = null;
+
+  startAnimationTimeout() {
+    // Timeout de segurança: força completar após 10 segundos
+    this.clearAnimationTimeout();
+    this.animationTimeout = setTimeout(() => {
+      console.warn('[GachaHome] Timeout da animação excedido, forçando conclusão...');
+      this.forceCompleteAnimation();
+    }, 10000);
+  }
+
+  clearAnimationTimeout() {
+    if (this.animationTimeout) {
+      clearTimeout(this.animationTimeout);
+      this.animationTimeout = null;
+    }
+  }
+
+  forceCompleteAnimation() {
+    this.clearAnimationTimeout();
+    this.forceAnimationType = null;
+    this.forceAnimationSrc = null;
+    this.onAnimationComplete();
+  }
+
+  // Override dos getters para forçar tipo quando necessário
+  get effectiveAnimationType(): 'video' | 'gif' | null {
+    return this.forceAnimationType || this.currentAnimationType;
+  }
+
+  get effectiveAnimationSrc(): string | null {
+    return this.forceAnimationSrc || this.currentAnimationSrc;
+  }
+
+  // Revela os itens do multi-results de forma sequencial (stagger)
+  revealMultiResults(delayBetween = 180, startIndex?: number) {
+    if (!this.multiResults || this.multiResults.length === 0) return;
+
+    // Adicionar todos os itens de uma vez para animação staggered
+    this.revealedMultiResults = [...this.multiResults];
+    console.debug('[GachaHome] revealed all', this.multiResults.length, 'items');
+    this.cd.detectChanges();
+
+    // Rolar para o fim após a última animação
+    const lastAnimationDelay = (this.multiResults.length - 1) * 80 + 480; // delay 0.08s + duration 0.48s
+    setTimeout(() => {
+      try {
+        if (this.multiGrid && this.multiGrid.nativeElement) {
+          const el = this.multiGrid.nativeElement as HTMLElement;
+          el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        }
+      } catch (e) { /* ignore */ }
+    }, lastAnimationDelay);
+  }
+
+  // Método removido - getCardGachaConfig não é mais necessário
+  // getCardGachaConfig(): CardGachaConfig {
+  //   const results: CardGachaResult[] = [];
+  //   if (this.openMode === 'single' && this.drawnItem) {
+  //     results.push({
+  //       rarity: this.drawnItem.rarity.toLowerCase() as any,
+  //       color: this.getRarityColor(this.drawnItem.rarity)
+  //     });
+  //   } else if (this.openMode === 'multi' && this.multiResults.length > 0) {
+  //     this.multiResults.forEach(item => {
+  //       results.push({
+  //         rarity: item.rarity.toLowerCase() as any,
+  //         color: this.getRarityColor(item.rarity)
+  //       });
+  //     });
+  //   }
+  //   return {
+  //     mode: this.openMode === 'single' ? 'x1' : (this.openMode === 'multi' ? (this.selectedBox?.type === 'NORMAL' ? 'x10' : 'x5') : 'x1'),
+  //     results: results
+  //   };
+  // }
 }

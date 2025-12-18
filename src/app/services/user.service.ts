@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { collection, doc, setDoc, getDoc, getDocs, updateDoc, increment } from 'firebase/firestore';
 import { db, auth } from '../firebase.config';
 import { User } from '../models/user.model';
+import { TicketService } from './ticket.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
 
-  constructor() { }
+  constructor(private ticketService: TicketService) { }
 
   // Salvar dados do usuário
   async saveUser(uid: string, userData: any) {
@@ -74,31 +75,15 @@ export class UserService {
 
   // Adicionar tickets ao usuário
   async addTickets(uid: string, amount: number, type: 'normal' | 'premium' = 'normal'): Promise<void> {
+    // Delegate ticket updates to TicketService to keep subject in sync
     try {
-      console.log(`Adicionando ${amount} tickets ${type} para usuário ${uid}`);
-      const docRef = doc(db, 'users', uid);
-      const field = type === 'normal' ? 'normalTickets' : 'premiumTickets';
-
-      // Verificar se o documento existe
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        console.log(`Documento existe, atualizando ${field} com +${amount}`);
-        await updateDoc(docRef, {
-          [field]: increment(amount)
-        });
+      if (type === 'normal') {
+        await this.ticketService.addTickets(uid, amount, 0);
       } else {
-        console.log(`Documento não existe, criando com ${field}: ${amount}`);
-        const initialData: any = {
-          normalTickets: 0,
-          premiumTickets: 0
-        };
-        initialData[field] = amount;
-        await setDoc(docRef, initialData);
+        await this.ticketService.addTickets(uid, 0, amount);
       }
-
-      console.log(`Tickets adicionados com sucesso para ${uid}`);
     } catch (error) {
-      console.error('Erro ao adicionar tickets:', error);
+      console.error('Erro ao adicionar tickets via TicketService:', error);
       throw error;
     }
   }

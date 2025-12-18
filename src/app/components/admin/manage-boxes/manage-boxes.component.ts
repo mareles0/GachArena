@@ -20,12 +20,20 @@ export class ManageBoxesComponent implements OnInit {
     description: '',
     type: 'NORMAL' as 'NORMAL' | 'PREMIUM',
     theme: '',
+    themeColor: '',
     active: true,
-    imageUrl: ''
+    imageUrl: '',
+    // Animação de abertura
+    openingAnimationType: 'auto' as 'auto' | 'video' | 'gif',
+    openingAnimationSrc: ''
   };
   
   selectedFile: File | null = null;
   uploadingImage: boolean = false;
+
+  // Upload de animação
+  selectedAnimationFile: File | null = null;
+  uploadingAnimation: boolean = false;
 
   // Sistema de notificações
   notification = {
@@ -122,8 +130,11 @@ export class ManageBoxesComponent implements OnInit {
       description: '',
       type: 'NORMAL',
       theme: '',
+      themeColor: '',
       active: true,
-      imageUrl: ''
+      imageUrl: '',
+      openingAnimationType: 'auto',
+      openingAnimationSrc: ''
     };
     this.selectedFile = null;
     this.showForm = true;
@@ -136,10 +147,14 @@ export class ManageBoxesComponent implements OnInit {
       description: box.description,
       type: box.type,
       theme: box.theme,
+      themeColor: (box as any).themeColor || '',
       active: box.active,
-      imageUrl: box.imageUrl
+      imageUrl: box.imageUrl,
+      openingAnimationType: (box as any).openingAnimationType || 'auto',
+      openingAnimationSrc: (box as any).openingAnimationSrc || ''
     };
     this.selectedFile = null;
+    this.selectedAnimationFile = null;
     this.showForm = true;
   }
 
@@ -147,6 +162,7 @@ export class ManageBoxesComponent implements OnInit {
     this.showForm = false;
     this.editingBox = null;
     this.selectedFile = null;
+    this.selectedAnimationFile = null;
   }
 
   onFileSelected(event: any) {
@@ -157,6 +173,31 @@ export class ManageBoxesComponent implements OnInit {
         return;
       }
       this.selectedFile = file;
+    }
+  }
+
+  onAnimationFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      // Aceitar vídeos, GIFs e outros formatos de animação
+      const allowedTypes = ['video/mp4', 'video/webm', 'image/gif', 'video/avi', 'video/mov'];
+      const isValidType = allowedTypes.includes(file.type) || file.name.toLowerCase().endsWith('.gif');
+
+      if (!isValidType) {
+        this.showNotification('Por favor, selecione apenas arquivos de vídeo (MP4, WebM, AVI, MOV) ou GIF', 'error');
+        return;
+      }
+
+      // Verificar tamanho do arquivo (máximo 50MB)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        this.showNotification('Arquivo muito grande. Máximo permitido: 50MB', 'error');
+        return;
+      }
+
+      this.selectedAnimationFile = file;
+      // Auto-preencher o campo de URL com o nome do arquivo
+      this.boxForm.openingAnimationSrc = file.name;
     }
   }
 
@@ -190,14 +231,62 @@ export class ManageBoxesComponent implements OnInit {
         console.log('Upload concluído! URL:', imageUrl);
       }
 
-      const boxData = {
+      // Upload da animação
+      let animationUrl = this.boxForm.openingAnimationSrc;
+      
+      if (this.selectedAnimationFile) {
+        this.uploadingAnimation = true;
+        
+        // Se estiver editando e tiver uma animação antiga, deletar do Storage
+        if (this.editingBox && (this.editingBox as any).openingAnimationSrc && 
+            (this.editingBox as any).openingAnimationSrc.startsWith('https://')) {
+          try {
+            await this.storageService.deleteImage((this.editingBox as any).openingAnimationSrc);
+            console.log('Animação antiga deletada do Storage');
+          } catch (error) {
+            console.warn('Erro ao deletar animação antiga:', error);
+          }
+        }
+        
+        console.log('Iniciando upload da animação...');
+        animationUrl = await this.storageService.uploadBoxAnimation(
+          this.selectedAnimationFile, 
+          this.boxForm.theme
+        );
+        console.log('Upload da animação concluído! URL:', animationUrl);
+      }
+
+      // Validate optional hex color
+      if (this.boxForm.themeColor && !/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(this.boxForm.themeColor)) {
+        this.showNotification('Formato de cor inválido. Use hex, ex: #b50000', 'error');
+        this.uploadingImage = false;
+        return;
+      }
+
+      const boxData: any = {
         name: this.boxForm.name,
         description: this.boxForm.description,
         type: this.boxForm.type,
         theme: this.boxForm.theme,
         active: this.boxForm.active,
-        imageUrl: imageUrl
+        // Animação de abertura
+        openingAnimationType: this.boxForm.openingAnimationType
       };
+
+      // Adicionar imageUrl apenas se tiver valor
+      if (imageUrl) {
+        boxData.imageUrl = imageUrl;
+      }
+
+      // Adicionar themeColor apenas se tiver valor
+      if (this.boxForm.themeColor) {
+        boxData.themeColor = this.boxForm.themeColor;
+      }
+
+      // Adicionar openingAnimationSrc apenas se tiver valor
+      if (animationUrl) {
+        boxData.openingAnimationSrc = animationUrl;
+      }
 
       console.log('Salvando caixa no Firestore...', boxData);
 
@@ -216,6 +305,7 @@ export class ManageBoxesComponent implements OnInit {
       this.showNotification('❌ Erro ao salvar caixa: ' + error, 'error');
     } finally {
       this.uploadingImage = false;
+      this.uploadingAnimation = false;
     }
   }
 }

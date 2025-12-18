@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, Timestamp, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import { Mission, UserMission } from '../models/mission.model';
 
@@ -13,10 +13,14 @@ export class MissionService {
   // CRUD Missões
   async createMission(mission: Omit<Mission, 'id' | 'createdAt'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, 'missions'), {
-        ...mission,
-        createdAt: Timestamp.now()
-      });
+      // Avoid persisting an `id` field inside the document body which
+      // could later overwrite the Firestore doc id when merging.
+      const payload: any = { ...mission };
+      if ('id' in payload) delete payload.id;
+      payload.createdAt = Timestamp.now();
+
+      const docRef = await addDoc(collection(db, 'missions'), payload);
+      console.log('Created mission in Firestore:', docRef.id, payload);
       return docRef.id;
     } catch (error) {
       console.error('Erro ao criar missão:', error);
@@ -29,7 +33,9 @@ export class MissionService {
       const docRef = doc(db, 'missions', id);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as Mission;
+        const data = docSnap.data();
+        const { id: _id, ...rest } = data as any;
+        return { id: docSnap.id, ...rest } as Mission;
       }
       return null;
     } catch (error) {
@@ -41,7 +47,13 @@ export class MissionService {
   async getAllMissions(): Promise<Mission[]> {
     try {
       const querySnapshot = await getDocs(collection(db, 'missions'));
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mission));
+      const docsInfo = querySnapshot.docs.map(d => ({ id: d.id }));
+      console.log('Fetched missions doc ids:', docsInfo);
+      return querySnapshot.docs.map(d => {
+        const data = d.data();
+        const { id: _id, ...rest } = data as any;
+        return { id: d.id, ...rest } as Mission;
+      });
     } catch (error) {
       console.error('Erro ao buscar missões:', error);
       return [];
@@ -52,7 +64,11 @@ export class MissionService {
     try {
       const q = query(collection(db, 'missions'), where('active', '==', true));
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mission));
+      return querySnapshot.docs.map(d => {
+        const data = d.data();
+        const { id: _id, ...rest } = data as any;
+        return { id: d.id, ...rest } as Mission;
+      });
     } catch (error) {
       console.error('Erro ao buscar missões ativas:', error);
       return [];
@@ -61,6 +77,10 @@ export class MissionService {
 
   async updateMission(id: string, mission: Partial<Mission>): Promise<void> {
     try {
+      if (!id || typeof id !== 'string' || id.trim() === '' || id.includes('/')) {
+        console.error('Invalid mission id provided to updateMission:', id);
+        throw new Error('Invalid mission id provided to updateMission');
+      }
       const docRef = doc(db, 'missions', id);
       await updateDoc(docRef, mission);
     } catch (error) {
@@ -71,6 +91,10 @@ export class MissionService {
 
   async deleteMission(id: string): Promise<void> {
     try {
+      if (!id || typeof id !== 'string' || id.trim() === '' || id.includes('/')) {
+        console.error('Invalid mission id provided to deleteMission:', id);
+        throw new Error('Invalid mission id provided to deleteMission');
+      }
       const docRef = doc(db, 'missions', id);
       await deleteDoc(docRef);
       // Deletar todas as UserMissions associadas
@@ -116,17 +140,88 @@ export class MissionService {
       if (!existing.empty) {
         return existing.docs[0].id;
       }
+      // Fetch mission to determine if it should auto-complete (e.g., DAILY with no requirement)
+      const mission = await this.getMission(missionId);
+      const isAutoComplete = mission && mission.type === 'DAILY' && (mission.autoComplete === true || !mission.requirement || mission.requirement.trim() === '');
 
-      const docRef = await addDoc(collection(db, 'userMissions'), {
+      const payload: any = {
         userId,
         missionId,
-        progress: 0,
-        completed: false,
+        progress: isAutoComplete ? 100 : 0,
+        completed: isAutoComplete ? true : false,
+        claimed: isAutoComplete ? true : false,
+        claimedDays: [],
+        // nextAvailableAt allows first day to be collectible immediately if not autoComplete
+        nextAvailableAt: isAutoComplete ? undefined : Timestamp.now(),
         createdAt: Timestamp.now()
-      });
+      };
+
+      if (isAutoComplete) {
+        payload.completedAt = Timestamp.now();
+      }
+
+      const docRef = await addDoc(collection(db, 'userMissions'), payload);
       return docRef.id;
     } catch (error) {
       console.error('Erro ao iniciar missão:', error);
+      throw error;
+    }
+  }
+
+  async claimMission(userMissionId: string): Promise<void> {
+    try {
+      const docRef = doc(db, 'userMissions', userMissionId);
+      await updateDoc(docRef, { claimed: true, claimedAt: Timestamp.now() });
+    } catch (error) {
+      console.error('Erro ao marcar missão como coletada:', error);
+      throw error;
+    }
+  }
+
+  async claimDaily(userMissionId: string, day: number): Promise<void> {
+    try {
+      const userMissionRef = doc(db, 'userMissions', userMissionId);
+      await runTransaction(db, async (tx) => {
+        const umSnap = await tx.get(userMissionRef as any);
+        if (!umSnap.exists()) throw new Error('UserMission não encontrado');
+        const umData: any = umSnap.data();
+        const missionId = umData.missionId;
+        const mission = await this.getMission(missionId || '');
+        const totalDays = (mission && mission.dailyRewards && mission.dailyRewards.length) || 7;
+        const claimedDays: number[] = (umData.claimedDays || []).slice();
+        if (claimedDays.includes(day)) throw new Error('Dia já coletado');
+
+        // ensure day is the next available unclaimed day (sequential rule)
+        const allDays = Array.from({ length: totalDays }, (_, i) => i + 1);
+        const nextUnclaimed = allDays.find(d => !claimedDays.includes(d));
+        if (nextUnclaimed !== day) throw new Error('Dia não disponível para coleta');
+
+        // check time-based availability
+        const nextAvailableTs = umData.nextAvailableAt as any;
+        if (nextAvailableTs) {
+          const nextAvailableMillis = (nextAvailableTs.seconds ? nextAvailableTs.seconds * 1000 : (nextAvailableTs as any).toMillis());
+          if (Date.now() < nextAvailableMillis) throw new Error('Dia ainda não disponível');
+        }
+
+        claimedDays.push(day);
+        const progress = Math.round((claimedDays.length / totalDays) * 100);
+
+        const updates: any = { claimedDays, progress };
+        if (claimedDays.length === totalDays) {
+          updates.completed = true;
+          updates.completedAt = Timestamp.now();
+          updates.claimed = true;
+          updates.claimedAt = Timestamp.now();
+          updates.nextAvailableAt = undefined;
+        } else {
+          // set next available to +24h
+          updates.nextAvailableAt = Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000);
+        }
+
+        tx.update(userMissionRef as any, updates);
+      });
+    } catch (error) {
+      console.error('Erro ao coletar dia:', error);
       throw error;
     }
   }

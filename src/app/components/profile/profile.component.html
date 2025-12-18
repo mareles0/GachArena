@@ -1,0 +1,154 @@
+<div id="profile-container" *ngIf="!loading; else loadingTpl">
+  <!-- full page background panel -->
+  <div class="page-bg" *ngIf="profile?.profileBackground">
+    <video *ngIf="isVideoUrl(profile?.profileBackground)" class="page-bg-video" autoplay muted loop playsinline [attr.src]="profile?.profileBackground"></video>
+    <img *ngIf="isGifUrl(profile?.profileBackground) && !isVideoUrl(profile?.profileBackground)" class="page-bg-gif" [src]="profile?.profileBackground" alt="" />
+    <div *ngIf="!isVideoUrl(profile?.profileBackground) && !isGifUrl(profile?.profileBackground)" class="page-bg-image" [style.background-image]="'url(' + profile?.profileBackground + ')'"> </div>
+  </div>
+
+  <div class="profile-hero" [class.has-video-bg]="isVideoUrl(profile?.profileBackground)">
+    <video *ngIf="isVideoUrl(profile?.profileBackground)" class="hero-video" autoplay muted loop playsinline [attr.src]="profile?.profileBackground"></video>
+    <img *ngIf="isGifUrl(profile?.profileBackground) && !isVideoUrl(profile?.profileBackground)" class="hero-gif" [src]="profile?.profileBackground" alt="" />
+    <div class="hero-bg-image" *ngIf="!isVideoUrl(profile?.profileBackground) && !isGifUrl(profile?.profileBackground)" [style.background-image]="'linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(' + (profile?.profileBackground || profile?.profileIcon || 'assets/profile-hero.svg') + ')'">
+    </div>
+    <div class="hero-inner">
+      <div class="avatar-wrap">
+        <img [src]="profile?.profileIcon || 'assets/default-avatar.svg'" alt="Avatar" class="avatar">
+        <div *ngIf="auth.currentUser?.uid === userId" class="edit-badge" (click)="startEdit()" title="Editar perfil">
+          <i class="bi bi-pencil"></i>
+        </div>
+      </div>
+
+      <div class="hero-info">
+        <h1 class="display-name">{{ username }}</h1>
+        <div class="meta-row">
+          <div class="uid">UID: <span>{{ userId }}</span></div>
+        </div>
+        <p class="short-desc" *ngIf="profile?.description">{{ profile?.description }}</p>
+
+        <div class="hero-actions">
+          <button *ngIf="auth.currentUser?.uid !== userId && !isFriend" class="btn btn-outline" (click)="sendFriendRequest()">Enviar solicitação</button>
+          <button *ngIf="auth.currentUser?.uid !== userId && isFriend" class="btn btn-primary" (click)="openTrade()">Propor troca</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="showcase">
+    <h3>Cartas em destaque</h3>
+    <div class="cards">
+      <div class="card" *ngFor="let it of showcasedItems">
+        <div class="card-frame">
+          <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="card">
+        </div>
+        <div class="card-title">{{ it.item.name }}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Edit profile modal -->
+  <div class="modal" [class.show]="editing" [style.display]="editing ? 'block' : 'none'" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar Perfil</h5>
+          <button type="button" class="btn-close" (click)="cancelEdit()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="edit-profile">
+            <div *ngIf="modalLoading" class="modal-loading">
+              <div class="spinner-border text-light" role="status"><span class="visually-hidden">Carregando...</span></div>
+            </div>
+            <div *ngIf="error && !modalLoading" class="modal-error">{{ error }}</div>
+            <div class="edit-grid">
+              <div class="left">
+                <!-- Nome não editável - usar username -->
+                <!-- <label>Nome</label>
+                <input #displayNameInput type="text" class="form-control" [(ngModel)]="profile!.displayName"> -->
+
+                <label>Descrição</label>
+                <textarea rows="4" class="form-control" [(ngModel)]="profile!.description"></textarea>
+
+                <label>Ícone</label>
+                <div *ngIf="iconsLoaded; else noIcons">
+                  <div class="icons-gallery-categories scrollable">
+                    <div class="category" *ngFor="let cat of (iconsByCategory | keyvalue)">
+                      <div class="cat-title">{{ cat.key }}</div>
+                      <div class="cat-icons">
+                        <div class="icon" *ngFor="let icon of cat.value" (click)="selectIcon(icon)" [class.selected]="profile?.profileIcon === icon">
+                          <img [src]="icon" alt="icon">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <ng-template #noIcons>
+                  <div class="no-icons">Nenhum ícone disponível. Verifique a pasta <code>assets/avatares</code>.</div>
+                </ng-template>
+              </div>
+
+              <div class="right">
+                <h4>Cartas em destaque (selecione até 6)</h4>
+                <div class="cards-grid scrollable">
+                  <label class="card-checkbox" *ngFor="let it of myItemsForShowcase">
+                    <input type="checkbox" [checked]="showcasedSelection.has(it.id)" (change)="toggleShowcase(it.id, $any($event.target).checked)">
+                    <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="">
+                    <span>{{ it.item.name }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="bottom-options">
+                <label>Fundo do perfil</label>
+
+                <!-- preview selecionado -->
+                <div class="bg-preview" *ngIf="profile?.profileBackground">
+                  <ng-container *ngIf="isVideoUrl(profile?.profileBackground)">
+                    <video class="bg-preview-video" autoplay muted loop playsinline [attr.src]="profile?.profileBackground"></video>
+                  </ng-container>
+                  <ng-container *ngIf="!isVideoUrl(profile?.profileBackground) && isGifUrl(profile?.profileBackground)">
+                    <img class="bg-preview-gif" [src]="profile?.profileBackground" alt="preview">
+                  </ng-container>
+                  <ng-container *ngIf="!isVideoUrl(profile?.profileBackground) && !isGifUrl(profile?.profileBackground)">
+                    <div class="bg-preview-image" [style.background-image]="'url(' + profile?.profileBackground + ')'"></div>
+                  </ng-container>
+                </div>
+
+                <div *ngIf="backgroundsLoaded; else noBg">
+                  <div class="backgrounds-gallery scrollable">
+                    <div class="bg-item" *ngFor="let bg of backgrounds" (click)="profile!.profileBackground = bg.src" [class.selected]="profile?.profileBackground === bg.src">
+                      <ng-container *ngIf="bg.type === 'gif'">
+                        <img class="bg-thumb-gif" [src]="bg.src" alt="background">
+                      </ng-container>
+                      <ng-container *ngIf="bg.type === 'image'">
+                        <img [src]="bg.src" alt="background">
+                      </ng-container>
+                      <ng-container *ngIf="bg.type === 'video'">
+                        <video class="bg-thumb-video" autoplay muted loop playsinline [attr.src]="bg.src"></video>
+                      </ng-container>
+                    </div>
+                  </div>
+                </div>
+                <ng-template #noBg>
+                  <div class="no-icons">Nenhum fundo disponível em <code>assets/backgrounds</code>.</div>
+                </ng-template>
+              </div>
+
+            </div>
+        </div>
+        <div class="modal-footer" [style.zIndex]="30">
+          <button class="btn btn-secondary" (click)="cancelEdit()" [disabled]="false">Cancelar</button>
+          <button class="btn btn-primary" (click)="saveEdit()" [disabled]="modalLoading">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="editing" *ngIf="editing" (click)="cancelEdit()"></div>
+
+</div>
+
+<app-trade-modal *ngIf="showTradeModal" [targetUserId]="userId || ''" [targetUsername]="username || ''" [targetUserPhoto]="profile?.profileIcon || ''" (closed)="closeTrade($event)"></app-trade-modal>
+
+<ng-template #loadingTpl>
+  <div class="loading">Carregando...</div>
+</ng-template>

@@ -1,4 +1,10 @@
 <div class="friends-container">
+  <img src="https://i.pinimg.com/originals/8d/5a/5e/8d5a5e1f329951baea1b4828d79cccf9.gif" class="bg-gif" alt="" aria-hidden="true">
+     
+    <video autoplay muted loop class="bg-video">
+        <source src="assets/backgrounds/welcome.webm" type="video/webm">
+        <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
+    </video>
   <div class="notification-container" *ngIf="notification.show">
     <div class="notification" [ngClass]="notification.type">{{ notification.message }}</div>
   </div>
@@ -9,7 +15,8 @@
     <input [(ngModel)]="searchTerm" (input)="searchUsers()" placeholder="Buscar usuários..." class="search-input">
     <div class="search-results" *ngIf="searchResults.length > 0">
       <div class="user-item" *ngFor="let user of searchResults">
-        <span>{{ user.username }}</span>
+        <img [src]="user.photoURL || 'assets/default-avatar.svg'" alt="avatar" class="user-avatar">
+        <span class="username">{{ user.username }}</span>
         <button (click)="sendRequest(user)" class="btn-add">Adicionar</button>
       </div>
     </div>
@@ -17,9 +24,20 @@
 
   <section *ngIf="pendingRequests.length > 0">
     <h2>Solicitações Pendentes</h2>
-    <div class="friend-card" *ngFor="let req of pendingRequests">
-      <span>{{ req.friendUsername }}</span>
-      <div>
+    <div class="friend-card" *ngFor="let req of pendingRequests" [class.has-bg]="$any(req).profileBackground" [style.background-image]="(!isVideoUrl($any(req).profileBackground) && !isGifUrl($any(req).profileBackground)) ? 'url(' + $any(req).profileBackground + ')' : null">
+      <a class="friend-card-link" [routerLink]="['/profile', $any(req).userId || '']" title="Abrir perfil de {{ $any(req).username }}">
+        <div class="friend-card-inner">
+          <img [src]="$any(req).photoURL || 'assets/default-avatar.svg'" alt="avatar" class="user-avatar">
+          <span class="username">{{ $any(req).username }}</span>
+        </div>
+      </a>
+      <ng-container *ngIf="isVideoUrl($any(req).profileBackground)">
+        <video autoplay muted loop playsinline [attr.src]="$any(req).profileBackground"></video>
+      </ng-container>
+      <ng-container *ngIf="!isVideoUrl($any(req).profileBackground) && isGifUrl($any(req).profileBackground)">
+        <img class="friend-bg-gif" [src]="$any(req).profileBackground" alt="">
+      </ng-container>
+      <div class="actions-right">
         <button (click)="acceptRequest(req.id || '')" class="btn-accept">Aceitar</button>
         <button (click)="rejectRequest(req.id || '')" class="btn-reject">Rejeitar</button>
       </div>
@@ -28,8 +46,19 @@
 
   <section>
     <h2>Meus Amigos</h2>
-    <div class="friend-card" *ngFor="let friend of friends">
-      <span>{{ getFriendName(friend) || friend.friendUsername }}</span>
+    <div class="friend-card" *ngFor="let friend of friends" [class.has-bg]="$any(friend).profileBackground" [style.background-image]="(!isVideoUrl($any(friend).profileBackground) && !isGifUrl($any(friend).profileBackground)) ? 'url(' + $any(friend).profileBackground + ')' : null">
+      <a class="friend-card-link" [routerLink]="['/profile', $any(friend).userId || '']" title="Abrir perfil de {{ $any(friend).username || friend.friendUsername }}">
+        <div class="friend-card-inner">
+          <img [src]="$any(friend).photoURL || 'assets/default-avatar.svg'" alt="avatar" class="user-avatar">
+          <span class="username">{{ $any(friend).username || friend.friendUsername }}</span>
+        </div>
+      </a>
+      <ng-container *ngIf="isVideoUrl($any(friend).profileBackground)">
+        <video autoplay muted loop playsinline [attr.src]="$any(friend).profileBackground"></video>
+      </ng-container>
+      <ng-container *ngIf="!isVideoUrl($any(friend).profileBackground) && isGifUrl($any(friend).profileBackground)">
+        <img class="friend-bg-gif" [src]="$any(friend).profileBackground" alt="">
+      </ng-container>
       <button (click)="removeFriend(friend.id || '')" class="btn-remove">Remover</button>
     </div>
     <p *ngIf="friends.length === 0" class="empty">Nenhum amigo ainda</p>

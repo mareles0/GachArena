@@ -1,5 +1,13 @@
 <div class="ranking-container">
-  <!-- Notificações -->
+
+  <img src="https://i.pinimg.com/originals/12/39/3d/12393d9a32280a761d4b6d946a576d6f.gif" class="bg-gif" alt="" aria-hidden="true">
+     
+    <video autoplay muted loop class="bg-video">
+        <source src="assets/backgrounds/welcome.webm" type="video/webm">
+        <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
+    </video>
+
+
   <div class="notification-container" *ngIf="notification.show">
     <div class="notification" [ngClass]="notification.type">
       <span>{{ notification.message }}</span>
@@ -17,7 +25,7 @@
       </button>
       <button 
         [class.active]="viewMode === 'box'" 
-        (click)="viewMode = 'box'">
+        (click)="selectView('box')">
         <i class="bi bi-box"></i> Por Caixa
       </button>
     </div>
@@ -47,13 +55,26 @@
       
       <div class="player-info">
         <img 
-          [src]="entry.photoURL || 'assets/default-avatar.png'" 
+          [src]="entry.photoURL || 'assets/default-avatar.svg'" 
           alt="Avatar"
           class="player-avatar">
         <div class="player-details">
-          <h3>{{ entry.username }}</h3>
+          <h3><a class="profile-link" [routerLink]="['/profile', entry.userId]">{{ entry.username }}</a></h3>
           <p>{{ entry.totalItems }} items coletados</p>
         </div>
+      </div>
+      <div class="player-bg" *ngIf="entry.profileBackground">
+        <ng-container *ngIf="isVideoUrl(entry.profileBackground); else notVideo">
+          <video autoplay muted loop playsinline [attr.src]="entry.profileBackground"></video>
+        </ng-container>
+        <ng-template #notVideo>
+          <ng-container *ngIf="isGifUrl(entry.profileBackground); else imageBg">
+            <img class="player-bg-gif" [src]="entry.profileBackground" alt="">
+          </ng-container>
+          <ng-template #imageBg>
+            <div class="image" [style.background-image]="'url(' + entry.profileBackground + ')'" ></div>
+          </ng-template>
+        </ng-template>
       </div>
 
       <div class="rarest-item">
@@ -70,7 +91,7 @@
       </div>
 
       <div class="score">
-        <span class="score-value">{{ entry.score | number:'1.0-0' }}</span>
+        <span class="score-value">{{ entry.score | number:'1.2-2' }}</span>
         <span class="score-label">pontos</span>
       </div>
     </div>
@@ -86,12 +107,25 @@
       
       <div class="player-info">
         <img 
-          [src]="entry.photoURL || 'assets/default-avatar.png'" 
+          [src]="entry.photoURL || 'assets/default-avatar.svg'" 
           alt="Avatar"
           class="player-avatar">
         <div class="player-details">
-          <h3>{{ entry.username }}</h3>
+          <h3><a class="profile-link" [routerLink]="['/profile', entry.userId]">{{ entry.username }}</a></h3>
         </div>
+      </div>
+      <div class="player-bg" *ngIf="entry.profileBackground">
+        <ng-container *ngIf="isVideoUrl(entry.profileBackground); else notVideoBox">
+          <video autoplay muted loop playsinline [attr.src]="entry.profileBackground"></video>
+        </ng-container>
+        <ng-template #notVideoBox>
+          <ng-container *ngIf="isGifUrl(entry.profileBackground); else imageBgBox">
+            <img class="player-bg-gif" [src]="entry.profileBackground" alt="">
+          </ng-container>
+          <ng-template #imageBgBox>
+            <div class="image" [style.background-image]="'url(' + entry.profileBackground + ')'" ></div>
+          </ng-template>
+        </ng-template>
       </div>
 
       <div class="rarest-item">
@@ -108,7 +142,7 @@
       </div>
 
       <div class="score">
-        <span class="score-value">{{ entry.score }}</span>
+        <span class="score-value">{{ entry.score | number:'1.2-2' | number:'1.2-2' }}</span>
         <span class="score-label">pontos</span>
       </div>
     </div>

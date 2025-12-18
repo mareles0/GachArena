@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { ItemService } from './services/item.service';
 
 @Component({
   selector: 'app-root',
@@ -9,7 +10,20 @@ import { Router } from '@angular/router';
 export class AppComponent {
   title = 'GachArena';
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private itemService: ItemService) {
+    // Função global para migração (acessível via console)
+    (window as any).migrateItems = async () => {
+      console.log('Iniciando migração de itens...');
+      try {
+        await this.itemService.migrateItemsWithoutPoints(true);
+        console.log('Migração de itens base concluída. Iniciando migração de userItems...');
+        await this.itemService.migrateUserItemsPoints();
+        console.log('Migração concluída com sucesso!');
+      } catch (error) {
+        console.error('Erro na migração:', error);
+      }
+    };
+  }
 
   irParaLogin() {
     this.router.navigate(['/login']);

@@ -1,4 +1,11 @@
 <div class="missions-container">
+<img src="https://i.pinimg.com/originals/a6/ac/92/a6ac9244c02998a5dcce22c324d8d8a4.gif" class="bg-gif" alt="" aria-hidden="true">
+     
+    <video autoplay muted loop class="bg-video">
+        <source src="assets/backgrounds/welcome.webm" type="video/webm">
+        <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
+    </video>
+
   <div class="notification-container" *ngIf="notification.show">
     <div class="notification" [ngClass]="notification.type">{{ notification.message }}</div>
   </div>
@@ -11,27 +18,72 @@
   </div>
 
   <div *ngIf="!isLoading">
+    <div class="mission-tabs">
+      <button [class.active]="view==='all'" (click)="view='all'">Todas</button>
+      <button [class.active]="view==='diarias'" (click)="view='diarias'">Diárias</button>
+      <button [class.active]="view==='desafios'" (click)="view='desafios'">Desafios</button>
+    </div>
+
     <!-- Missões em Progresso -->
-    <section *ngIf="userMissions.length > 0">
+    <section *ngIf="userMissions.length > 0 && (view==='all' || view==='diarias' || view==='desafios')">
       <h2>Minhas Missões</h2>
-      <div class="missions-grid">
-        <div class="mission-card" *ngFor="let um of userMissions">
-          <div class="mission-header">
-            <i class="bi" [ngClass]="getMissionIcon(um.mission?.type || '')"></i>
-            <h3>{{ um.mission?.title }}</h3>
-          </div>
+
+      <!-- Diárias em formato de painel -->
+      <div *ngIf="(view==='all' || view==='diarias')">
+        <div class="daily-in-progress" *ngFor="let um of dailyUserMissions">
+          <h3>{{ um.mission?.title }}</h3>
           <p>{{ um.mission?.description }}</p>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="getProgressPercentage(um)"></div>
+          <div class="daily-board">
+            <div class="day" *ngFor="let d of um.mission?.dailyRewards">
+              <div class="day-inner" [class.active]="getCurrentDailyDay(um) === d.day">
+                <img [src]="d.imageUrl || 'assets/default-card.png'" alt="">
+                <div class="day-label">{{ d.label || ('Dia ' + d.day) }}</div>
+                <div class="day-reward">{{ d.rewardNormal || 0 }} 🎫 / {{ d.rewardPremium || 0 }} 💎</div>
+                <div class="day-collected" *ngIf="isDayClaimed(um, d.day)">Coletado</div>
+                <div *ngIf="!isDayClaimed(um, d.day) && getNextUnclaimedDay(um) === d.day" class="day-action">
+                  <button class="btn-claim-day" (click)="claimDaily(um, d.day)" [disabled]="!isDayAvailable(um)">
+                    <span *ngIf="isDayAvailable(um); else waiting">Coletar</span>
+                    <ng-template #waiting>Disponível em {{ timeUntilNext(um) }}</ng-template>
+                  </button>
+                </div>
+                <div *ngIf="!isDayClaimed(um, d.day) && getNextUnclaimedDay(um) !== d.day" class="day-future">Bloqueado</div>
+              </div>
+            </div>
           </div>
-          <div class="mission-footer">
-            <span class="reward"><i class="bi bi-ticket-perforated"></i> {{ um.mission?.rewardNormal }} tickets</span>
-            <button 
-              *ngIf="um.completed" 
-              (click)="claimReward(um)"
-              class="btn-claim">
-              Coletar
-            </button>
+          <div class="daily-actions">
+            <button *ngIf="um.completed && !um.claimed" (click)="claimReward(um)" class="btn-claim">Coletar</button>
+            <button *ngIf="!um.completed" class="btn-start" (click)="startMission(um.mission?.id || '')">Iniciar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Outras missões (desafios/minhas missões) -->
+      <div *ngIf="(view==='all' || view==='desafios')">
+        <div class="missions-grid">
+          <div class="mission-card" *ngFor="let um of otherUserMissions">
+            <div class="mission-header">
+              <i class="bi" [ngClass]="getMissionIcon(um.mission?.type || '')"></i>
+              <h3>{{ um.mission?.title }}</h3>
+            </div>
+            <p>{{ um.mission?.description }}</p>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="getProgressPercentage(um)"></div>
+            </div>
+            <div class="mission-footer">
+              <span class="reward">
+                <img src="https://static.wikitide.net/cravesagawiki/4/46/Platinum_Gacha_Ticket.png" alt="Ticket" class="reward-ticket" *ngIf="um.mission?.rewardNormal">
+                <span class="reward-amount">{{ um.mission?.rewardNormal || 0 }}</span>
+                <img src="https://static.wikitide.net/cravesagawiki/f/fe/SR_or_Higher_Gacha_Ticket.png" alt="Premium" class="reward-ticket" *ngIf="um.mission?.rewardPremium">
+                <span class="reward-amount premium">{{ um.mission?.rewardPremium || 0 }}</span>
+              </span>
+              <button 
+                *ngIf="um.completed && !um.claimed" 
+                (click)="claimReward(um)"
+                class="btn-claim">
+                Coletar
+              </button>
+              <button *ngIf="um.completed && um.claimed" class="btn-claim claimed" disabled>Coletado</button>
+            </div>
           </div>
         </div>
       </div>
@@ -40,16 +92,42 @@
     <!-- Missões Disponíveis -->
     <section *ngIf="availableMissions.length > 0">
       <h2>Disponíveis</h2>
-      <div class="missions-grid">
-        <div class="mission-card available" *ngFor="let mission of availableMissions">
-          <div class="mission-header">
-            <i class="bi" [ngClass]="getMissionIcon(mission.type)"></i>
-            <h3>{{ mission.title }}</h3>
-          </div>
+
+      <div *ngIf="view==='all' || view==='diarias'">
+        <div class="daily-available" *ngFor="let mission of dailyAvailable">
+          <h3>{{ mission.title }}</h3>
           <p>{{ mission.description }}</p>
+          <div class="daily-board small">
+            <div class="day" *ngFor="let d of mission.dailyRewards">
+              <img [src]="d.imageUrl || 'assets/default-card.png'" alt="">
+              <div class="day-label">{{ d.label || ('Dia ' + d.day) }}</div>
+              <div class="day-reward">{{ d.rewardNormal || 0 }} 🎫</div>
+            </div>
+          </div>
           <div class="mission-footer">
-            <span class="reward"><i class="bi bi-ticket-perforated"></i> {{ mission.rewardNormal }} tickets</span>
             <button (click)="startMission(mission.id || '')" class="btn-start">Iniciar</button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="view==='all' || view==='desafios'">
+        <div class="missions-grid">
+          <div class="mission-card available" *ngFor="let mission of otherAvailable">
+            <div class="mission-header">
+              <i class="bi" [ngClass]="getMissionIcon(mission.type)"></i>
+              <h3>{{ mission.title }}</h3>
+            </div>
+            <p>{{ mission.description }}</p>
+            <div *ngIf="mission.autoComplete" class="auto-badge">Coletável</div>
+            <div class="mission-footer">
+              <span class="reward">
+                <img src="https://static.wikitide.net/cravesagawiki/4/46/Platinum_Gacha_Ticket.png" alt="Ticket" class="reward-ticket" *ngIf="mission.rewardNormal">
+                <span class="reward-amount">{{ mission.rewardNormal || 0 }}</span>
+                <img src="https://static.wikitide.net/cravesagawiki/f/fe/SR_or_Higher_Gacha_Ticket.png" alt="Premium" class="reward-ticket" *ngIf="mission.rewardPremium">
+                <span class="reward-amount premium">{{ mission.rewardPremium || 0 }}</span>
+              </span>
+              <button (click)="startMission(mission.id || '')" class="btn-start">Iniciar</button>
+            </div>
           </div>
         </div>
       </div>

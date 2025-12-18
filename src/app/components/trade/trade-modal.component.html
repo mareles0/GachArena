@@ -1,0 +1,88 @@
+<div class="trade-overlay" (click)="close()" tabindex="-1">
+  <div class="trade-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="target">
+        <img [src]="targetUserPhoto || 'assets/default-avatar.svg'" alt="avatar" class="target-avatar">
+        <div class="target-info">
+          <div class="target-name">{{ targetUsername || targetUserId }}</div>
+          <div class="target-sub">Propor troca</div>
+        </div>
+      </div>
+      <button class="close" (click)="close()">×</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="status-row" aria-live="polite" aria-atomic="true">
+        <div class="status error" *ngIf="error" role="status">{{ error }}</div>
+        <div class="status success" *ngIf="success" role="status">{{ success }}</div>
+        <div class="status helper" *ngIf="!error && !success" role="status">Selecione até {{ maxPerSide }} cartas por lado.</div>
+      </div>
+
+      <div class="selection">
+        <div class="col">
+          <h5>Suas cartas <small>({{ offeredCount }}/{{ maxPerSide }})</small></h5>
+          <div class="items" role="list">
+            <div class="card-tile" *ngFor="let it of myItems"
+                 [class.selected]="selectedOffered.has(it.id)"
+                 [class.disabled]="selectedOffered.size >= maxPerSide && !selectedOffered.has(it.id)"
+                 (click)="toggleOffer(it.id)"
+                 (mouseenter)="showHover(it, $event)"
+                 (mouseleave)="hideHover()"
+                 tabindex="0"
+                 (keydown.enter)="toggleOffer(it.id)"
+                 (keydown.space)="toggleOffer(it.id)"
+                 role="button"
+                 [attr.aria-pressed]="selectedOffered.has(it.id)">
+              <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt=""/>
+              <div class="card-name">{{ it.item.name }}</div>
+            </div>
+            <div *ngIf="myItems.length === 0" class="empty-items">Sem cartas para oferecer</div>
+          </div>
+        </div>
+
+        <div class="col">
+          <h5>Cartas do destinatário <small>({{ requestedCount }}/{{ maxPerSide }})</small></h5>
+          <div class="items" role="list">
+            <div class="card-tile" *ngFor="let it of targetItems"
+                 [class.selected]="selectedRequested.has(it.id)"
+                 [class.disabled]="selectedRequested.size >= maxPerSide && !selectedRequested.has(it.id)"
+                 (click)="toggleRequest(it.id)"
+                 (mouseenter)="showHover(it, $event)"
+                 (mouseleave)="hideHover()"
+                 tabindex="0"
+                 (keydown.enter)="toggleRequest(it.id)"
+                 (keydown.space)="toggleRequest(it.id)"
+                 role="button"
+                 [attr.aria-pressed]="selectedRequested.has(it.id)">
+              <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt=""/>
+              <div class="card-name">{{ it.item.name }}</div>
+            </div>
+            <div *ngIf="targetItems.length === 0" class="empty-items">Este usuário não possui cartas</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn" (click)="close()">Cancelar</button>
+      <button class="btn btn-warning" (click)="submitProposal()" [disabled]="loading || !canSubmit()">
+        <span *ngIf="!loading">Enviar proposta</span>
+        <span *ngIf="loading">
+          <i class="spinner-border" aria-hidden="true"></i> Enviando...
+        </span>
+      </button>
+    </div>
+  </div>
+  <div class="card-tooltip" *ngIf="hoveredItem" [style.top.px]="tooltipY" [style.left.px]="tooltipX">
+    <img [src]="hoveredItem.item.imageUrl || 'assets/default-card.png'" alt="" class="tooltip-img">
+    <div class="tooltip-info">
+      <h4>{{ hoveredItem.item.name }}</h4>
+      <p>{{ hoveredItem.item.description }}</p>
+      <div class="tooltip-meta">
+        <span>Raridade: {{ hoveredItem.item.rarity }} ({{ hoveredItem.rarityLevel || 1000 }}/1000)</span>
+        <span>Tipo: {{ hoveredItem.item.type }}</span>
+      </div>
+    </div>
+  </div>
+</div>

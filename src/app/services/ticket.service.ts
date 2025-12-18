@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { getFirestore, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Ticket } from '../models/ticket.model';
 
@@ -66,18 +66,22 @@ export class TicketService {
   async addTickets(userId: string, normalTickets: number, premiumTickets: number): Promise<void> {
     const docRef = doc(this.db, 'users', userId);
 
+    // Check if user document exists; if not, create it with initial amounts
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) {
+      await setDoc(docRef, {
+        normalTickets: normalTickets || 0,
+        premiumTickets: premiumTickets || 0
+      });
+      return;
+    }
+
     await updateDoc(docRef, {
       normalTickets: increment(normalTickets),
       premiumTickets: increment(premiumTickets)
     });
 
-    // Atualizar o subject após adicionar tickets
-    const currentTickets = this.ticketsSubject.value;
-    const updatedTickets = {
-      normalTickets: currentTickets.normalTickets + normalTickets,
-      premiumTickets: currentTickets.premiumTickets + premiumTickets
-    };
-    this.ticketsSubject.next(updatedTickets);
+    // Não atualizar o subject aqui para evitar bug visual na navbar do admin
   }
 
   // Método para forçar atualização dos tickets

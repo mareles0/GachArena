@@ -1,4 +1,13 @@
 .navbar {
+  /* navbar leve (acima de fundo, abaixo de modais/toasts) */
+  position: relative;
+  /* manter abaixo de modais (~2000) e toasts (20000), mas acima do fundo */
+  z-index: 10;
+
+  &.low-z {
+    /* when route requests low stacking, keep navbar above most content but below modals/toasts */
+    z-index: 50 !important;
+  }
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
   .navbar-brand {
@@ -40,6 +49,7 @@
   .dropdown-menu {
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(135deg, #dedcdc 0%, #cfcfcf 100%);
   }
 
   .dropdown-item {
@@ -49,10 +59,16 @@
     transition: all 0.2s;
 
     &:hover {
-      background: linear-gradient(135deg, #000000 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #000000 0%, #302d33 100%);
       color: white;
     }
   }
+  .dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dropdown-menu .bi { font-size:1rem }
 
   .ticket-display {
     display: flex;

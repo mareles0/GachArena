@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav *ngIf="showNavbar" [ngClass]="{ 'low-z': lowZ }" class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
     <a class="navbar-brand" routerLink="/">
       <i class="bi bi-box-seam"></i> GachArena
@@ -33,6 +33,11 @@
         <li class="nav-item" *ngIf="isLoggedIn">
           <a class="nav-link" routerLink="/amigos" routerLinkActive="active">
             <i class="bi bi-people"></i> Amigos
+          </a>
+        </li>
+        <li class="nav-item" *ngIf="isLoggedIn">
+          <a class="nav-link" routerLink="/trades" routerLinkActive="active">
+            <i class="bi bi-arrow-left-right"></i> Trocas
           </a>
         </li>
 
@@ -92,6 +97,10 @@
             {{ username }}
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+            <li><a class="dropdown-item" [routerLink]="['/profile', userId]" style="cursor: pointer;">
+              <i class="bi bi-person-circle"></i> Perfil
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" (click)="logout()" style="cursor: pointer;">
               <i class="bi bi-box-arrow-right"></i> Sair
             </a></li>

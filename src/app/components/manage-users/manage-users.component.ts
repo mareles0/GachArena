@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { UserService } from '../../services/user.service';
+import { ItemService } from '../../services/item.service';
 import { User } from '../../models/user.model';
+import { Item, UserItem } from '../../models/item.model';
 
 @Component({
   selector: 'app-manage-users',
@@ -19,7 +21,19 @@ export class ManageUsersComponent implements OnInit {
   ticketAmount = 0;
   ticketType: 'normal' | 'premium' = 'normal';
 
-  constructor(private userService: UserService) { }
+  showRoleModal = false;
+  newUserType: 'PLAYER' | 'VIP' | 'ADMINISTRADOR' = 'PLAYER';
+
+  showInventoryModal = false;
+  userItems: UserItem[] = [];
+  showAddItemModal = false;
+  allItems: Item[] = [];
+  selectedItemId = '';
+  selectedItem: Item | null = null;
+  rarityLevel = 1;
+  removeQuantities: { [key: string]: number } = {};
+
+  constructor(private userService: UserService, private itemService: ItemService) { }
 
   async ngOnInit() {
     await this.loadUsers();
@@ -88,6 +102,103 @@ export class ManageUsersComponent implements OnInit {
       this.filterUsers();
     } catch (error) {
       this.showNotification('Erro ao adicionar tickets', 'error');
+    }
+  }
+
+  changeRole(user: User) {
+    this.selectedUser = user;
+    this.newUserType = user.userType;
+    this.showRoleModal = true;
+  }
+
+  closeRoleModal() {
+    this.showRoleModal = false;
+    this.selectedUser = null;
+  }
+
+  async confirmChangeRole() {
+    if (!this.selectedUser) return;
+
+    try {
+      await this.userService.updateUser(this.selectedUser.id || '', { userType: this.newUserType });
+      this.showNotification(`Cargo alterado para ${this.newUserType}`, 'success');
+      this.closeRoleModal();
+      await this.loadUsers();
+      this.filterUsers();
+    } catch (error) {
+      this.showNotification('Erro ao alterar cargo', 'error');
+    }
+  }
+
+  async viewInventory(user: User) {
+    this.selectedUser = user;
+    this.showInventoryModal = true;
+    try {
+      this.userItems = await this.itemService.getUserItems(user.id || '');
+    } catch (error) {
+      this.showNotification('Erro ao carregar inventário', 'error');
+      this.userItems = [];
+    }
+  }
+
+  closeInventoryModal() {
+    this.showInventoryModal = false;
+    this.selectedUser = null;
+    this.userItems = [];
+  }
+
+  async removeItem(userItem: UserItem) {
+    if (!this.selectedUser) return;
+
+    const qty = this.removeQuantities[userItem.id] || 1;
+    if (qty > userItem.quantity) {
+      this.showNotification('Quantidade inválida', 'error');
+      return;
+    }
+
+    try {
+      await this.itemService.removeItemFromUser(userItem.id, qty);
+      this.showNotification('Item removido', 'success');
+      // Recarregar inventário
+      this.userItems = await this.itemService.getUserItems(this.selectedUser.id || '');
+    } catch (error) {
+      this.showNotification('Erro ao remover item', 'error');
+    }
+  }
+
+  async openAddItemModal() {
+    this.showAddItemModal = true;
+    try {
+      this.allItems = await this.itemService.getAllItems();
+    } catch (error) {
+      this.showNotification('Erro ao carregar itens', 'error');
+      this.allItems = [];
+    }
+  }
+
+  closeAddItemModal() {
+    this.showAddItemModal = false;
+    this.selectedItemId = '';
+    this.selectedItem = null;
+    this.rarityLevel = 1;
+  }
+
+  onItemSelected() {
+    this.selectedItem = this.allItems.find(i => i.id === this.selectedItemId) || null;
+  }
+
+  async confirmAddItem() {
+    if (!this.selectedUser || !this.selectedItemId) return;
+
+    try {
+      const rl = (this.selectedItem && (this.selectedItem.rarity === 'LENDARIO' || this.selectedItem.rarity === 'MITICO')) ? this.rarityLevel : undefined;
+      await this.itemService.addItemToUser(this.selectedUser.id || '', this.selectedItemId, rl);
+      this.showNotification('Item adicionado', 'success');
+      this.closeAddItemModal();
+      // Recarregar inventário
+      this.userItems = await this.itemService.getUserItems(this.selectedUser.id || '');
+    } catch (error) {
+      this.showNotification('Erro ao adicionar item', 'error');
     }
   }
 

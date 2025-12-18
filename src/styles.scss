@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 @import '~bootstrap/dist/css/bootstrap.min.css';
+@import '~bootstrap-icons/font/bootstrap-icons.css';
 
 
 
@@ -14,4 +15,13 @@ body, html {
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+}
+
+/* Global overrides to ensure overlays and toasts stay above navbar/backgrounds */
+.notification-toast {
+    z-index: 20000 !important;
+}
+
+.modal-overlay, .modal-backdrop, .modal {
+    z-index: 2000 !important;
 }

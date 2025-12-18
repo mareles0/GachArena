@@ -1,0 +1,216 @@
+<div class="trades-wrapper">
+  <img src="https://i.pinimg.com/originals/08/e5/97/08e597e1addb5f2aab9ae3ac4820b285.gif" class="bg-gif" alt="" aria-hidden="true">
+     
+
+  <div class="bg-overlay"></div>
+
+  <div class="notification-container" *ngIf="notification.show">
+    <div class="notification" [ngClass]="notification.type">{{ notification.message }}</div>
+  </div>
+
+  <div class="trades-container">
+    <h2>Trocas</h2>
+
+  <div class="tabs">
+    <button [class.active]="view==='received'" (click)="setView('received')">Recebidas ({{ received.length }})</button>
+    <button [class.active]="view==='sent'" (click)="setView('sent')">Enviadas ({{ sent.length }})</button>
+    <button [class.active]="view==='history'" (click)="setView('history')">Histórico ({{ history.length }})</button>
+  </div>
+
+  <div *ngIf="loading">Carregando...</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <div *ngIf="view==='received'">
+    <div *ngIf="received.length===0" class="empty">Nenhuma proposta recebida</div>
+    <div *ngFor="let t of received" class="trade-item">
+      <div class="trade-header">
+        <div><strong>{{ t.fromUsername }}</strong> propõe troca</div>
+        <div class="trade-meta">{{ t.createdAt?.toDate ? (t.createdAt.toDate() | date:'short') : (t.createdAt | date:'short') }} - <span class="status">{{ t.status || 'PENDENTE' }}</span></div>
+      </div>
+
+      <div class="preview-row">
+        <div>
+          <div class="preview-title">Oferece</div>
+          <div class="preview-items">
+            <div class="mini-card" *ngFor="let it of t.offeredItems" (click)="toggleExpand(t.id)" tabindex="0" role="button" aria-pressed="false">
+              <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="">
+              <div class="mini-name">{{ it.item.name }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="preview-title">Solicita</div>
+          <div class="preview-items">
+            <div class="mini-card" *ngFor="let it of t.requestedItems" (click)="toggleExpand(t.id)" tabindex="0" role="button" aria-pressed="false">
+              <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="">
+              <div class="mini-name">{{ it.item.name }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" (click)="accept(t.id)">Aceitar</button>
+        <button class="btn" (click)="reject(t.id)">Rejeitar</button>
+        <button class="btn btn-link" (click)="toggleExpand(t.id)">{{ expandedTradeId===t.id ? 'Ocultar detalhes' : 'Ver detalhes' }}</button>
+      </div>
+
+      <div *ngIf="expandedTradeId===t.id" class="trade-details">
+        <div class="detail-col">
+          <h4>Oferece</h4>
+          <div *ngFor="let it of t.offeredItems" class="full-card">
+            <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="" class="full-image">
+            <div class="full-meta">
+              <div class="name">{{ it.item.name }}</div>
+              <div class="rarity">Raridade: {{ it.item.rarity }} ({{ it.rarityLevel }}/1000)</div>
+              <div class="power">Poder: {{ it.item.power }}</div>
+              <div class="desc">{{ it.item.description }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="detail-col">
+          <h4>Solicita</h4>
+          <div *ngFor="let it of t.requestedItems" class="full-card">
+            <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="" class="full-image">
+            <div class="full-meta">
+              <div class="name">{{ it.item.name }}</div>
+              <div class="rarity">Raridade: {{ it.item.rarity }} ({{ it.rarityLevel }}/1000)</div>
+              <div class="power">Poder: {{ it.item.power }}</div>
+              <div class="desc">{{ it.item.description }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="view==='sent'">
+    <div *ngIf="sent.length===0" class="empty">Nenhuma proposta enviada</div>
+    <div *ngFor="let t of sent" class="trade-item">
+      <div class="trade-header">
+        <div>Enviada para <strong>{{ t.toUsername }}</strong></div>
+        <div class="trade-meta">{{ t.createdAt?.toDate ? (t.createdAt.toDate() | date:'short') : (t.createdAt | date:'short') }} - <span class="status">{{ t.status || 'PENDENTE' }}</span></div>
+      </div>
+
+      <div class="preview-row">
+        <div>
+          <div class="preview-title">Você oferece</div>
+          <div class="preview-items">
+            <div class="mini-card" *ngFor="let it of t.offeredItems" (click)="toggleExpand(t.id)">
+              <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="">
+              <div class="mini-name">{{ it.item.name }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="preview-title">Você solicita</div>
+          <div class="preview-items">
+            <div class="mini-card" *ngFor="let it of t.requestedItems" (click)="toggleExpand(t.id)">
+              <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="">
+              <div class="mini-name">{{ it.item.name }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" *ngIf="t.status === 'PENDING'" (click)="cancel(t.id)">Cancelar</button>
+        <button class="btn btn-link" (click)="toggleExpand(t.id)">{{ expandedTradeId===t.id ? 'Ocultar detalhes' : 'Ver detalhes' }}</button>
+      </div>
+
+      <div *ngIf="expandedTradeId===t.id" class="trade-details">
+        <div class="detail-col">
+          <h4>Você oferece</h4>
+          <div *ngFor="let it of t.offeredItems" class="full-card">
+            <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="" class="full-image">
+            <div class="full-meta">
+              <div class="name">{{ it.item.name }}</div>
+              <div class="rarity">Raridade: {{ it.item.rarity }} ({{ it.rarityLevel }}/1000)</div>
+              <div class="power">Poder: {{ it.item.power }}</div>
+              <div class="desc">{{ it.item.description }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="detail-col">
+          <h4>Você solicita</h4>
+          <div *ngFor="let it of t.requestedItems" class="full-card">
+            <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="" class="full-image">
+            <div class="full-meta">
+              <div class="name">{{ it.item.name }}</div>
+              <div class="rarity">Raridade: {{ it.item.rarity }} ({{ it.rarityLevel }}/1000)</div>
+              <div class="power">Poder: {{ it.item.power }}</div>
+              <div class="desc">{{ it.item.description }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="view==='history'">
+    <div *ngIf="history.length===0" class="empty">Nenhum histórico de trocas</div>
+    <div *ngFor="let t of history" class="trade-item">
+      <div class="trade-header">
+        <div *ngIf="t.fromUsername"><strong>{{ t.fromUsername }}</strong> propôs troca</div>
+        <div *ngIf="t.toUsername">Você propôs troca para <strong>{{ t.toUsername }}</strong></div>
+        <div class="trade-meta">{{ t.createdAt?.toDate ? (t.createdAt.toDate() | date:'short') : (t.createdAt | date:'short') }} - <span class="status" [ngClass]="t.status.toLowerCase()">{{ t.status }}</span></div>
+      </div>
+
+      <div class="preview-row">
+        <div>
+          <div class="preview-title">Itens oferecidos</div>
+          <div class="preview-items">
+            <div class="mini-card" *ngFor="let it of t.offeredItems" (click)="toggleExpand(t.id)">
+              <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="">
+              <div class="mini-name">{{ it.item.name }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="preview-title">Itens solicitados</div>
+          <div class="preview-items">
+            <div class="mini-card" *ngFor="let it of t.requestedItems" (click)="toggleExpand(t.id)">
+              <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="">
+              <div class="mini-name">{{ it.item.name }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-link" (click)="toggleExpand(t.id)">{{ expandedTradeId===t.id ? 'Ocultar detalhes' : 'Ver detalhes' }}</button>
+      </div>
+
+      <div *ngIf="expandedTradeId===t.id" class="trade-details">
+        <div class="detail-col">
+          <h4>Itens oferecidos</h4>
+          <div *ngFor="let it of t.offeredItems" class="full-card">
+            <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="" class="full-image">
+            <div class="full-meta">
+              <div class="name">{{ it.item.name }}</div>
+              <div class="rarity">Raridade: {{ it.item.rarity }} ({{ it.rarityLevel }}/1000)</div>
+              <div class="power">Poder: {{ it.item.power }}</div>
+              <div class="desc">{{ it.item.description }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="detail-col">
+          <h4>Itens solicitados</h4>
+          <div *ngFor="let it of t.requestedItems" class="full-card">
+            <img [src]="it.item.imageUrl || 'assets/default-card.png'" alt="" class="full-image">
+            <div class="full-meta">
+              <div class="name">{{ it.item.name }}</div>
+              <div class="rarity">Raridade: {{ it.item.rarity }} ({{ it.rarityLevel }}/1000)</div>
+              <div class="power">Poder: {{ it.item.power }}</div>
+              <div class="desc">{{ it.item.description }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

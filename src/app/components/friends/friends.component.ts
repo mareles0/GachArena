@@ -26,23 +26,58 @@ export class FriendsComponent implements OnInit {
     private userService: UserService
   ) { }
 
+  isVideoUrl(url?: string | null): boolean {
+    if (!url) return false;
+    return /\.(webm|mp4)$/i.test(url);
+  }
+
+  isGifUrl(url?: string | null): boolean {
+    if (!url) return false;
+    return /\.(gif)$/i.test(url);
+  }
+
   async ngOnInit() {
     this.currentUserId = await this.userService.getCurrentUserId() || '';
     const currentUser = await this.userService.getUserById(this.currentUserId);
     if (currentUser) {
       this.currentUserName = currentUser.username;
-      this.currentUserPhoto = currentUser.photoURL || '';
+      this.currentUserPhoto = (currentUser as any).profileIcon || currentUser.photoURL || '';
     }
     await this.loadFriends();
     await this.loadPendingRequests();
   }
 
   async loadFriends() {
-    this.friends = await this.friendService.getFriends(this.currentUserId);
+    // obter raw friendships e enriquecer com dados do outro usuário
+    const raw = await this.friendService.getFriends(this.currentUserId);
+    const enriched = await Promise.all(raw.map(async (f) => {
+      const otherId = f.userId === this.currentUserId ? f.friendId : f.userId;
+      const otherUser = otherId ? await this.userService.getUserById(otherId) : null;
+      return {
+        id: f.id,
+        userId: otherId,
+        username: otherUser?.username || f.friendUsername || 'Usuário',
+        photoURL: (otherUser as any)?.profileIcon || otherUser?.photoURL || f.friendPhotoURL || '',
+        profileBackground: (otherUser as any)?.profileBackground || ''
+      } as Friend & { username?: string; photoURL?: string; profileBackground?: string };
+    }));
+    this.friends = enriched;
   }
 
   async loadPendingRequests() {
-    this.pendingRequests = await this.friendService.getPendingRequests(this.currentUserId);
+    // carregar solicitações pendentes e mostrar o remetente (quem enviou)
+    const raws = await this.friendService.getPendingRequests(this.currentUserId);
+    const enriched = await Promise.all(raws.map(async (r) => {
+      const sender = await this.userService.getUserById(r.userId);
+      return {
+        id: r.id,
+        userId: r.userId,
+        username: sender?.username || r.friendUsername || 'Usuário',
+        photoURL: (sender as any)?.profileIcon || sender?.photoURL || r.friendPhotoURL || '',
+        profileBackground: (sender as any)?.profileBackground || ''
+      } as Friend & { username?: string; photoURL?: string; profileBackground?: string };
+    }));
+    this.pendingRequests = enriched;
   }
 
   async searchUsers() {

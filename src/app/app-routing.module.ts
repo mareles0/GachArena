@@ -6,6 +6,8 @@ import { RegisterComponent } from './components/register/register.component';
 import { RecuperarSenhaComponent } from './components/recuperar-senha/recuperar-senha.component';
 import { EmailVerificationComponent } from './components/email-verification/email-verification.component';
 import { CompleteProfileComponent } from './components/complete-profile/complete-profile.component';
+import { ProfileComponent } from './components/profile/profile.component';
+import { TradesComponent } from './components/trades/trades.component';
 
 // Player Components
 import { GachaHomeComponent } from './components/player/gacha-home/gacha-home.component';
@@ -32,7 +34,9 @@ const routes: Routes = [
   { path: 'gacha', component: GachaHomeComponent },
   { path: 'inventario', component: InventoryComponent },
   { path: 'ranking', component: RankingComponent },
+  { path: 'profile/:id', component: ProfileComponent },
   { path: 'amigos', component: FriendsComponent },
+  { path: 'trades', component: TradesComponent },
   { path: 'missoes', component: MissionsComponent },
   
   // Admin Routes

@@ -1,31 +1,36 @@
 <div class="card-gacha-container">
-  <!-- Fundo escurecido com blur -->
+  <!-- Canvas para sistema de partículas -->
+  <canvas #particleCanvas></canvas>
+
+  <!-- Fundo escurecido com blur e padrão animado -->
   <div #background class="background-overlay"></div>
 
-  <!-- Container dos cards -->
+  <!-- Container dos cards com perspectiva 3D -->
   <div #cardsContainer class="cards-container">
-    <!-- Cards serão criados dinamicamente via JavaScript -->
+    <!-- Cards são criados dinamicamente via JavaScript -->
   </div>
 
-  <!-- Placeholder visível enquanto os resultados não chegam -->
+  <!-- Placeholder épico enquanto os resultados não chegam -->
   <div class="loading-card" *ngIf="!config || !config.results || config.results.length === 0">
     <div class="loading-card-inner">
       <div class="loading-pattern"></div>
-      <div class="loading-text">Preparando cartas...</div>
+      <div class="loading-text">✨ Invocando cartas mágicas ✨</div>
     </div>
   </div>
 
   <!-- Painel de status visível APENAS em modo debug -->
   <div class="gacha-status" *ngIf="debug && statusMessage">
     <div class="status-inner">
-      <div class="status-line">{{ statusMessage }}</div>
-      <div class="status-line">Cards criados: {{ createdCount }}</div>
-      <div class="status-line" *ngIf="resultsPreview && resultsPreview.length">Raridades: {{ resultsPreview.join(', ') }}</div>
+      <div class="status-line">🎮 {{ statusMessage }}</div>
+      <div class="status-line" *ngIf="createdCount > 0">📊 Cards criados: {{ createdCount }}</div>
+      <div class="status-line" *ngIf="resultsPreview && resultsPreview.length">
+        🎯 Raridades: {{ resultsPreview.join(', ') }}
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Áudios -->
+<!-- Áudios aprimorados -->
 <audio #flipAudio preload="auto">
   <source src="assets/audio/card-flip.mp3" type="audio/mpeg">
   <source src="assets/audio/card-flip.ogg" type="audio/ogg">

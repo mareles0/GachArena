@@ -252,4 +252,20 @@ export class ManageItemsComponent implements OnInit {
       this.loading = false;
     }
   }
+
+  async migrateItems() {
+    try {
+      this.loading = true;
+      await this.itemService.migrateItemsWithoutPoints(true);
+      console.log('Migração de itens base concluída. Migrando userItems...');
+      await this.itemService.migrateUserItemsPoints();
+      this.showNotification('✅ Migração concluída! Itens atualizados com pontos baseados na raridade.', 'success');
+      await this.loadItems();
+    } catch (error) {
+      console.error('Erro na migração:', error);
+      this.showNotification('❌ Erro na migração: ' + error, 'error');
+    } finally {
+      this.loading = false;
+    }
+  }
 }

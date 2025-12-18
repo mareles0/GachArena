@@ -1,5 +1,13 @@
 <div class="container-fluid mt-4">
-  <!-- Notificação Toast -->
+
+<img src="https://i.pinimg.com/originals/1b/3c/58/1b3c5821c4ef798f196b30cc3eb46ac2.gif" class="bg-gif" alt="" aria-hidden="true">
+     
+    <video autoplay muted loop class="bg-video">
+        <source src="assets/backgrounds/welcome.webm" type="video/webm">
+        <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
+    </video>
+
+
   <div class="notification-toast" *ngIf="notification.show" 
        [class.success]="notification.type === 'success'"
        [class.error]="notification.type === 'error'"
@@ -15,6 +23,13 @@
 
   <h2 class="mb-4"><i class="bi bi-card-image"></i> Gerenciar Itens</h2>
 
+  <div class="mb-3">
+    <button class="btn btn-warning me-2" (click)="migrateItems()" [disabled]="loading">
+      <i class="bi bi-arrow-repeat"></i> Recalcular Pontos de Todos os Itens
+    </button>
+    <small class="text-muted">Recalcula pontos de TODOS os itens e userItems baseados na raridade e rarityLevel</small>
+  </div>
+
   <div class="row">
     <!-- Lista de Caixas -->
     <div class="col-md-3">
@@ -22,7 +37,7 @@
         <div class="card-header">
           <h5 class="mb-0">Selecione uma Caixa</h5>
         </div>
-        <div class="list-group list-group-flush" style="max-height: 70vh; overflow-y: auto;">
+        <div class="list-group list-group-flush" style="max-height: 80vh; overflow-y: auto;">
           <button *ngFor="let box of boxes" 
                   class="list-group-item list-group-item-action"
                   [class.active]="selectedBox?.id === box.id"

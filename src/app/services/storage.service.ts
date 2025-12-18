@@ -38,6 +38,13 @@ export class StorageService {
     return this.uploadImage(file, path);
   }
 
+  async uploadBoxAnimation(file: File, boxName: string): Promise<string> {
+    const timestamp = Date.now();
+    const fileName = `${boxName}_animation_${timestamp}.${file.name.split('.').pop()}`;
+    const path = `animations/${fileName}`;
+    return this.uploadImage(file, path);
+  }
+
   async deleteImage(imageUrl: string): Promise<void> {
     try {
       const imageRef = ref(storage, imageUrl);

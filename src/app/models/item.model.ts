@@ -20,4 +20,5 @@ export interface UserItem {
   obtainedAt: Date;
   quantity: number;
   rarityLevel?: number; // Nível de raridade aleatório (1-1000) gerado ao ganhar o item
+  points?: number; // Pontos calculados baseado na raridade e rarityLevel
 }

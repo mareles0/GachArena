@@ -13,6 +13,8 @@ import { Subscription } from 'rxjs';
   styleUrls: ['./navbar.component.scss']
 })
 export class NavbarComponent implements OnInit, OnDestroy {
+  showNavbar: boolean = true;
+  lowZ: boolean = false;
   isLoggedIn: boolean = false;
   isAdmin: boolean = false;
   username: string = '';
@@ -41,10 +43,22 @@ export class NavbarComponent implements OnInit, OnDestroy {
     
     this.routerSubscription = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe(() => {
-        console.log('[Navbar] Navegação detectada, atualizando status...');
+      .subscribe((event: any) => {
+        const url = event.urlAfterRedirects || this.router.url;
+        console.log('[Navbar] Navegação detectada para', url);
+        const hideOn = ['/', '/login', '/register', '/recuperar-senha'];
+        const path = url.split('?')[0];
+        this.showNavbar = !hideOn.includes(path);
+        // routes where navbar should sit lower in z stacking
+        this.lowZ = path === '/gacha';
         this.checkUserStatus();
       });
+
+    // definir valor inicial baseado na rota atual
+    const current = this.router.url.split('?')[0];
+    const hideOnInit = ['/', '/login', '/register', '/recuperar-senha'];
+    this.showNavbar = !hideOnInit.includes(current);
+    this.lowZ = current === '/gacha';
   }
 
   ngOnDestroy() {
@@ -69,12 +83,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
       console.log('[Navbar] Dados do usuário:', userData);
       
       if (userData) {
-        this.username = userData.username || userData.displayName || 'Usuário';
-        this.photoURL = userData.photoURL || '';
+        this.username = userData.username || 'Usuário';
+        // Preferir o avatar escolhido (profileIcon) sobre photoURL
+        this.photoURL = (userData as any).profileIcon || userData.photoURL || '';
         this.isAdmin = userData.userType === 'ADMINISTRADOR';
         console.log('[Navbar] Username:', this.username, 'IsAdmin:', this.isAdmin);
       }
       // Os tickets serão carregados automaticamente pelo observable
+        // Forçar atualização inicial dos tickets
+        await this.ticketService.refreshTickets(this.userId);
     } else {
       console.log('[Navbar] Nenhum usuário autenticado');
       this.isLoggedIn = false;

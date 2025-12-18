@@ -31,14 +31,19 @@ export class FriendService {
         throw new Error('Vocês já são amigos');
       }
 
-      const docRef = await addDoc(collection(db, 'friends'), {
+      // construir payload sem campos undefined (Firestore não aceita `undefined`)
+      const payload: any = {
         userId: fromUserId,
         friendId: toUserId,
         friendUsername: toUserName,
-        friendPhotoURL: fromUserPhoto,
         status: 'PENDING',
         createdAt: Timestamp.now()
-      });
+      };
+      if (typeof fromUserPhoto !== 'undefined' && fromUserPhoto !== null && fromUserPhoto !== '') {
+        payload.friendPhotoURL = fromUserPhoto;
+      }
+
+      const docRef = await addDoc(collection(db, 'friends'), payload);
       return docRef.id;
     } catch (error) {
       console.error('Erro ao enviar solicitação de amizade:', error);
@@ -143,7 +148,7 @@ export class FriendService {
       // Filtrar usuários que correspondem à busca (exceto o próprio usuário)
       return users.filter(user => 
         user.id !== currentUserId &&
-        user.userType === 'player' &&
+        user.userType === 'PLAYER' &&
         (user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
          user.email.toLowerCase().includes(searchTerm.toLowerCase()))
       );

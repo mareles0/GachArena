@@ -1,5 +1,12 @@
 <div class="inventory-container">
-  <!-- Notificação Toast -->
+<img src="https://i.pinimg.com/originals/87/b3/74/87b374a764bfa8f4ad403569455a9554.gif" class="bg-gif" alt="" aria-hidden="true">
+     
+    <video autoplay muted loop class="bg-video">
+        <source src="assets/backgrounds/welcome.webm" type="video/webm">
+        <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
+    </video>
+
+
   <div class="notification-toast" *ngIf="notification.show" 
        [class.success]="notification.type === 'success'"
        [class.error]="notification.type === 'error'"
@@ -57,7 +64,7 @@
     <h3>Nenhum item encontrado</h3>
     <p>Abra caixas no Gacha para conseguir itens!</p>
     <a routerLink="/gacha" class="btn btn-primary">
-      <i class="bi bi-box-seam"></i> Ir para Gacha
+      Ir para Gacha
     </a>
   </div>
 
@@ -79,7 +86,7 @@
         <h4>{{ userItem.item.name }}</h4>
         <p class="item-box">{{ userItem.item.boxName }}</p>
         <div class="item-power">
-          <i class="bi bi-lightning-fill"></i> {{ userItem.item.power }}
+           {{ userItem.item.power }}
         </div>
       </div>
     </div>
@@ -117,7 +124,7 @@
 
             <div class="stat-row">
               <span class="stat-label">Pontos:</span>
-              <span class="stat-value">{{ selectedItemForDetails.item.points }}</span>
+              <span class="stat-value">{{ selectedItemForDetails?.points ?? 0 }}</span>
             </div>
             
             <div class="stat-row" *ngIf="selectedItemForDetails.rarityLevel">
