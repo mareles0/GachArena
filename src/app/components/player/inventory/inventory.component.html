@@ -77,7 +77,6 @@
       </div>
       <div class="rarity-badge" [ngClass]="getRarityClass(userItem.item.rarity)">
         {{ userItem.item.rarity }}
-        <span class="rarity-level" *ngIf="userItem.rarityLevel"> - Nível {{ userItem.rarityLevel }}</span>
       </div>
       <img [src]="userItem.item.imageUrl" 
            [alt]="userItem.item.name" 

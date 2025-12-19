@@ -33,6 +33,9 @@ export class GachaHomeComponent implements OnInit {
   isMultiOpening: boolean = false;
   isAnimating: boolean = false;
   resultsReady: boolean = false;
+  canSkipAnimation: boolean = false;
+  currentMultiIndex: number = 0;
+  isItemTransitioning: boolean = false;
 
   @ViewChild('multiGrid') multiGrid?: ElementRef<HTMLDivElement>;
   
@@ -206,9 +209,12 @@ export class GachaHomeComponent implements OnInit {
     this.drawnItem = null;
     this.drawnRarityLevel = 0;
     this.isAnimating = false;
+    this.canSkipAnimation = false;
     this.resultsReady = false;
     this.multiResults = [];
     this.revealedMultiResults = [];
+    this.currentMultiIndex = 0;
+    this.isItemTransitioning = false;
     // limpar reveals pendentes
     this.revealTimers.forEach(t => clearTimeout(t));
     this.revealTimers = [];
@@ -246,6 +252,7 @@ export class GachaHomeComponent implements OnInit {
     if (hasAnimation) {
       // Iniciar animação imediatamente como loading
       this.isAnimating = true;
+      this.canSkipAnimation = true;
       this.startAnimationTimeout(); // Inicia timeout de segurança
       this.cd.detectChanges();
     }
@@ -256,6 +263,7 @@ export class GachaHomeComponent implements OnInit {
     if (!used) {
       this.showNotification('❌ Erro ao usar ticket', 'error');
       this.isAnimating = false; // Parar animação se erro
+      this.canSkipAnimation = false;
       return;
     }
 
@@ -291,6 +299,7 @@ export class GachaHomeComponent implements OnInit {
     if (hasAnimation) {
       // Iniciar animação imediatamente como loading
       this.isAnimating = true;
+      this.canSkipAnimation = true;
       this.startAnimationTimeout(); // Inicia timeout de segurança
       this.cd.detectChanges();
     }
@@ -340,6 +349,7 @@ export class GachaHomeComponent implements OnInit {
       console.error('Erro na abertura múltipla:', error);
       this.showNotification('❌ Erro durante abertura múltipla', 'error');
       this.isAnimating = false; // Parar animação se erro
+      this.canSkipAnimation = false;
     } finally {
       this.isMultiOpening = false;
     }
@@ -377,6 +387,7 @@ export class GachaHomeComponent implements OnInit {
       this.showResult = true;
       this.loading = false;
       this.isAnimating = false;
+      this.canSkipAnimation = false;
       this.resultsReady = false; // Resetar para próximas aberturas
       // Iniciar reveal sequencial dos itens **somente se ainda não começou**
       if (!this.revealedMultiResults || this.revealedMultiResults.length === 0) {
@@ -390,6 +401,7 @@ export class GachaHomeComponent implements OnInit {
           this.showResult = true;
           this.loading = false;
           this.isAnimating = false;
+          this.canSkipAnimation = false;
           this.resultsReady = false;
           if (!this.revealedMultiResults || this.revealedMultiResults.length === 0) {
             this.revealMultiResults();
@@ -400,6 +412,7 @@ export class GachaHomeComponent implements OnInit {
           this.showResult = true;
           this.loading = false;
           this.isAnimating = false;
+          this.canSkipAnimation = false;
           this.resultsReady = false;
           if (!this.revealedMultiResults || this.revealedMultiResults.length === 0) {
             this.revealMultiResults();
@@ -407,6 +420,12 @@ export class GachaHomeComponent implements OnInit {
         }
       }, 500);
     }
+  }
+
+  skipAnimation() {
+    console.log('[GachaHome] Usuário pulou a animação');
+    this.clearAnimationTimeout();
+    this.onAnimationComplete();
   }
 
   onVideoError() {
@@ -434,16 +453,17 @@ export class GachaHomeComponent implements OnInit {
   }
 
   onGifLoaded() {
-    console.log('[GachaHome] GIF carregado, iniciando timeout');
+    console.log('[GachaHome] GIF carregado, definindo duração padrão de 8 segundos');
     this.startAnimationTimeout();
     
-    // Para GIFs, definir um timeout menor (3 segundos) já que não temos evento de fim
+    // Para GIFs, definir duração padrão de 8 segundos (tempo típico para animações Gacha)
+    // O usuário pode pular a qualquer momento com o botão
     setTimeout(() => {
       if (this.isAnimating) {
-        console.log('[GachaHome] Timeout do GIF atingido, completando animação');
+        console.log('[GachaHome] Duração padrão do GIF atingida, completando animação');
         this.onAnimationComplete();
       }
-    }, 3000);
+    }, 8000);
   }
 
   ensureMuted(event: Event) {
@@ -495,21 +515,47 @@ export class GachaHomeComponent implements OnInit {
   revealMultiResults(delayBetween = 180, startIndex?: number) {
     if (!this.multiResults || this.multiResults.length === 0) return;
 
-    // Adicionar todos os itens de uma vez para animação staggered
-    this.revealedMultiResults = [...this.multiResults];
-    console.debug('[GachaHome] revealed all', this.multiResults.length, 'items');
+    const start = startIndex ?? 0;
+    this.currentMultiIndex = start;
+    this.revealedMultiResults = [this.multiResults[start]];
+    this.isItemTransitioning = false; // Garante que o primeiro item apareça com animação de entrada
+    console.debug('[GachaHome] revealed first item of', this.multiResults.length, 'items');
     this.cd.detectChanges();
+  }
 
-    // Rolar para o fim após a última animação
-    const lastAnimationDelay = (this.multiResults.length - 1) * 80 + 480; // delay 0.08s + duration 0.48s
-    setTimeout(() => {
-      try {
-        if (this.multiGrid && this.multiGrid.nativeElement) {
-          const el = this.multiGrid.nativeElement as HTMLElement;
-          el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-        }
-      } catch (e) { /* ignore */ }
-    }, lastAnimationDelay);
+  nextMultiItem() {
+    if (this.currentMultiIndex < this.multiResults.length - 1 && !this.isItemTransitioning) {
+      this.isItemTransitioning = true;
+      
+      // Animação de saída do item atual
+      this.cd.detectChanges();
+      
+      setTimeout(() => {
+        this.currentMultiIndex++;
+        // Mostra apenas o item atual (não acumula)
+        this.revealedMultiResults = [this.multiResults[this.currentMultiIndex]];
+        
+        // Pequeno delay antes de permitir a revelação para evitar conflitos visuais
+        setTimeout(() => {
+          this.isItemTransitioning = false; // Permite que a revelação comece
+          console.debug('[GachaHome] showing item', this.currentMultiIndex + 1, 'of', this.multiResults.length);
+          this.cd.detectChanges();
+        }, 100); // Delay adicional para estabilizar
+        
+        this.cd.detectChanges();
+      }, 600); // Tempo da animação de saída (aumentado para sincronizar com CSS)
+    } else if (this.currentMultiIndex >= this.multiResults.length - 1) {
+      // Já está no último item, não faz nada
+      console.debug('[GachaHome] already at last item');
+    }
+  }
+
+  skipMultiReveal() {
+    // Quando pular, mostra todos os itens de uma vez
+    this.revealedMultiResults = [...this.multiResults];
+    this.currentMultiIndex = this.multiResults.length - 1;
+    console.debug('[GachaHome] skipped to show all', this.multiResults.length, 'items');
+    this.cd.detectChanges();
   }
 
   // Método removido - getCardGachaConfig não é mais necessário

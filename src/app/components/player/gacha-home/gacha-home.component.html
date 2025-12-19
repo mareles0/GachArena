@@ -82,14 +82,49 @@
 
         <!-- Resultado Múltiplo -->
         <div class="multi-result" *ngIf="openMode === 'multi'">
-          <h2 class="multi-title">
+          <h2 class="multi-title" *ngIf="revealedMultiResults.length < multiResults.length">
+            <i class="bi bi-trophy-fill"></i>
+            Item {{ currentMultiIndex + 1 }} de {{ multiResults.length }}
+          </h2>
+          <h2 class="multi-title" *ngIf="revealedMultiResults.length === multiResults.length">
             <i class="bi bi-trophy-fill"></i>
             Multi Abertura Concluída!
           </h2>
-          <p class="multi-subtitle">Você ganhou {{ multiResults.length }} itens!</p>
+          <p class="multi-subtitle" *ngIf="revealedMultiResults.length < multiResults.length">Clique no item para continuar</p>
+          <p class="multi-subtitle" *ngIf="revealedMultiResults.length === multiResults.length">Você ganhou {{ multiResults.length }} itens!</p>
           
-          <div class="multi-items-grid" #multiGrid>
-            <div class="multi-item-card" *ngFor="let item of revealedMultiResults; let i = index" [style.border-color]="getRarityColor(item.rarity)" [style.animationDelay]="(i * 0.08) + 's'">
+          <!-- Modo de visualização sequencial (um item por vez) -->
+          <div class="current-item-display" *ngIf="revealedMultiResults.length < multiResults.length && revealedMultiResults.length > 0">
+            <div class="result-card" 
+                 [style.border-color]="getRarityColor(revealedMultiResults[0].rarity)"
+                 [style.--rarity-color]="getRarityColor(revealedMultiResults[0].rarity)"
+                 [style.--rarity-glow]="getRarityColor(revealedMultiResults[0].rarity)"
+                 [ngClass]="{
+                   'item-exiting': isItemTransitioning, 
+                   'item-entering': !isItemTransitioning && currentMultiIndex > 0, 
+                   'first-item': currentMultiIndex === 0,
+                   'card-revealing': !isItemTransitioning && currentMultiIndex >= 0
+                 }"
+                 (click)="nextMultiItem()">
+              <div class="rarity-glow" [style.background]="getRarityColor(revealedMultiResults[0].rarity)"></div>
+              <img [src]="revealedMultiResults[0].imageUrl" 
+                   [alt]="revealedMultiResults[0].name" 
+                   class="item-image">
+              <h2>{{ revealedMultiResults[0].name }}</h2>
+              <div class="rarity-badge" [ngClass]="getRarityClass(revealedMultiResults[0].rarity)">
+                {{ revealedMultiResults[0].rarity }}
+              </div>
+              <div class="item-stats">
+                <span class="power-stat">
+                  <i class="bi bi-lightning-fill"></i> Poder: {{ revealedMultiResults[0].power }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modo de visualização completa (todos os itens) -->
+          <div class="multi-items-grid" *ngIf="revealedMultiResults.length === multiResults.length" #multiGrid>
+            <div class="multi-item-card" *ngFor="let item of revealedMultiResults; let i = index" [style.border-color]="getRarityColor(item.rarity)" [style.animationDelay]="(i * 0.12) + 's'" [style.animationFillMode]="'forwards'">
               <div class="rarity-glow" [style.background]="getRarityColor(item.rarity)"></div>
               <img [src]="item.imageUrl" [alt]="item.name" class="multi-item-image">
               <div class="multi-item-info">
@@ -104,7 +139,7 @@
             </div>
           </div>
 
-          <button class="btn btn-success mt-4" (click)="closeModal()">
+          <button class="btn btn-success mt-4" (click)="closeModal()" *ngIf="currentMultiIndex >= multiResults.length - 1 || revealedMultiResults.length === multiResults.length">
             <i class="bi bi-check-circle"></i> Continuar
           </button>
         </div>
@@ -251,6 +286,11 @@
                 <i class="bi bi-star-fill text-warning"></i>
                 <span class="loading-message">Revelando Itens...</span>
               </div>
+              <button class="btn btn-outline-light btn-sm skip-animation-btn" 
+                      *ngIf="canSkipAnimation" 
+                      (click)="skipAnimation()">
+                <i class="bi bi-skip-forward"></i> Pular
+              </button>
             </div>
           </div>
         </div>

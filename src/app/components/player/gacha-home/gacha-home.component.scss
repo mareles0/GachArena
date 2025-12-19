@@ -593,27 +593,62 @@
       color: #ffffff; /* texto branco */
       margin-bottom: 2rem;
       font-size: 1.1rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+
+      i {
+        color: #ffd54f;
+        margin-right: 0.5rem;
+      }
+
+      .click-hint {
+        display: block;
+        font-size: 0.95rem;
+        color: #ffd54f;
+        font-style: italic;
+        margin-top: 0.5rem;
+        opacity: 0.9;
+        animation: pulse 2s ease-in-out infinite;
+        text-shadow: 0 0 10px rgba(255, 213, 79, 0.5);
+
+        i {
+          animation: bounce 1s ease-in-out infinite;
+        }
+      }
     }
 
     .multi-items-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: 1fr; /* Sempre uma coluna para foco no item atual */
       gap: 1rem;
       margin-bottom: 2rem;
-      max-height: calc(50vh);
+      max-height: calc(60vh);
       overflow-y: auto;
-      align-content: start; /* garante que o grid comece no topo */
-      padding-right: 6px; /* espaço para scrollbar */
+      align-content: start;
+      padding: 1rem;
+      justify-items: center; /* Centralizar horizontalmente */
       -webkit-overflow-scrolling: touch;
 
       .multi-item-card {
-        padding: 0.8rem;
-        border: 2px solid;
-        border-radius: 12px;
+        padding: 1.5rem;
+        border: 3px solid;
+        border-radius: 16px;
         position: relative;
         overflow: hidden;
-        background: white;
-        transition: transform 0.18s ease;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        min-height: 320px;
+        max-width: 280px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
 
         /* estado inicial para animar ao entrar */
         opacity: 0;
@@ -629,59 +664,81 @@
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: 120%;
-          height: 120%;
-          filter: blur(40px);
-          opacity: 0.2;
+          width: 140%;
+          height: 140%;
+          filter: blur(50px);
+          opacity: 0.15;
           z-index: 0;
+          border-radius: 50%;
         }
 
         .multi-item-image {
           position: relative;
           z-index: 1;
           width: 100%;
-          height: 100px;
+          max-width: 180px;
+          height: 180px;
           object-fit: contain;
           object-position: center;
-          margin-bottom: 0.5rem;
-          background: rgba(255, 255, 255, 0.08);
-          border-radius: 6px;
-          padding: 0.4rem;
+          margin-bottom: 1rem;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          padding: 0.8rem;
           transform-origin: center;
           animation: multiImagePop 0.36s cubic-bezier(.2,.9,.25,1) both;
-          animation-delay: inherit; /* usa o mesmo delay inline do pai */
+          animation-delay: inherit;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         }
 
         .multi-item-info {
           position: relative;
           z-index: 1;
+          text-align: center;
+          width: 100%;
 
           h4 {
-            margin: 0 0 0.5rem 0;
-            font-size: 1rem;
-            font-weight: 600;
+            margin: 0 0 0.75rem 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            line-height: 1.3;
           }
 
           .rarity-badge {
             display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
             font-weight: bold;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
           }
 
           .power-stat {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.25rem;
-            font-size: 0.8rem;
-            color: #666;
+            gap: 0.4rem;
+            font-size: 0.9rem;
+            color: #555;
+            font-weight: 600;
 
             i {
               color: #ffd54f;
+              filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
             }
+          }
+        }
+
+        // Estilo para quando o card é clicável
+        &.clickable {
+          cursor: pointer;
+          
+          &:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
           }
         }
       }
@@ -698,6 +755,79 @@
         100% { transform: scale(1); }
       }
 
+      // Animações de transição sequencial
+      @keyframes fadeOut {
+        0% { 
+          opacity: 1; 
+          transform: scale(1) translateY(0);
+          filter: blur(0px);
+        }
+        100% { 
+          opacity: 0; 
+          transform: scale(0.95) translateY(-10px);
+          filter: blur(2px);
+        }
+      }
+
+      @keyframes fadeIn {
+        0% { 
+          opacity: 0; 
+          transform: scale(0.95) translateY(10px);
+          filter: blur(2px);
+        }
+        50% {
+          opacity: 0.7;
+          transform: scale(1.02) translateY(-2px);
+          filter: blur(1px);
+        }
+        100% { 
+          opacity: 1; 
+          transform: scale(1) translateY(0);
+          filter: blur(0px);
+        }
+      }
+
+      @keyframes mysteryGlow {
+        0% { 
+          box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+          filter: brightness(1);
+        }
+        50% {
+          box-shadow: 0 0 40px rgba(255, 215, 0, 0.3), 0 0 80px rgba(255, 215, 0, 0.1);
+          filter: brightness(1.1);
+        }
+        100% { 
+          box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+          filter: brightness(1);
+        }
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 0.7; }
+        50% { opacity: 1; }
+      }
+
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-3px); }
+        60% { transform: translateY(-2px); }
+      }
+
+      // Classes de animação
+      .fade-out {
+        animation: fadeOut 0.3s ease-out forwards;
+      }
+
+      .fade-in {
+        animation: fadeIn 0.6s ease-out forwards;
+        animation-fill-mode: both;
+      }
+
+      // Efeito de mistério - glow pulsante
+      .mystery-reveal {
+        animation: mysteryGlow 2s ease-in-out infinite;
+      }
+
       /* Forçar scrollbar visível quando aplicável (apenas estilo) */
       .multi-items-grid::-webkit-scrollbar { width: 10px; }
       .multi-items-grid::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 8px; }
@@ -708,6 +838,70 @@
           animation: none !important;
           opacity: 1 !important;
           transform: none !important;
+        }
+        .fade-out, .fade-in, .mystery-reveal {
+          animation: none !important;
+        }
+      }
+
+      // Responsividade para diferentes tamanhos de tela
+      @media (max-width: 768px) {
+        .multi-items-grid {
+          padding: 0.5rem;
+          max-height: calc(50vh);
+          
+          .multi-item-card {
+            padding: 1rem;
+            min-height: 280px;
+            max-width: 240px;
+            
+            .multi-item-image {
+              max-width: 140px;
+              height: 140px;
+              padding: 0.6rem;
+            }
+            
+            .multi-item-info h4 {
+              font-size: 1rem;
+            }
+            
+            .rarity-badge {
+              font-size: 0.7rem;
+              padding: 0.3rem 0.8rem;
+            }
+          }
+        }
+      }
+
+      @media (max-width: 480px) {
+        .multi-items-grid {
+          padding: 0.25rem;
+          max-height: calc(45vh);
+          
+          .multi-item-card {
+            padding: 0.75rem;
+            min-height: 240px;
+            max-width: 200px;
+            
+            .multi-item-image {
+              max-width: 120px;
+              height: 120px;
+              padding: 0.4rem;
+            }
+            
+            .multi-item-info h4 {
+              font-size: 0.9rem;
+            }
+            
+            .rarity-badge {
+              font-size: 0.65rem;
+              padding: 0.25rem 0.6rem;
+            }
+            
+            .power-stat {
+              font-size: 0.8rem;
+            }
+          }
         }
       }
     }
@@ -1019,11 +1213,71 @@
   }
 }
 
+.skip-animation-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #ffd54f;
+  border-radius: 25px;
+  color: #333;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+
+  &:hover {
+    background: #ffd54f;
+    border-color: #ffca28;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  i {
+    font-size: 1rem;
+  }
+
+  // Responsividade
+  @media (max-width: 768px) {
+    top: 15px;
+    right: 15px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+
+    i {
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+
+    i {
+      font-size: 0.8rem;
+    }
+  }
+}
+
 .portal-animation-modal {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   border-radius: 20px;
   padding: 2.5rem;
-  max-width: 1200px; /* maior para permitir card maior */
+  max-width: 1440px;
   width: 95%;
   box-shadow: 
     0 24px 48px rgba(0, 0, 0, 0.55),
@@ -1031,6 +1285,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(138, 43, 226, 0.28);
   animation: modalSlideIn 0.9s ease-out;
+  overflow: visible;
 
   @keyframes modalSlideIn {
     from {
@@ -1122,45 +1377,46 @@
   justify-content: center;
   align-items: center;
   margin: 2rem 0;
-  min-height: 500px;
+  min-height: 600px; 
+  overflow: visible; 
 
-  @media (max-width: 768px) {
-    min-height: 400px;
+  @media (max-width: 1280px) {
     margin: 1.5rem 0;
   }
 
-  @media (max-width: 480px) {
-    min-height: 350px;
+  @media (max-width: 960px) {
     margin: 1rem 0;
   }
 
-  // Nova animação personalizada (vídeo/gif)
+  
   .custom-opening-animation {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
-    max-width: 840px; /* maior card */
+    max-width: 1000px; /* Aumentado para dar mais espaço */
     margin: 0 auto;
+    overflow: visible; /* Permite que o vídeo/gif não seja cortado */
 
     .opening-video, .opening-gif {
       width: 100%;
       height: auto;
-      max-height: 520px; /* aumentado */
-      object-fit: contain;
+      max-height: 600px; /* Aumentado significativamente */
+      object-fit: contain; /* Mantém proporções sem cortar */
       border-radius: 14px;
       box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
+      display: block; /* Garante que seja tratado como bloco */
 
       @media (max-width: 900px) {
-        max-height: 460px;
+        max-height: 550px; /* Aumentado */
       }
 
       @media (max-width: 768px) {
-        max-height: 380px;
+        max-height: 480px; /* Aumentado */
       }
 
       @media (max-width: 480px) {
-        max-height: 320px;
+        max-height: 400px; /* Aumentado */
       }
     }
 
@@ -1221,4 +1477,245 @@
     0%, 100% { opacity: 0.7; }
     50% { opacity: 1; }
   }
+}
+
+// Animações para transição sequencial de itens
+@keyframes itemExit {
+  0% {
+    transform: scale(1) translateY(0px);
+    opacity: 1;
+    filter: blur(0px) brightness(1);
+  }
+  50% {
+    transform: scale(1.05) translateY(-5px);
+    opacity: 0.7;
+    filter: blur(0.5px) brightness(1.1);
+  }
+  100% {
+    transform: scale(0.95) translateY(-10px);
+    opacity: 0;
+    filter: blur(1px) brightness(0.9);
+  }
+}
+
+@keyframes itemEnter {
+  0% {
+    transform: scale(0.9) translateY(15px);
+    opacity: 0;
+    filter: blur(2px) brightness(0.8);
+  }
+  40% {
+    transform: scale(1.02) translateY(-2px);
+    opacity: 0.8;
+    filter: blur(0.5px) brightness(1.1);
+  }
+  100% {
+    transform: scale(1) translateY(0px);
+    opacity: 1;
+    filter: blur(0px) brightness(1);
+  }
+}
+
+@keyframes sparkleEffect {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes magicBurst {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// Classe para animação de saída
+.item-exiting {
+  animation: itemExit 0.5s ease-in forwards;
+  pointer-events: none; // Evita cliques durante a transição
+  z-index: 1; // Garante que fique atrás durante saída
+}
+
+// Classe para animação de entrada
+.item-entering {
+  animation: itemEnter 0.6s ease-out forwards;
+  animation-delay: 0.1s; // Pequeno delay para suavizar a transição
+  z-index: 2; // Garante que fique na frente durante entrada
+  
+  // Efeito misterioso apenas nos elementos internos, não na borda/cor de fundo
+  .rarity-glow {
+    background: rgba(108, 117, 125, 0.1) !important;
+    opacity: 0.3 !important;
+  }
+  
+  .rarity-badge {
+    filter: grayscale(100%) brightness(0.7) !important;
+    opacity: 0.7 !important;
+  }
+  
+  .item-image {
+    filter: grayscale(100%) brightness(0.7) !important;
+    opacity: 0.7 !important;
+  }
+  
+  // Não aplicar filtros na borda e box-shadow para preservar cores de raridade
+  border-color: var(--rarity-color) !important;
+  box-shadow: 0 0 15px var(--rarity-glow) !important;
+}
+
+// Classe para efeito de brilho durante transição
+.item-transitioning {
+  .rarity-glow {
+    animation: sparkleEffect 0.3s ease-in-out infinite;
+  }
+  
+  .item-image {
+    animation: magicBurst 0.5s ease-out;
+  }
+}
+
+// Animação especial para o primeiro item
+.first-item {
+  animation: cardFadeIn 1s ease-out;
+}
+
+// Animação de revelação completa do card
+@keyframes cardReveal {
+  0% {
+    border-color: #6c757d;
+    box-shadow: 0 0 15px rgba(108, 117, 125, 0.2);
+  }
+  30% {
+    border-color: #6c757d;
+    box-shadow: 0 0 20px rgba(108, 117, 125, 0.3);
+  }
+  60% {
+    border-color: #6c757d;
+    box-shadow: 0 0 25px rgba(108, 117, 125, 0.4);
+  }
+  100% {
+    border-color: var(--rarity-color);
+    box-shadow: 0 0 35px var(--rarity-glow);
+  }
+}
+
+@keyframes glowReveal {
+  0% {
+    background: radial-gradient(circle, rgba(108, 117, 125, 0.1) 0%, transparent 70%);
+    opacity: 0.3;
+  }
+  30% {
+    background: radial-gradient(circle, rgba(108, 117, 125, 0.2) 0%, transparent 70%);
+    opacity: 0.5;
+  }
+  60% {
+    background: radial-gradient(circle, rgba(108, 117, 125, 0.3) 0%, transparent 70%);
+    opacity: 0.7;
+  }
+  100% {
+    background: var(--rarity-glow);
+    opacity: 1;
+  }
+}
+
+@keyframes badgeReveal {
+  0% {
+    filter: grayscale(100%) brightness(0.7);
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  50% {
+    filter: grayscale(50%) brightness(0.8);
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+  100% {
+    filter: grayscale(0%) brightness(1);
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// Classe para efeito misterioso
+.mysterious-card {
+  transform: scale(1) !important; // Garante que não há transform durante mistério
+  
+  .rarity-glow {
+    background: rgba(108, 117, 125, 0.1) !important;
+    opacity: 0.3;
+  }
+  
+  .rarity-badge {
+    filter: grayscale(100%) brightness(0.7);
+    opacity: 0.7;
+  }
+  
+  .item-image {
+    filter: grayscale(100%) brightness(0.7);
+    opacity: 0.7;
+  }
+  
+  // Preserva as cores de raridade na borda e box-shadow
+  border-color: var(--rarity-color) !important;
+  box-shadow: 0 0 15px var(--rarity-glow) !important;
+  
+  // Remove qualquer animação durante o estado misterioso
+  animation: none !important;
+}
+
+// Classe para revelação independente do card
+.card-revealing {
+  animation: cardReveal 1.5s ease-out forwards !important;
+  animation-delay: 0.7s; // Delay para começar após a entrada terminar
+  z-index: 3; // Garante que fique na frente durante revelação
+  
+  .rarity-glow {
+    animation: glowReveal 1.5s ease-out forwards !important;
+    animation-delay: 0.7s;
+  }
+  
+  .rarity-badge {
+    animation: badgeReveal 1.5s ease-out forwards !important;
+    animation-delay: 0.7s;
+  }
+  
+  .item-image {
+    animation: badgeReveal 1.5s ease-out forwards !important;
+    animation-delay: 0.7s;
+  }
+}
+
+// Animação de fade para cards de resultado
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.result-card {
+  animation: cardFadeIn 0.8s ease-out;
+}
+
+// Animação staggered para grid de itens
+.multi-item-card {
+  opacity: 0;
+  animation: cardFadeIn 0.6s ease-out forwards;
 }
