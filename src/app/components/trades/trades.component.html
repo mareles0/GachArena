@@ -51,8 +51,8 @@
       </div>
 
       <div class="actions">
-        <button class="btn btn-primary" (click)="accept(t.id)">Aceitar</button>
-        <button class="btn" (click)="reject(t.id)">Rejeitar</button>
+        <button class="btn btn-aceitar" (click)="accept(t.id)">Aceitar</button>
+        <button class="btn btn-rejeitar" (click)="reject(t.id)">Rejeitar</button>
         <button class="btn btn-link" (click)="toggleExpand(t.id)">{{ expandedTradeId===t.id ? 'Ocultar detalhes' : 'Ver detalhes' }}</button>
       </div>
 
@@ -116,7 +116,7 @@
       </div>
 
       <div class="actions">
-        <button class="btn" *ngIf="t.status === 'PENDING'" (click)="cancel(t.id)">Cancelar</button>
+        <button class="btn btn-rejeitar" *ngIf="t.status === 'PENDING'" (click)="cancel(t.id)">Cancelar</button>
         <button class="btn btn-link" (click)="toggleExpand(t.id)">{{ expandedTradeId===t.id ? 'Ocultar detalhes' : 'Ver detalhes' }}</button>
       </div>
 

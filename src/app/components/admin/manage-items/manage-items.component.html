@@ -23,13 +23,6 @@
 
   <h2 class="mb-4"><i class="bi bi-card-image"></i> Gerenciar Itens</h2>
 
-  <div class="mb-3">
-    <button class="btn btn-warning me-2" (click)="migrateItems()" [disabled]="loading">
-      <i class="bi bi-arrow-repeat"></i> Recalcular Pontos de Todos os Itens
-    </button>
-    <small class="text-muted">Recalcula pontos de TODOS os itens e userItems baseados na raridade e rarityLevel</small>
-  </div>
-
   <div class="row">
     <!-- Lista de Caixas -->
     <div class="col-md-3">
@@ -80,7 +73,7 @@
 
         <div class="row" *ngIf="!loading && items.length > 0">
           <div class="col-md-4 mb-3" *ngFor="let item of items">
-            <div class="card h-100">
+            <div class="card h-100" [style.border-color]="getRarityColor(item.rarity)">
               <img [src]="item.imageUrl" class="card-img-top" [alt]="item.name" 
                    style="height: 350px; object-fit: cover;">
               <div class="card-body">

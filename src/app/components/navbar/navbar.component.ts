@@ -15,6 +15,7 @@ import { Subscription } from 'rxjs';
 export class NavbarComponent implements OnInit, OnDestroy {
   showNavbar: boolean = true;
   lowZ: boolean = false;
+  highZ: boolean = false;
   isLoggedIn: boolean = false;
   isAdmin: boolean = false;
   username: string = '';
@@ -51,6 +52,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.showNavbar = !hideOn.includes(path);
         // routes where navbar should sit lower in z stacking
         this.lowZ = path === '/gacha';
+        // routes where navbar should sit higher in z stacking
+        this.highZ = path === '/trades';
         this.checkUserStatus();
       });
 
@@ -59,6 +62,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     const hideOnInit = ['/', '/login', '/register', '/recuperar-senha'];
     this.showNavbar = !hideOnInit.includes(current);
     this.lowZ = current === '/gacha';
+    this.highZ = current === '/trades';
   }
 
   ngOnDestroy() {

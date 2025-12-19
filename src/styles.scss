@@ -17,7 +17,6 @@ body, html {
     overflow-x: hidden;
 }
 
-/* Global overrides to ensure overlays and toasts stay above navbar/backgrounds */
 .notification-toast {
     z-index: 20000 !important;
 }

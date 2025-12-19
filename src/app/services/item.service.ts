@@ -261,8 +261,24 @@ export class ItemService {
     const item = await this.getItemById(itemId);
     if (!item) throw new Error('Item não encontrado');
 
-    // Gerar nível de raridade aleatório (1-1000) se não fornecido
-    const finalRarityLevel = rarityLevel ?? Math.floor(Math.random() * 1000) + 1;
+    // Para itens lendários e míticos, garantir rarityLevel único
+    let finalRarityLevel: number;
+    if (item.rarity === 'LENDARIO' || item.rarity === 'MITICO') {
+      if (rarityLevel) {
+        // Verificar se o rarityLevel fornecido já existe para este item
+        const exists = await this.checkRarityLevelExists(itemId, rarityLevel, userId);
+        if (exists) {
+          throw new Error('Este nível de raridade já existe para este item');
+        }
+        finalRarityLevel = rarityLevel;
+      } else {
+        // Gerar rarityLevel único
+        finalRarityLevel = await this.generateUniqueRarityLevel(itemId, userId);
+      }
+    } else {
+      // Para outros itens, usar o rarityLevel fornecido ou gerar aleatório
+      finalRarityLevel = rarityLevel ?? Math.floor(Math.random() * 1000) + 1;
+    }
 
     // Calcular pontos baseado na raridade e rarityLevel
     const points = this.calculateItemPoints(item.rarity, finalRarityLevel);
@@ -344,15 +360,65 @@ export class ItemService {
     
     if (boxItems.length === 0) return null;
 
-    const rarityOrder = { 'MITICO': 5, 'LENDARIO': 4, 'EPICO': 3, 'RARO': 2, 'COMUM': 1 };
-    
     boxItems.sort((a, b) => {
-      const rarityDiff = rarityOrder[b.item.rarity] - rarityOrder[a.item.rarity];
-      if (rarityDiff !== 0) return rarityDiff;
-      return b.item.power - a.item.power;
+      // Calcular score baseado na raridade e rarityLevel
+      let scoreA = a.item.points || 0;
+      let scoreB = b.item.points || 0;
+      
+      // Para itens lendários e míticos, aplicar multiplicador do rarityLevel
+      if ((a.item.rarity === 'LENDARIO' || a.item.rarity === 'MITICO') && a.rarityLevel) {
+        const rarityMultiplierA = 1 + ((1000 - a.rarityLevel) / 1000);
+        scoreA = scoreA * rarityMultiplierA;
+      }
+      
+      if ((b.item.rarity === 'LENDARIO' || b.item.rarity === 'MITICO') && b.rarityLevel) {
+        const rarityMultiplierB = 1 + ((1000 - b.rarityLevel) / 1000);
+        scoreB = scoreB * rarityMultiplierB;
+      }
+      
+      return scoreB - scoreA; // Ordenação decrescente
     });
 
     return boxItems[0];
+  }
+
+  // Verificar se um rarityLevel já existe para um item específico
+  private async checkRarityLevelExists(itemId: string, rarityLevel: number, excludeUserId?: string): Promise<boolean> {
+    const q = query(
+      collection(this.db, 'userItems'), 
+      where('itemId', '==', itemId),
+      where('rarityLevel', '==', rarityLevel)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    // Se excludeUserId for fornecido, excluir itens desse usuário
+    const existingItems = querySnapshot.docs.filter(doc => {
+      const data = doc.data();
+      return !excludeUserId || data['userId'] !== excludeUserId;
+    });
+    
+    return existingItems.length > 0;
+  }
+
+  // Gerar um rarityLevel único para um item
+  private async generateUniqueRarityLevel(itemId: string, userId: string): Promise<number> {
+    const maxAttempts = 1000; // Evitar loop infinito
+    let attempts = 0;
+    
+    while (attempts < maxAttempts) {
+      const rarityLevel = Math.floor(Math.random() * 1000) + 1;
+      const exists = await this.checkRarityLevelExists(itemId, rarityLevel, userId);
+      
+      if (!exists) {
+        return rarityLevel;
+      }
+      
+      attempts++;
+    }
+    
+    // Se não conseguir gerar único após muitas tentativas, usar timestamp como base
+    const timestampBased = (Date.now() % 1000) + 1;
+    return Math.min(timestampBased, 1000);
   }
 
   async drawRandomItem(boxId: string): Promise<Item> {

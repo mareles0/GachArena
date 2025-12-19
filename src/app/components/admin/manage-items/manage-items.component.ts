@@ -234,6 +234,17 @@ export class ManageItemsComponent implements OnInit {
     return classes[rarity] || 'text-secondary';
   }
 
+  getRarityColor(rarity: string): string {
+    const colors: any = {
+      'COMUM': '#9e9e9e',
+      'RARO': '#4fc3f7',
+      'EPICO': '#ba68c8',
+      'LENDARIO': '#ffd54f',
+      'MITICO': '#ff6f00'
+    };
+    return colors[rarity] || '#fff';
+  }
+
   async deleteAllItems() {
     if (!confirm('ATENÇÃO! Isso irá deletar TODOS os itens do banco de dados. Continuar?')) {
       return;

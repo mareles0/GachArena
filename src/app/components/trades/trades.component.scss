@@ -221,3 +221,31 @@
         background: linear-gradient(135deg, #3b82f6, #2563eb);
     }
 }
+
+.btn-aceitar{
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+        background-color: #218838;
+    }
+}
+
+.btn-rejeitar{
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+        background-color: #c82333;
+    }
+}

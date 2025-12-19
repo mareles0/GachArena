@@ -8,6 +8,11 @@
     /* when route requests low stacking, keep navbar above most content but below modals/toasts */
     z-index: 50 !important;
   }
+
+  &.high-z {
+    /* when route requests high stacking, keep navbar above most content and some overlays */
+    z-index: 100 !important;
+  }
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
   .navbar-brand {

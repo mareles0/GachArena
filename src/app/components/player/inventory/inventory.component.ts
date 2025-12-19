@@ -78,11 +78,23 @@ export class InventoryComponent implements OnInit {
   }
 
   sortByRarity() {
-    const rarityOrder: any = { 'MITICO': 5, 'LENDARIO': 4, 'EPICO': 3, 'RARO': 2, 'COMUM': 1 };
     this.filteredItems.sort((a, b) => {
-      const rarityDiff = rarityOrder[b.item.rarity] - rarityOrder[a.item.rarity];
-      if (rarityDiff !== 0) return rarityDiff;
-      return b.item.power - a.item.power;
+      // Calcular score baseado na raridade e rarityLevel
+      let scoreA = a.item.points || 0;
+      let scoreB = b.item.points || 0;
+      
+      // Para itens lendários e míticos, aplicar multiplicador do rarityLevel
+      if ((a.item.rarity === 'LENDARIO' || a.item.rarity === 'MITICO') && a.rarityLevel) {
+        const rarityMultiplierA = 1 + ((1000 - a.rarityLevel) / 1000);
+        scoreA = scoreA * rarityMultiplierA;
+      }
+      
+      if ((b.item.rarity === 'LENDARIO' || b.item.rarity === 'MITICO') && b.rarityLevel) {
+        const rarityMultiplierB = 1 + ((1000 - b.rarityLevel) / 1000);
+        scoreB = scoreB * rarityMultiplierB;
+      }
+      
+      return scoreB - scoreA; // Ordenação decrescente
     });
   }
 

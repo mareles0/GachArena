@@ -286,6 +286,12 @@
       font-weight: bold;
       color: white;
       z-index: 2;
+
+      .rarity-level {
+        font-size: 0.7rem;
+        font-weight: normal;
+        opacity: 0.9;
+      }
     }
 
     .rarity-level-badge {

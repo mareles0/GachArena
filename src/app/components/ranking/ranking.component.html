@@ -78,14 +78,14 @@
       </div>
 
       <div class="rarest-item">
-        <img [src]="entry.rarestItem.imageUrl" 
-             alt="{{ entry.rarestItem.name }}"
+        <img [src]="entry.rarestItem.item.imageUrl" 
+             alt="{{ entry.rarestItem.item.name }}"
              (click)="showItemDetailsModal(entry.rarestItem)"
              class="item-image clickable">
         <div class="item-info">
-          <span class="item-name">{{ entry.rarestItem.name }}</span>
-          <span class="item-rarity" [style.color]="getRarityColor(entry.rarestItem.rarity)">
-            {{ entry.rarestItem.rarity }}
+          <span class="item-name">{{ entry.rarestItem.item.name }}</span>
+          <span class="item-rarity" [style.color]="getRarityColor(entry.rarestItem.item.rarity)">
+            {{ entry.rarestItem.item.rarity }}
           </span>
         </div>
       </div>
@@ -129,14 +129,14 @@
       </div>
 
       <div class="rarest-item">
-        <img [src]="entry.rarestItem.imageUrl" 
-             alt="{{ entry.rarestItem.name }}"
+        <img [src]="entry.rarestItem.item.imageUrl" 
+             alt="{{ entry.rarestItem.item.name }}"
              (click)="showItemDetailsModal(entry.rarestItem)"
              class="item-image clickable">
         <div class="item-info">
-          <span class="item-name">{{ entry.rarestItem.name }}</span>
-          <span class="item-rarity" [style.color]="getRarityColor(entry.rarestItem.rarity)">
-            {{ entry.rarestItem.rarity }}
+          <span class="item-name">{{ entry.rarestItem.item.name }}</span>
+          <span class="item-rarity" [style.color]="getRarityColor(entry.rarestItem.item.rarity)">
+            {{ entry.rarestItem.item.rarity }}
           </span>
         </div>
       </div>
@@ -177,21 +177,21 @@
     <div class="modal-body" *ngIf="selectedItemForDetails">
       <div class="item-details-container">
         <div class="item-image-large">
-          <img [src]="selectedItemForDetails.imageUrl" 
-               [alt]="selectedItemForDetails.name"
+          <img [src]="selectedItemForDetails.item.imageUrl" 
+               [alt]="selectedItemForDetails.item.name"
                class="item-image-modal">
         </div>
         
         <div class="item-info-details">
-          <h4 class="item-name-modal">{{ selectedItemForDetails.name }}</h4>
-          <div class="rarity-badge" [style.background-color]="getRarityColor(selectedItemForDetails.rarity)">
-            {{ selectedItemForDetails.rarity }}
+          <h4 class="item-name-modal">{{ selectedItemForDetails.item.name }}</h4>
+          <div class="rarity-badge" [style.background-color]="getRarityColor(selectedItemForDetails.item.rarity)">
+            {{ selectedItemForDetails.item.rarity }}
           </div>
           
           <div class="item-stats">
             <div class="stat-row">
               <span class="stat-label">Poder:</span>
-              <span class="stat-value">{{ selectedItemForDetails.power }}</span>
+              <span class="stat-value">{{ selectedItemForDetails.item.power }}</span>
             </div>
             
             <div class="stat-row" *ngIf="selectedItemForDetails.rarityLevel">
@@ -201,17 +201,17 @@
             
             <div class="stat-row">
               <span class="stat-label">Caixa:</span>
-              <span class="stat-value">{{ selectedItemForDetails.boxName }}</span>
+              <span class="stat-value">{{ selectedItemForDetails.item.boxName }}</span>
             </div>
             
             <div class="stat-row">
               <span class="stat-label">Drop Rate:</span>
-              <span class="stat-value">{{ selectedItemForDetails.dropRate }}%</span>
+              <span class="stat-value">{{ selectedItemForDetails.item.dropRate }}%</span>
             </div>
           </div>
           
-          <div class="item-description" *ngIf="selectedItemForDetails.description">
-            <p>{{ selectedItemForDetails.description }}</p>
+          <div class="item-description" *ngIf="selectedItemForDetails.item.description">
+            <p>{{ selectedItemForDetails.item.description }}</p>
           </div>
         </div>
       </div>

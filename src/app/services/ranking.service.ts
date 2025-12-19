@@ -11,7 +11,7 @@ export interface RankingEntry {
   username: string;
   photoURL: string;
   profileBackground?: string;
-  rarestItem: any;
+  rarestItem: any; // UserItem
   totalItems: number;
   score: number; // Calculado baseado nos pontos dos itens
 }
@@ -43,18 +43,29 @@ export class RankingService {
 
         // Calcular score baseado nos pontos dos itens
         let totalScore = 0;
-        let rarestItem = userItems[0];
-        let maxPoints = 0;
 
         userItems.forEach(ui => {
           // Calcular pontos totais do item (pontos * quantidade)
           const itemPoints = (ui.item.points || 0) * ui.quantity;
           totalScore += itemPoints;
+        });
 
-          // Encontrar o item com mais pontos (para mostrar como "mais raro")
-          const singleItemPoints = ui.item.points || 0;
-          if (singleItemPoints > maxPoints) {
-            maxPoints = singleItemPoints;
+        // Encontrar o item com mais pontos de nível de raridade
+        let rarestItem = userItems[0];
+        let maxRarityScore = 0;
+        
+        userItems.forEach(ui => {
+          // Calcular score baseado na raridade e rarityLevel
+          let rarityScore = ui.item.points || 0;
+          
+          // Para itens lendários e míticos, aplicar multiplicador do rarityLevel
+          if ((ui.item.rarity === 'LENDARIO' || ui.item.rarity === 'MITICO') && ui.rarityLevel) {
+            const rarityMultiplier = 1 + ((1000 - ui.rarityLevel) / 1000); // 1.0 a 2.0
+            rarityScore = rarityScore * rarityMultiplier;
+          }
+          
+          if (rarityScore > maxRarityScore) {
+            maxRarityScore = rarityScore;
             rarestItem = ui;
           }
         });
@@ -64,7 +75,7 @@ export class RankingService {
           username: user.username || 'Jogador',
           photoURL: (user as any).profileIcon || user.photoURL || '',
           profileBackground: (user as any).profileBackground || '',
-          rarestItem: rarestItem.item,
+          rarestItem: rarestItem,
           totalItems: userItems.length,
           score: totalScore
         });
@@ -112,7 +123,7 @@ export class RankingService {
           username: user.username || 'Jogador',
           photoURL: (user as any).profileIcon || user.photoURL || '',
           profileBackground: (user as any).profileBackground || '',
-          rarestItem: rarestItem.item,
+          rarestItem: rarestItem,
           totalItems: totalItemsInBox,
           score
         });
