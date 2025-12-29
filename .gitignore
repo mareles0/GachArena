@@ -43,3 +43,33 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# Angular specific
+.angular/cache
+
+# Environment files
+/src/environments/environment*.ts
+
+# Firebase service account keys
+/src/environments/serviceAccountKey.json
+
+# Local backend config
+/backend/.env
+/backend/.env.local
+/backend/.env.development
+/backend/.env.production
+
+# Local frontend config
+/frontend/src/environments/environment*.ts
+/frontend/src/app/config/*.ts
+/frontend/src/app/config/*.json
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log**
+yarn-error.log*
+
+# gacharena keys
+gacharena-bd17c-firebase-adminsdk-fbsvc-39931119da.json
