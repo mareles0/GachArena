@@ -4,9 +4,34 @@
       <i class="bi bi-box-seam"></i> GachArena
     </a>
     
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+    <!-- Compact actions shown on small screens: tickets + profile -->
+    <div class="nav-compact d-flex align-items-center gap-2 d-flex d-lg-none" *ngIf="isLoggedIn">
+      <div class="ticket-display normal">
+        <img src="https://static.wikitide.net/cravesagawiki/4/46/Platinum_Gacha_Ticket.png" alt="Ticket Normal" class="ticket-icon">
+        <span class="ticket-amount">{{ tickets.normalTickets }}</span>
+      </div>
+      <div class="ticket-display premium">
+        <img src="https://static.wikitide.net/cravesagawiki/f/fe/SR_or_Higher_Gacha_Ticket.png" alt="Ticket Premium" class="ticket-icon">
+        <span class="ticket-amount">{{ tickets.premiumTickets }}</span>
+      </div>
+
+      <div class="dropdown">
+        <button class="btn btn-link p-0 nav-compact-user d-flex align-items-center" id="compactUserDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <img *ngIf="photoURL" [src]="photoURL" alt="Avatar" class="user-avatar me-1">
+          <i *ngIf="!photoURL" class="bi bi-person-circle" style="font-size:1.2rem;"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="compactUserDropdown">
+          <li><a class="dropdown-item" [routerLink]="['/profile', userId]" style="cursor: pointer;"><i class="bi bi-person-circle"></i> Perfil</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" (click)="logout()" style="cursor: pointer;"><i class="bi bi-box-arrow-right"></i> Sair</a></li>
+        </ul>
+      </div>
+
+      <!-- Toggler moved here to the right of tickets & profile on small screens -->
+      <button class="navbar-toggler ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    </div>
 
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
@@ -64,7 +89,7 @@
       </ul>
 
       <!-- Tickets Display (Disponível para todos os usuários logados) -->
-      <ul class="navbar-nav mx-3" *ngIf="isLoggedIn">
+      <ul class="navbar-nav mx-3 d-none d-lg-flex" *ngIf="isLoggedIn">
         <li class="nav-item d-flex align-items-center gap-3">
           <div class="ticket-display normal">
             <img src="https://static.wikitide.net/cravesagawiki/4/46/Platinum_Gacha_Ticket.png" alt="Ticket Normal" class="ticket-icon">
@@ -90,7 +115,7 @@
           </a>
         </li>
 
-        <li class="nav-item dropdown" *ngIf="isLoggedIn">
+        <li class="nav-item dropdown d-none d-lg-flex" *ngIf="isLoggedIn">
           <a class="nav-link dropdown-toggle d-flex align-items-center" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
             <img *ngIf="photoURL" [src]="photoURL" alt="Avatar" class="user-avatar me-2">
             <i *ngIf="!photoURL" class="bi bi-person-circle me-2" style="font-size: 1.5rem;"></i>

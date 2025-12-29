@@ -38,6 +38,7 @@ export class GachaHomeComponent implements OnInit {
   isItemTransitioning: boolean = false;
 
   @ViewChild('multiGrid') multiGrid?: ElementRef<HTMLDivElement>;
+  @ViewChild('openingVideo') openingVideo?: ElementRef<HTMLVideoElement>;
   
   openingAnimationType: 'video' | 'gif' | 'auto' = 'auto'; // 'auto' detecta pela extensão
   openingAnimationSrc: string = 'assets/backgrounds/1bb90899170e8e1c2a8888dce944bd99.gif'; // caminho para o vídeo/gif
@@ -454,16 +455,9 @@ export class GachaHomeComponent implements OnInit {
 
   onGifLoaded() {
     console.log('[GachaHome] GIF carregado, definindo duração padrão de 8 segundos');
-    this.startAnimationTimeout();
-    
-    // Para GIFs, definir duração padrão de 8 segundos (tempo típico para animações Gacha)
-    // O usuário pode pular a qualquer momento com o botão
-    setTimeout(() => {
-      if (this.isAnimating) {
-        console.log('[GachaHome] Duração padrão do GIF atingida, completando animação');
-        this.onAnimationComplete();
-      }
-    }, 8000);
+    // Para GIFs (ou enquanto estiver convertendo GIFs para vídeos), usar duração padrão de 8s
+    this.startAnimationTimeout(8000);
+    // O próprio timeout chamará forceCompleteAnimation() que executará onAnimationComplete()
   }
 
   ensureMuted(event: Event) {
@@ -475,17 +469,33 @@ export class GachaHomeComponent implements OnInit {
     }
   }
 
+  // Quando o metadado do vídeo carrega, usamos a duração real para o timeout
+  onVideoMetadata(event: Event) {
+    const video = event.target as HTMLVideoElement;
+    if (video && !isNaN(video.duration) && isFinite(video.duration) && video.duration > 0) {
+      const ms = Math.ceil(video.duration * 1000) + 300; // pequeno buffer
+      console.log('[GachaHome] Duração do vídeo detectada:', video.duration, 's => timeout', ms, 'ms');
+      this.startAnimationTimeout(ms);
+    } else {
+      // fallback para 10s se não for possível detectar
+      this.startAnimationTimeout(10000);
+    }
+    // Garante mudo também
+    this.ensureMuted(event);
+  }
+
   private animationTimeout: any;
   private forceAnimationType: 'video' | 'gif' | null = null;
   private forceAnimationSrc: string | null = null;
 
-  startAnimationTimeout() {
-    // Timeout de segurança: força completar após 10 segundos
+  startAnimationTimeout(durationMs?: number) {
+    // Timeout de segurança: força completar após durationMs (ms) ou 10 segundos por padrão
     this.clearAnimationTimeout();
+    const timeout = typeof durationMs === 'number' ? durationMs : 10000;
     this.animationTimeout = setTimeout(() => {
       console.warn('[GachaHome] Timeout da animação excedido, forçando conclusão...');
       this.forceCompleteAnimation();
-    }, 10000);
+    }, timeout);
   }
 
   clearAnimationTimeout() {

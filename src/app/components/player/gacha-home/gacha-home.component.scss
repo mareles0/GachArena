@@ -447,43 +447,52 @@
   .result-card {
     text-align: center;
     padding: 2rem;
-    border: 4px solid;
-    border-radius: 20px;
+    border-radius: 18px;
     position: relative;
     overflow: hidden;
-    animation: resultAppear 0.5s;
+    animation: resultAppear 0.45s;
+
+    /* Visual mais moderno: vidro translúcido com borda suave e glow */
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px) saturate(1.05);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 28px rgba(138, 43, 226, 0.08);
 
     .rarity-glow {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 150%;
-      height: 150%;
-      filter: blur(60px);
-      opacity: 0.3;
+      width: 140%;
+      height: 140%;
+      filter: blur(48px);
+      opacity: 0.28;
       z-index: 0;
+      border-radius: 12px;
     }
 
     .item-image {
       position: relative;
       z-index: 1;
-      width: 250px;
-      height: 250px;
+      width: 260px;
+      height: 260px;
       object-fit: contain;
       object-position: center;
       margin: 0 auto 1rem;
       display: block;
       animation: itemFloat 2s ease-in-out infinite;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 15px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      border-radius: 16px;
       padding: 1rem;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.45);
     }
 
     h2 {
       position: relative;
       z-index: 1;
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
     }
 
     .rarity-badge {
@@ -494,6 +503,9 @@
       border-radius: 20px;
       font-weight: bold;
       margin-bottom: 1rem;
+      color: #111;
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.18);
     }
 
     .item-description {
@@ -579,9 +591,10 @@
     padding: 2rem;
 
     .multi-title {
-      color: #333;
+      color: #ffffff;
       margin-bottom: 0.5rem;
       font-size: 1.8rem;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
 
       i {
         color: #ffd54f;
@@ -1214,7 +1227,8 @@
 }
 
 .skip-animation-btn {
-  position: absolute;
+  /* Fixado na viewport para sempre permanecer no canto superior direito */
+  position: fixed;
   top: 20px;
   right: 20px;
   background: rgba(255, 255, 255, 0.95);
@@ -1226,7 +1240,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  z-index: 10001;
+  z-index: 10020; /* Mais alto que o vídeo */
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1271,7 +1285,7 @@
       font-size: 0.8rem;
     }
   }
-}
+} 
 
 .portal-animation-modal {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -1325,6 +1339,8 @@
 .portal-header {
   text-align: center;
   margin-bottom: 2rem;
+  position: relative; /* acima do vídeo */
+  z-index: 10005;
 
   h3 {
     color: #ffffff;
@@ -1353,6 +1369,8 @@
   color: #b794f6;
   font-size: 1.1rem;
   font-weight: 500;
+  position: relative;
+  z-index: 10005;
 
   i {
     font-size: 1.2rem;
@@ -1398,25 +1416,31 @@
     margin: 0 auto;
     overflow: visible; /* Permite que o vídeo/gif não seja cortado */
 
+    /* Centralizar o vídeo/GIF cobrindo a viewport, mantendo-o atrás do UI */
     .opening-video, .opening-gif {
-      width: 100%;
+      /* usar dimensões mínimas para garantir cobertura e centralizar com transform */
+      min-width: 100vw;
+      min-height: 100vh;
+      width: auto;
       height: auto;
-      max-height: 600px; /* Aumentado significativamente */
-      object-fit: contain; /* Mantém proporções sem cortar */
-      border-radius: 14px;
-      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
-      display: block; /* Garante que seja tratado como bloco */
+      object-fit: cover; /* Cobre toda a viewport */
+      object-position: center center; /* Força o centro do conteúdo */
+      border-radius: 0;
+      box-shadow: none;
+      display: block;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%); /* Centraliza */
+      z-index: 10000;
+      pointer-events: none; /* Não bloqueia clique */
 
       @media (max-width: 900px) {
-        max-height: 550px; /* Aumentado */
-      }
-
-      @media (max-width: 768px) {
-        max-height: 480px; /* Aumentado */
+        object-fit: cover;
       }
 
       @media (max-width: 480px) {
-        max-height: 400px; /* Aumentado */
+        object-fit: cover;
       }
     }
 
@@ -1459,6 +1483,8 @@
 .portal-footer {
   text-align: center;
   margin-top: 2rem;
+  position: relative;
+  z-index: 10005;
 }
 
 .loading-indicator {
