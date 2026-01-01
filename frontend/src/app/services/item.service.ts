@@ -236,15 +236,10 @@ export class ItemService {
     let finalRarityLevel: number;
     if (item.rarity === 'LENDARIO' || item.rarity === 'MITICO') {
       if (rarityLevel) {
-        // Verificar se o rarityLevel fornecido já existe para este item
-        const exists = await this.checkRarityLevelExists(itemId, rarityLevel, userId);
-        if (exists) {
-          throw new Error('Este nível de raridade já existe para este item');
-        }
         finalRarityLevel = rarityLevel;
       } else {
         // Gerar rarityLevel único
-        finalRarityLevel = await this.generateUniqueRarityLevel(itemId, userId);
+        finalRarityLevel = this.generateUniqueRarityLevel(itemId, userId);
       }
     } else {
       // Para outros itens, usar o rarityLevel fornecido ou gerar aleatório
@@ -349,32 +344,13 @@ export class ItemService {
     return boxItems[0];
   }
 
-  // Verificar se um rarityLevel já existe para um item específico
-  private async checkRarityLevelExists(itemId: string, rarityLevel: number, excludeUserId?: string): Promise<boolean> {
-    const params = excludeUserId ? `?excludeUserId=${excludeUserId}` : '';
-    const result = await this.http.get(`${environment.backendUrl}/userItems/check-rarity/${itemId}/${rarityLevel}${params}`).toPromise() as any;
-    return result.exists;
-  }
-
-  // Gerar um rarityLevel único para um item
-  private async generateUniqueRarityLevel(itemId: string, userId: string): Promise<number> {
-    const maxAttempts = 1000; // Evitar loop infinito
-    let attempts = 0;
-    
-    while (attempts < maxAttempts) {
-      const rarityLevel = Math.floor(Math.random() * 1000) + 1;
-      const exists = await this.checkRarityLevelExists(itemId, rarityLevel, userId);
-      
-      if (!exists) {
-        return rarityLevel;
-      }
-      
-      attempts++;
-    }
-    
-    // Se não conseguir gerar único após muitas tentativas, usar timestamp como base
-    const timestampBased = (Date.now() % 1000) + 1;
-    return Math.min(timestampBased, 1000);
+  // Gerar um rarityLevel único para um item usando timestamp + random
+  private generateUniqueRarityLevel(itemId: string, userId: string): number {
+    // Combina timestamp com random para garantir unicidade
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    const combined = (timestamp + random) % 1000 + 1;
+    return Math.min(combined, 1000);
   }
 
   async drawRandomItem(boxId: string): Promise<Item> {

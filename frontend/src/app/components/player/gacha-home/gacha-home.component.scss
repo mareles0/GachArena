@@ -249,22 +249,25 @@
   .modal-content {
     background: rgba(0, 0, 0, 1);
     border-radius: 20px;
-    max-width: 800px;
+    max-width: 900px;
     width: 90%;
-    max-height: 90vh;
+    max-height: 95vh;
     overflow-y: auto;
+    overflow-x: hidden;
     animation: slideUp 0.3s;
+    display: flex;
+    flex-direction: column;
 
     @media (max-width: 768px) {
       width: 95%;
       max-width: 95vw;
-      max-height: 85vh;
+      max-height: 90vh;
     }
 
     @media (max-width: 480px) {
       width: 98%;
       max-width: 98vw;
-      max-height: 80vh;
+      max-height: 85vh;
       border-radius: 15px;
     }
   }
@@ -441,8 +444,41 @@
   }
 }
 
+// Botão Pular Revelação
+.skip-btn {
+  position: absolute !important;
+  top: 20px !important;
+  right: 20px !important;
+  left: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  z-index: 1000;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #ffc107, #ff9800);
+  border: 2px solid #ffc107;
+  color: #000;
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: 30px;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    border-color: #ff9800;
+    transform: scale(1.05) !important;
+    box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6);
+  }
+
+  i {
+    margin-right: 0.5rem;
+  }
+}
+
 .box-result {
   padding: 2rem;
+  border-radius: 20px;
+  min-height: 500px;
 
   .result-card {
     text-align: center;
@@ -451,12 +487,10 @@
     position: relative;
     overflow: hidden;
     animation: resultAppear 0.45s;
-
-    /* Visual mais moderno: vidro translúcido com borda suave e glow */
-    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-    border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(8px) saturate(1.05);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 28px rgba(138, 43, 226, 0.08);
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
 
     .rarity-glow {
       position: absolute;
@@ -481,7 +515,7 @@
       margin: 0 auto 1rem;
       display: block;
       animation: itemFloat 2s ease-in-out infinite;
-      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      background: #ffffff;
       border-radius: 16px;
       padding: 1rem;
       box-shadow: 0 6px 18px rgba(0,0,0,0.45);
@@ -491,8 +525,9 @@
       position: relative;
       z-index: 1;
       margin-bottom: 0.75rem;
-      color: #fff;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+      color: #ffffff;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+      font-weight: 700;
     }
 
     .rarity-badge {
@@ -587,6 +622,7 @@
   }
 
   .multi-result {
+    position: relative;
     text-align: center;
     padding: 2rem;
 
@@ -603,7 +639,7 @@
     }
 
     .multi-subtitle {
-      color: #ffffff; /* texto branco */
+      color: #ffffff;
       margin-bottom: 2rem;
       font-size: 1.1rem;
       text-align: center;
@@ -633,43 +669,46 @@
       }
     }
 
-    .multi-items-grid {
-      display: grid;
-      grid-template-columns: 1fr; /* Sempre uma coluna para foco no item atual */
-      gap: 1rem;
-      margin-bottom: 2rem;
-      max-height: calc(60vh);
-      overflow-y: auto;
-      align-content: start;
+    // Container para exibição sequencial de um item por vez
+    .current-item-display {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 550px;
+      margin: 1rem 0;
       padding: 1rem;
-      justify-items: center; /* Centralizar horizontalmente */
-      -webkit-overflow-scrolling: touch;
 
-      .multi-item-card {
-        padding: 1.5rem;
-        border: 3px solid;
-        border-radius: 16px;
-        position: relative;
-        overflow: hidden;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        transition: transform 0.18s ease, box-shadow 0.18s ease;
-        min-height: 320px;
-        max-width: 280px;
+      .result-card {
         width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+        max-width: 500px;
+        padding: 2rem 1.5rem;
+        border: 4px solid;
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        position: relative;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
-        /* estado inicial para animar ao entrar */
-        opacity: 0;
-        transform: translateY(12px) scale(0.99);
-        animation: multiItemIn 0.48s cubic-bezier(.2,.9,.3,1) both;
+        // Estados de animação
+        &.item-exiting {
+          animation: itemExitAnimation 0.6s cubic-bezier(0.6, 0.04, 0.98, 0.335) forwards;
+        }
+
+        &.item-entering {
+          animation: itemEnterAnimation 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        &.first-item, &.card-revealing {
+          animation: cardRevealAnimation 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
 
         &:hover {
-          transform: translateY(-2px) scale(1);
+          transform: translateY(-8px) scale(1.02);
+          box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
+        }
+
+        &:active {
+          transform: translateY(-4px) scale(1.01);
         }
 
         .rarity-glow {
@@ -677,30 +716,201 @@
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: 140%;
-          height: 140%;
-          filter: blur(50px);
-          opacity: 0.15;
+          width: 160%;
+          height: 160%;
+          filter: blur(60px);
+          opacity: 0.25;
           z-index: 0;
           border-radius: 50%;
+          animation: glowPulse 3s ease-in-out infinite;
+        }
+
+        .item-image {
+          position: relative;
+          z-index: 1;
+          width: 100%;
+          max-width: 240px;
+          height: 240px;
+          object-fit: contain;
+          object-position: center;
+          margin: 0 auto 1rem;
+          display: block;
+          animation: itemImageFloat 3s ease-in-out infinite;
+          background: #ffffff;
+          border-radius: 20px;
+          padding: 1rem;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+
+        h2 {
+          position: relative;
+          z-index: 1;
+          margin-bottom: 0.75rem;
+          color: #1a1a1a;
+          font-size: 1.5rem;
+          font-weight: 800;
+          text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+        }
+
+        .rarity-badge {
+          position: relative;
+          z-index: 1;
+          display: inline-block;
+          padding: 0.5rem 1.5rem;
+          border-radius: 30px;
+          font-weight: 800;
+          font-size: 0.95rem;
+          margin-bottom: 1rem;
+          color: #fff;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+        }
+
+        .item-stats {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          justify-content: center;
+          margin-top: 1rem;
+
+          .power-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.3rem;
+            color: #1a1a1a;
+            font-weight: 700;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 140, 0, 0.25));
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            border: 2px solid rgba(255, 215, 0, 0.6);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+
+            i {
+              color: #ffd700;
+              font-size: 1.5rem;
+              filter: drop-shadow(0 2px 4px rgba(255, 215, 0, 0.5));
+              animation: sparkle 2s ease-in-out infinite;
+            }
+          }
+        }
+
+        // Efeito de clique visual
+        &::after {
+          content: 'Clique para próximo →';
+          position: absolute;
+          bottom: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 0.9rem;
+          color: rgba(255, 140, 0, 1);
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          opacity: 0.9;
+          animation: pulseGlow 2s ease-in-out infinite;
+          z-index: 2;
+        }
+
+        // Esconder o texto quando for último item
+        &.last-item::after {
+          display: none;
+        }
+      }
+
+      @media (max-width: 768px) {
+        padding: 1rem;
+        min-height: 400px;
+
+        .result-card {
+          max-width: 100%;
+          padding: 2rem 1.5rem;
+
+          h2 {
+            font-size: 1.6rem;
+          }
+
+          .item-image {
+            max-width: 220px;
+            height: 220px;
+          }
+        }
+      }
+    }
+
+    .multi-items-grid {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      max-height: calc(70vh);
+      overflow-y: auto;
+      padding: 1rem;
+      -webkit-overflow-scrolling: touch;
+
+      // Grid para 5 caixas - 1 fileira
+      &.grid-5 {
+        grid-template-columns: repeat(5, 1fr);
+        
+        @media (max-width: 1200px) {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        
+        @media (max-width: 768px) {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      // Grid para 10 caixas - 2 fileiras de 5
+      &.grid-10 {
+        grid-template-columns: repeat(5, 1fr);
+        
+        @media (max-width: 1200px) {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        
+        @media (max-width: 768px) {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      .multi-item-card {
+        padding: 1rem;
+        border: 3px solid;
+        border-radius: 16px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: translateY(12px) scale(0.99);
+        animation: multiItemIn 0.48s cubic-bezier(.2,.9,.3,1) both;
+
+        &:hover {
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
         }
 
         .multi-item-image {
           position: relative;
           z-index: 1;
           width: 100%;
-          max-width: 180px;
-          height: 180px;
+          max-width: 120px;
+          height: 120px;
           object-fit: contain;
           object-position: center;
-          margin-bottom: 1rem;
-          background: rgba(255, 255, 255, 0.1);
+          margin-bottom: 0.75rem;
+          background: rgba(255, 255, 255, 0.9);
           border-radius: 12px;
-          padding: 0.8rem;
+          padding: 0.5rem;
           transform-origin: center;
           animation: multiImagePop 0.36s cubic-bezier(.2,.9,.25,1) both;
           animation-delay: inherit;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
         }
 
         .multi-item-info {
@@ -710,21 +920,22 @@
           width: 100%;
 
           h4 {
-            margin: 0 0 0.75rem 0;
-            font-size: 1.1rem;
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
             font-weight: 700;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-            line-height: 1.3;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+            line-height: 1.2;
           }
 
           .rarity-badge {
             display: inline-block;
-            padding: 0.4rem 1rem;
+            padding: 0.3rem 0.75rem;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             font-weight: bold;
-            margin-bottom: 0.75rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            margin-bottom: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
@@ -733,19 +944,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.4rem;
-            font-size: 0.9rem;
-            color: #555;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+            color: #fff;
             font-weight: 600;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 
             i {
               color: #ffd54f;
-              filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+              filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
             }
           }
         }
 
-        // Estilo para quando o card é clicável
         &.clickable {
           cursor: pointer;
           
@@ -1201,309 +1412,168 @@
 
 
 .portal-animation-overlay {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 2005 !important;
-  backdrop-filter: blur(8px);
+  z-index: 9999;
+  background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
-  animation: overlayFadeIn 0.8s ease-out;
+  animation: overlayFadeIn 0.3s ease-out;
+  border-radius: 20px;
+  overflow: hidden;
 
   @keyframes overlayFadeIn {
     from {
       opacity: 0;
-      backdrop-filter: blur(0px);
     }
     to {
       opacity: 1;
-      backdrop-filter: blur(8px);
     }
   }
 }
 
 .skip-animation-btn {
-  /* Fixado na viewport para sempre permanecer no canto superior direito */
-  position: fixed;
+  position: absolute;
   top: 20px;
   right: 20px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 2px solid #ffd54f;
-  border-radius: 25px;
-  color: #333;
-  padding: 8px 16px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid rgba(255, 215, 0, 0.8);
+  border-radius: 30px;
+  color: #ffd700;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  z-index: 10020; /* Mais alto que o vídeo */
+  z-index: 10002;
   display: flex;
   align-items: center;
-  gap: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.5);
   backdrop-filter: blur(10px);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 
   &:hover {
-    background: #ffd54f;
+    background: rgba(255, 215, 0, 0.95);
     border-color: #ffca28;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    color: #000;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 25px rgba(255, 215, 0, 0.7);
   }
 
   &:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transform: translateY(0) scale(1);
+    box-shadow: 0 2px 12px rgba(255, 215, 0, 0.5);
   }
 
   i {
-    font-size: 1rem;
+    font-size: 1.2rem;
   }
 
-  // Responsividade
   @media (max-width: 768px) {
     top: 15px;
     right: 15px;
-    padding: 6px 12px;
+    padding: 10px 18px;
+    font-size: 0.9rem;
+
+    i {
+      font-size: 1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    top: 12px;
+    right: 12px;
+    padding: 8px 14px;
     font-size: 0.8rem;
 
     i {
       font-size: 0.9rem;
     }
   }
+}
 
-  @media (max-width: 480px) {
-    top: 10px;
-    right: 10px;
-    padding: 5px 10px;
-    font-size: 0.75rem;
+.fullscreen-animation-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 20px;
 
-    i {
-      font-size: 0.8rem;
+  .fullscreen-opening-video,
+  .fullscreen-opening-gif {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: cover;
+    z-index: 10000;
+    border-radius: 20px;
+  }
+
+  .animation-fallback-fullscreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+
+    .fallback-spinner {
+      text-align: center;
+      animation: pulseGlow 2s infinite;
+
+      i {
+        font-size: 8rem;
+        color: #ffd700;
+        filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8));
+        animation: rotateStar 3s linear infinite;
+      }
+
+      @keyframes rotateStar {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes pulseGlow {
+        0%, 100% {
+          opacity: 0.7;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.1);
+        }
+      }
     }
   }
 } 
 
-.portal-animation-modal {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  border-radius: 20px;
-  padding: 2.5rem;
-  max-width: 1440px;
-  width: 95%;
-  box-shadow: 
-    0 24px 48px rgba(0, 0, 0, 0.55),
-    0 0 80px rgba(138, 43, 226, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(138, 43, 226, 0.28);
-  animation: modalSlideIn 0.9s ease-out;
-  overflow: visible;
+// Removido - não mais necessário com tela cheia
+// .portal-animation-modal, .portal-header, .portal-subtitle, .portal-animation-container, .portal-footer foram simplificados
 
-  @keyframes modalSlideIn {
-    from {
-      opacity: 0;
-      transform: scale(0.92) translateY(24px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-
-  @media (max-width: 1200px) {
-    max-width: 760px;
-    padding: 2rem;
-    width: 100%;
-  }
-
-  @media (max-width: 960px) {
-    max-width: 100%;
-    padding: 1.5rem;
-  }
-
-  @media (min-width: 961px) and (max-width: 1280px) {
-    max-width: 1100px;
-    padding: 2rem;
-    width: 95%;
-    border-radius: 18px;
-  }
-
-  @media (max-width: 960px) {
-    max-width: 98%;
-    padding: 1rem;
-  }
-}
-
-.portal-header {
-  text-align: center;
-  margin-bottom: 2rem;
-  position: relative; /* acima do vídeo */
-  z-index: 10005;
-
-  h3 {
-    color: #ffffff;
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
-    animation: titleGlow 2s ease-in-out infinite alternate;
-
-    @keyframes titleGlow {
-      from { text-shadow: 0 0 20px rgba(138, 43, 226, 0.5); }
-      to { text-shadow: 0 0 30px rgba(138, 43, 226, 0.8), 0 0 40px rgba(138, 43, 226, 0.4); }
-    }
-
-    @media (max-width: 480px) {
-      font-size: 1.5rem;
-    }
-  }
-}
-
-.portal-subtitle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  color: #b794f6;
-  font-size: 1.1rem;
-  font-weight: 500;
-  position: relative;
-  z-index: 10005;
-
-  i {
-    font-size: 1.2rem;
-    animation: magicSparkle 1.5s ease-in-out infinite;
-  }
-
-  span {
-    background: linear-gradient(45deg, #b794f6, #9f7aea);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  @keyframes magicSparkle {
-    0%, 100% { transform: scale(1); opacity: 0.8; }
-    50% { transform: scale(1.2); opacity: 1; }
-  }
-}
-
-.portal-animation-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 2rem 0;
-  min-height: 600px; 
-  overflow: visible; 
-
-  @media (max-width: 1280px) {
-    margin: 1.5rem 0;
-  }
-
-  @media (max-width: 960px) {
-    margin: 1rem 0;
-  }
-
-  
-  .custom-opening-animation {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    max-width: 1000px; /* Aumentado para dar mais espaço */
-    margin: 0 auto;
-    overflow: visible; /* Permite que o vídeo/gif não seja cortado */
-
-    /* Centralizar o vídeo/GIF cobrindo a viewport, mantendo-o atrás do UI */
-    .opening-video, .opening-gif {
-      /* usar dimensões mínimas para garantir cobertura e centralizar com transform */
-      min-width: 100vw;
-      min-height: 100vh;
-      width: auto;
-      height: auto;
-      object-fit: cover; /* Cobre toda a viewport */
-      object-position: center center; /* Força o centro do conteúdo */
-      border-radius: 0;
-      box-shadow: none;
-      display: block;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%); /* Centraliza */
-      z-index: 10000;
-      pointer-events: none; /* Não bloqueia clique */
-
-      @media (max-width: 900px) {
-        object-fit: cover;
-      }
-
-      @media (max-width: 480px) {
-        object-fit: cover;
-      }
-    }
-
-
-    //.opening-gif {
-      // GIFs podem ter tratamento especial se necessário
-    }
-
-    .animation-fallback {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      height: 400px;
-      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.3));
-      border-radius: 12px;
-      border: 2px solid rgba(255,215,0,0.3);
-
-      .fallback-spinner {
-        text-align: center;
-        animation: pulse 2s infinite;
-
-        i {
-          font-size: 4rem;
-          display: block;
-          margin-bottom: 1rem;
-          filter: drop-shadow(0 0 10px rgba(255,215,0,0.5));
-        }
-
-        .fallback-text {
-          font-size: 1.2rem;
-          font-weight: 600;
-          color: #ffd700;
-          text-shadow: 0 0 10px rgba(255,215,0,0.5);
-        }
-      }
-    }
-  }
-
-.portal-footer {
-  text-align: center;
-  margin-top: 2rem;
-  position: relative;
-  z-index: 10005;
-}
-
-.loading-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  color: #e2e8f0;
-  font-size: 1rem;
-
-  .loading-message {
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; }
-  }
-}
 
 // Animações para transição sequencial de itens
 @keyframes itemExit {
@@ -1568,46 +1638,114 @@
   }
 }
 
+// Novas animações para revelação sequencial aprimorada
+@keyframes itemExitAnimation {
+  0% {
+    transform: translateY(0) scale(1) rotateY(0deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  100% {
+    transform: translateY(-50px) scale(0.85) rotateY(-15deg);
+    opacity: 0;
+    filter: blur(8px);
+  }
+}
+
+@keyframes itemEnterAnimation {
+  0% {
+    transform: translateY(50px) scale(0.85) rotateY(15deg);
+    opacity: 0;
+    filter: blur(8px);
+  }
+  60% {
+    transform: translateY(-10px) scale(1.05) rotateY(-2deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  100% {
+    transform: translateY(0) scale(1) rotateY(0deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+@keyframes cardRevealAnimation {
+  0% {
+    transform: scale(0.5) rotateZ(-5deg);
+    opacity: 0;
+    filter: blur(10px);
+  }
+  50% {
+    transform: scale(1.1) rotateZ(2deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  100% {
+    transform: scale(1) rotateZ(0deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    opacity: 0.2;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+@keyframes itemImageFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 0.8;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  }
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 1), 0 0 30px rgba(255, 215, 0, 0.7);
+  }
+}
+
 // Classe para animação de saída
 .item-exiting {
   animation: itemExit 0.5s ease-in forwards;
-  pointer-events: none; // Evita cliques durante a transição
-  z-index: 1; // Garante que fique atrás durante saída
+  pointer-events: none;
+  z-index: 1;
 }
 
 // Classe para animação de entrada
 .item-entering {
   animation: itemEnter 0.6s ease-out forwards;
-  animation-delay: 0.1s; // Pequeno delay para suavizar a transição
-  z-index: 2; // Garante que fique na frente durante entrada
-  
-  // Efeito misterioso apenas nos elementos internos, não na borda/cor de fundo
-  .rarity-glow {
-    background: rgba(108, 117, 125, 0.1) !important;
-    opacity: 0.3 !important;
-  }
-  
-  .rarity-badge {
-    filter: grayscale(100%) brightness(0.7) !important;
-    opacity: 0.7 !important;
-  }
-  
-  .item-image {
-    filter: grayscale(100%) brightness(0.7) !important;
-    opacity: 0.7 !important;
-  }
-  
-  // Não aplicar filtros na borda e box-shadow para preservar cores de raridade
-  border-color: var(--rarity-color) !important;
-  box-shadow: 0 0 15px var(--rarity-glow) !important;
+  animation-delay: 0.1s;
+  z-index: 2;
 }
 
 // Classe para efeito de brilho durante transição
 .item-transitioning {
-  .rarity-glow {
-    animation: sparkleEffect 0.3s ease-in-out infinite;
-  }
-  
   .item-image {
     animation: magicBurst 0.5s ease-out;
   }
@@ -1616,63 +1754,6 @@
 // Animação especial para o primeiro item
 .first-item {
   animation: cardFadeIn 1s ease-out;
-}
-
-// Animação de revelação completa do card
-@keyframes cardReveal {
-  0% {
-    border-color: #6c757d;
-    box-shadow: 0 0 15px rgba(108, 117, 125, 0.2);
-  }
-  30% {
-    border-color: #6c757d;
-    box-shadow: 0 0 20px rgba(108, 117, 125, 0.3);
-  }
-  60% {
-    border-color: #6c757d;
-    box-shadow: 0 0 25px rgba(108, 117, 125, 0.4);
-  }
-  100% {
-    border-color: var(--rarity-color);
-    box-shadow: 0 0 35px var(--rarity-glow);
-  }
-}
-
-@keyframes glowReveal {
-  0% {
-    background: radial-gradient(circle, rgba(108, 117, 125, 0.1) 0%, transparent 70%);
-    opacity: 0.3;
-  }
-  30% {
-    background: radial-gradient(circle, rgba(108, 117, 125, 0.2) 0%, transparent 70%);
-    opacity: 0.5;
-  }
-  60% {
-    background: radial-gradient(circle, rgba(108, 117, 125, 0.3) 0%, transparent 70%);
-    opacity: 0.7;
-  }
-  100% {
-    background: var(--rarity-glow);
-    opacity: 1;
-  }
-}
-
-@keyframes badgeReveal {
-  0% {
-    filter: grayscale(100%) brightness(0.7);
-    transform: scale(0.9);
-    opacity: 0.7;
-  }
-  50% {
-    filter: grayscale(50%) brightness(0.8);
-    transform: scale(1.05);
-    opacity: 0.9;
-  }
-  100% {
-    filter: grayscale(0%) brightness(1);
-    transform: scale(1);
-    opacity: 1;
-  }
 }
 
 // Classe para efeito misterioso

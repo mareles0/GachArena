@@ -1,141 +1,133 @@
-<div class="missions-container">
-<img src="https://i.pinimg.com/originals/a6/ac/92/a6ac9244c02998a5dcce22c324d8d8a4.gif" class="bg-gif" alt="" aria-hidden="true">
-     
-    <video autoplay muted loop class="bg-video">
-        <source src="assets/backgrounds/welcome.webm" type="video/webm">
-        <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
-    </video>
+<div class="missions-page">
+  <!-- Background -->
+  <img src="https://i.pinimg.com/originals/a6/ac/92/a6ac9244c02998a5dcce22c324d8d8a4.gif" class="bg-gif" alt="" aria-hidden="true">
+  
+  <video autoplay muted loop class="bg-video">
+    <source src="assets/backgrounds/welcome.webm" type="video/webm">
+    <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
+  </video>
 
-  <div class="notification-container" *ngIf="notification.show">
-    <div class="notification" [ngClass]="notification.type">{{ notification.message }}</div>
+  <!-- Notification -->
+  <div class="notification-toast" 
+       *ngIf="notification.show"
+       [class.success]="notification.type === 'success'"
+       [class.error]="notification.type === 'error'"
+       [class.info]="notification.type === 'info'">
+    <i class="bi" 
+       [class.bi-check-circle-fill]="notification.type === 'success'"
+       [class.bi-x-circle-fill]="notification.type === 'error'"
+       [class.bi-info-circle-fill]="notification.type === 'info'"></i>
+    <span>{{ notification.message }}</span>
   </div>
 
-  <h1><i class="bi bi-list-check"></i> Missões</h1>
+  <!-- Header -->
+  <div class="missions-header">
+    <h1><i class="bi bi-calendar-check-fill"></i> Login Diário</h1>
+    <p class="subtitle">Complete dias consecutivos para ganhar recompensas!</p>
+  </div>
 
-  <div class="loading" *ngIf="isLoading">
-    <div class="spinner"></div>
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner-border text-light" role="status">
+      <span class="visually-hidden">Carregando...</span>
+    </div>
     <p>Carregando missões...</p>
   </div>
 
-  <div *ngIf="!isLoading">
-    <div class="mission-tabs">
-      <button [class.active]="view==='all'" (click)="view='all'">Todas</button>
-      <button [class.active]="view==='diarias'" (click)="view='diarias'">Diárias</button>
-      <button [class.active]="view==='desafios'" (click)="view='desafios'">Desafios</button>
-    </div>
+  <!-- Content -->
+  <div *ngIf="!isLoading" class="missions-content">
+    
+    <!-- Missões Diárias -->
+    <div *ngIf="dailyUserMissions.length > 0" class="daily-missions-container">
+      <div class="daily-mission-panel" *ngFor="let um of dailyUserMissions">
+        
+        <!-- Header Info -->
+        <div class="daily-info-header">
+          <div class="info-left">
+            <h2>{{ um.mission?.title || 'Recompensas de Login' }}</h2>
+            <p>{{ um.mission?.description || 'Faça login diariamente para coletar recompensas' }}</p>
+          </div>
+          <div class="info-right">
+            <div class="days-counter">
+              <i class="bi bi-calendar3"></i>
+              <span>{{ (um.claimedDays || []).length }} / {{ (um.mission?.dailyRewards || []).length }} Dias</span>
+            </div>
+          </div>
+        </div>
 
-    <!-- Missões em Progresso -->
-    <section *ngIf="userMissions.length > 0 && (view==='all' || view==='diarias' || view==='desafios')">
-      <h2>Minhas Missões</h2>
+        <!-- Grid de Dias -->
+        <div class="days-grid">
+          <div class="day-cell" 
+               *ngFor="let day of um.mission?.dailyRewards || []"
+               [class.claimed]="isDayClaimed(um, day.day)"
+               [class.available]="getNextUnclaimedDay(um) === day.day && isDayAvailable(um)"
+               [class.locked]="getNextUnclaimedDay(um) !== day.day && !isDayClaimed(um, day.day)">
+            
+            <div class="day-header">
+              <span class="day-number">Dia {{ day.day }}</span>
+              <i *ngIf="isDayClaimed(um, day.day)" class="bi bi-check-circle-fill status-icon claimed-icon"></i>
+              <i *ngIf="getNextUnclaimedDay(um) === day.day && isDayAvailable(um)" class="bi bi-gift-fill status-icon available-icon"></i>
+            </div>
 
-      <!-- Diárias em formato de painel -->
-      <div *ngIf="(view==='all' || view==='diarias')">
-        <div class="daily-in-progress" *ngFor="let um of dailyUserMissions">
-          <h3>{{ um.mission?.title }}</h3>
-          <p>{{ um.mission?.description }}</p>
-          <div class="daily-board">
-            <div class="day" *ngFor="let d of um.mission?.dailyRewards">
-              <div class="day-inner" [class.active]="getCurrentDailyDay(um) === d.day">
-                <img [src]="d.imageUrl || 'assets/default-card.png'" alt="">
-                <div class="day-label">{{ d.label || ('Dia ' + d.day) }}</div>
-                <div class="day-reward">{{ d.rewardNormal || 0 }} 🎫 / {{ d.rewardPremium || 0 }} 💎</div>
-                <div class="day-collected" *ngIf="isDayClaimed(um, d.day)">Coletado</div>
-                <div *ngIf="!isDayClaimed(um, d.day) && getNextUnclaimedDay(um) === d.day" class="day-action">
-                  <button class="btn-claim-day" (click)="claimDaily(um, d.day)" [disabled]="!isDayAvailable(um)">
-                    <span *ngIf="isDayAvailable(um); else waiting">Coletar</span>
-                    <ng-template #waiting>Disponível em {{ timeUntilNext(um) }}</ng-template>
-                  </button>
-                </div>
-                <div *ngIf="!isDayClaimed(um, d.day) && getNextUnclaimedDay(um) !== d.day" class="day-future">Bloqueado</div>
+            <div class="day-reward">
+              <div *ngIf="day.reward && day.reward.normalTickets && day.reward.normalTickets > 0" class="reward-badge normal">
+                <img src="https://static.wikitide.net/cravesagawiki/4/46/Platinum_Gacha_Ticket.png" alt="Ticket">
+                <span>×{{ day.reward.normalTickets }}</span>
+              </div>
+              <div *ngIf="day.reward && day.reward.premiumTickets && day.reward.premiumTickets > 0" class="reward-badge premium">
+                <img src="https://static.wikitide.net/cravesagawiki/f/fe/SR_or_Higher_Gacha_Ticket.png" alt="Premium">
+                <span>×{{ day.reward.premiumTickets }}</span>
               </div>
             </div>
-          </div>
-          <div class="daily-actions">
-            <button *ngIf="um.completed && !um.claimed" (click)="claimReward(um)" class="btn-claim">Coletar</button>
-            <button *ngIf="!um.completed" class="btn-start" (click)="startMission(um.mission?.id || '')">Iniciar</button>
-          </div>
-        </div>
-      </div>
 
-      <!-- Outras missões (desafios/minhas missões) -->
-      <div *ngIf="(view==='all' || view==='desafios')">
-        <div class="missions-grid">
-          <div class="mission-card" *ngFor="let um of otherUserMissions">
-            <div class="mission-header">
-              <i class="bi" [ngClass]="getMissionIcon(um.mission?.type || '')"></i>
-              <h3>{{ um.mission?.title }}</h3>
-            </div>
-            <p>{{ um.mission?.description }}</p>
-            <div class="progress-bar">
-              <div class="progress-fill" [style.width.%]="getProgressPercentage(um)"></div>
-            </div>
-            <div class="mission-footer">
-              <span class="reward">
-                <img src="https://static.wikitide.net/cravesagawiki/4/46/Platinum_Gacha_Ticket.png" alt="Ticket" class="reward-ticket" *ngIf="um.mission?.rewardNormal">
-                <span class="reward-amount">{{ um.mission?.rewardNormal || 0 }}</span>
-                <img src="https://static.wikitide.net/cravesagawiki/f/fe/SR_or_Higher_Gacha_Ticket.png" alt="Premium" class="reward-ticket" *ngIf="um.mission?.rewardPremium">
-                <span class="reward-amount premium">{{ um.mission?.rewardPremium || 0 }}</span>
-              </span>
-              <button 
-                *ngIf="um.completed && !um.claimed" 
-                (click)="claimReward(um)"
-                class="btn-claim">
+            <div class="day-action">
+              <button *ngIf="getNextUnclaimedDay(um) === day.day && isDayAvailable(um)" 
+                      class="btn-claim"
+                      (click)="claimDaily(um, day.day)">
+                <i class="bi bi-hand-thumbs-up-fill"></i>
                 Coletar
               </button>
-              <button *ngIf="um.completed && um.claimed" class="btn-claim claimed" disabled>Coletado</button>
+
+              <div *ngIf="isDayClaimed(um, day.day)" class="status-label claimed">
+                <i class="bi bi-check-lg"></i> Coletado
+              </div>
+
+              <div *ngIf="getNextUnclaimedDay(um) === day.day && !isDayAvailable(um)" class="status-label wait">
+                <i class="bi bi-clock"></i> {{ timeUntilNext(um) }}
+              </div>
+
+              <div *ngIf="getNextUnclaimedDay(um) !== day.day && !isDayClaimed(um, day.day)" class="status-label locked">
+                <i class="bi bi-lock-fill"></i>
+              </div>
             </div>
+
           </div>
         </div>
+
       </div>
-    </section>
+    </div>
 
     <!-- Missões Disponíveis -->
-    <section *ngIf="availableMissions.length > 0">
-      <h2>Disponíveis</h2>
-
-      <div *ngIf="view==='all' || view==='diarias'">
-        <div class="daily-available" *ngFor="let mission of dailyAvailable">
-          <h3>{{ mission.title }}</h3>
+    <div *ngIf="dailyAvailable.length > 0" class="available-missions">
+      <h3><i class="bi bi-plus-circle"></i> Missões Disponíveis</h3>
+      <div class="available-grid">
+        <div class="available-card" *ngFor="let mission of dailyAvailable" (click)="startMission(mission.id!)">
+          <i class="bi bi-calendar-plus-fill mission-icon"></i>
+          <h4>{{ mission.title }}</h4>
           <p>{{ mission.description }}</p>
-          <div class="daily-board small">
-            <div class="day" *ngFor="let d of mission.dailyRewards">
-              <img [src]="d.imageUrl || 'assets/default-card.png'" alt="">
-              <div class="day-label">{{ d.label || ('Dia ' + d.day) }}</div>
-              <div class="day-reward">{{ d.rewardNormal || 0 }} 🎫</div>
-            </div>
-          </div>
-          <div class="mission-footer">
-            <button (click)="startMission(mission.id || '')" class="btn-start">Iniciar</button>
-          </div>
+          <button class="btn-start">
+            <i class="bi bi-play-fill"></i> Iniciar
+          </button>
         </div>
       </div>
-
-      <div *ngIf="view==='all' || view==='desafios'">
-        <div class="missions-grid">
-          <div class="mission-card available" *ngFor="let mission of otherAvailable">
-            <div class="mission-header">
-              <i class="bi" [ngClass]="getMissionIcon(mission.type)"></i>
-              <h3>{{ mission.title }}</h3>
-            </div>
-            <p>{{ mission.description }}</p>
-            <div *ngIf="mission.autoComplete" class="auto-badge">Coletável</div>
-            <div class="mission-footer">
-              <span class="reward">
-                <img src="https://static.wikitide.net/cravesagawiki/4/46/Platinum_Gacha_Ticket.png" alt="Ticket" class="reward-ticket" *ngIf="mission.rewardNormal">
-                <span class="reward-amount">{{ mission.rewardNormal || 0 }}</span>
-                <img src="https://static.wikitide.net/cravesagawiki/f/fe/SR_or_Higher_Gacha_Ticket.png" alt="Premium" class="reward-ticket" *ngIf="mission.rewardPremium">
-                <span class="reward-amount premium">{{ mission.rewardPremium || 0 }}</span>
-              </span>
-              <button (click)="startMission(mission.id || '')" class="btn-start">Iniciar</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <div class="empty-state" *ngIf="userMissions.length === 0 && availableMissions.length === 0">
-      <i class="bi bi-list-check"></i>
-      <p>Nenhuma missão disponível no momento</p>
     </div>
+
+    <!-- Empty State -->
+    <div *ngIf="dailyUserMissions.length === 0 && dailyAvailable.length === 0 && !isLoading" class="empty-state">
+      <i class="bi bi-calendar-x"></i>
+      <h3>Nenhuma missão diária disponível</h3>
+      <p>Aguarde novas missões serem criadas pelo administrador</p>
+    </div>
+
   </div>
 </div>

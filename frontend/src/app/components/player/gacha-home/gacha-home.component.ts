@@ -289,9 +289,15 @@ export class GachaHomeComponent implements OnInit {
   async openMultiBox() {
     if (!this.selectedBox) return;
 
+    // Validar tickets ANTES de começar
+    const required = this.getRequiredTickets();
+    if (!this.hasEnoughTickets()) {
+      this.showNotification(`❌ Tickets insuficientes! Você precisa de ${required.normal || required.premium} tickets para abrir ${required.normal || required.premium} caixas.`, 'error');
+      return;
+    }
+
     this.isMultiOpening = true;
     this.multiResults = [];
-    const required = this.getRequiredTickets();
     const totalOpens = required.normal + required.premium;
 
     // Verificar se há animação específica da caixa
@@ -306,27 +312,49 @@ export class GachaHomeComponent implements OnInit {
     }
 
     try {
-      // Abrir caixas baseado no tipo selecionado
+      // Abrir caixas baseado no tipo selecionado - PROCESSAMENTO EM PARALELO
       if (this.selectedBox.type === 'NORMAL') {
-        // Abrir 10 caixas normais
-        for (let i = 0; i < required.normal; i++) {
-          const used = await this.ticketService.useTicket(this.userId, 'NORMAL');
-          if (used) {
-            const item = await this.itemService.drawRandomItem(this.selectedBox.id);
+        // Abrir 10 caixas normais em paralelo
+        const promises = Array.from({ length: required.normal }, async (_, i) => {
+          try {
+            const used = await this.ticketService.useTicket(this.userId, 'NORMAL');
+            if (!used) {
+              console.error(`[GachaHome] Falha ao usar ticket ${i+1}`);
+              return null;
+            }
+            const item = await this.itemService.drawRandomItem(this.selectedBox!.id);
             await this.itemService.addItemToUser(this.userId, item.id);
-            this.multiResults.push(item);
+            console.log(`[GachaHome] Item ${i+1} obtido:`, item.name);
+            return item;
+          } catch (itemError) {
+            console.error(`[GachaHome] Erro ao processar item ${i+1}:`, itemError);
+            return null;
           }
-        }
+        });
+
+        const results = await Promise.all(promises);
+        this.multiResults = results.filter((item): item is Item => item !== null);
       } else {
-        // Abrir 5 caixas premium
-        for (let i = 0; i < required.premium; i++) {
-          const used = await this.ticketService.useTicket(this.userId, 'PREMIUM');
-          if (used) {
-            const item = await this.itemService.drawRandomItem(this.selectedBox.id);
+        // Abrir 5 caixas premium em paralelo
+        const promises = Array.from({ length: required.premium }, async (_, i) => {
+          try {
+            const used = await this.ticketService.useTicket(this.userId, 'PREMIUM');
+            if (!used) {
+              console.error(`[GachaHome] Falha ao usar ticket premium ${i+1}`);
+              return null;
+            }
+            const item = await this.itemService.drawRandomItem(this.selectedBox!.id);
             await this.itemService.addItemToUser(this.userId, item.id);
-            this.multiResults.push(item);
+            console.log(`[GachaHome] Item ${i+1} obtido:`, item.name);
+            return item;
+          } catch (itemError) {
+            console.error(`[GachaHome] Erro ao processar item premium ${i+1}:`, itemError);
+            return null;
           }
-        }
+        });
+
+        const results = await Promise.all(promises);
+        this.multiResults = results.filter((item): item is Item => item !== null);
       }
 
       this.tickets = await this.ticketService.getUserTickets(this.userId);
@@ -430,7 +458,7 @@ export class GachaHomeComponent implements OnInit {
   }
 
   onVideoError() {
-    console.warn('[GachaHome] Erro ao carregar vídeo, tentando fallback...');
+    console.log('[GachaHome] Vídeo não encontrado ou erro ao carregar. Usando animação fallback.');
     // Se o vídeo falhar, tenta usar GIF ou animação padrão
     if (this.currentAnimationType === 'video' && this.currentAnimationSrc) {
       // Tenta converter para GIF se possível
@@ -444,12 +472,19 @@ export class GachaHomeComponent implements OnInit {
         return;
       }
     }
-    // Se não conseguir fallback, força completar em 3 segundos
+    // Se não conseguir fallback, força completar em 3 segundos com animação padrão
+    this.forceAnimationType = null;
+    this.forceAnimationSrc = null;
+    this.cd.detectChanges();
     this.forceCompleteAnimation();
   }
 
   onGifError() {
-    console.warn('[GachaHome] Erro ao carregar GIF, usando animação padrão...');
+    console.log('[GachaHome] GIF não encontrado ou erro ao carregar. Usando animação padrão.');
+    // Usar animação fallback
+    this.forceAnimationType = null;
+    this.forceAnimationSrc = null;
+    this.cd.detectChanges();
     this.forceCompleteAnimation();
   }
 
@@ -566,6 +601,11 @@ export class GachaHomeComponent implements OnInit {
     this.currentMultiIndex = this.multiResults.length - 1;
     console.debug('[GachaHome] skipped to show all', this.multiResults.length, 'items');
     this.cd.detectChanges();
+  }
+
+  skipToAllItems() {
+    // Método alternativo para pular revelação
+    this.skipMultiReveal();
   }
 
   // Método removido - getCardGachaConfig não é mais necessário

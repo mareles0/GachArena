@@ -74,7 +74,14 @@ export class ManageMissionsComponent implements OnInit {
     this.editingMission = { ...mission };
     // ensure dailyRewards exists for daily missions when editing
     if (this.editingMission.type === 'DAILY' && (!this.editingMission.dailyRewards || this.editingMission.dailyRewards.length === 0)) {
-      this.editingMission.dailyRewards = [{ day: 1, label: 'Day 1', rewardNormal: 0, rewardPremium: 0, imageUrl: '' }];
+      this.editingMission.dailyRewards = [{ 
+        day: 1, 
+        label: 'Day 1', 
+        reward: { normalTickets: 0, premiumTickets: 0 },
+        rewardNormal: 0, 
+        rewardPremium: 0, 
+        imageUrl: '' 
+      }];
     }
   }
 
@@ -88,7 +95,14 @@ export class ManageMissionsComponent implements OnInit {
     try {
       // Ensure dailyRewards exists if type is DAILY
       if (this.editingMission.type === 'DAILY' && !this.editingMission.dailyRewards) {
-        this.editingMission.dailyRewards = [{ day: 1, label: 'Day 1', rewardNormal: 0, rewardPremium: 0, imageUrl: '' }];
+        this.editingMission.dailyRewards = [{ 
+          day: 1, 
+          label: 'Day 1', 
+          reward: { normalTickets: 0, premiumTickets: 0 },
+          rewardNormal: 0, 
+          rewardPremium: 0, 
+          imageUrl: '' 
+        }];
       }
       // Ensure numeric fields are numbers
       this.editingMission.rewardNormal = Number(this.editingMission.rewardNormal || 0);
@@ -98,6 +112,10 @@ export class ManageMissionsComponent implements OnInit {
         this.editingMission.dailyRewards = this.editingMission.dailyRewards.map(d => ({
           day: Number(d.day || 0),
           label: d.label || (`Day ${d.day}`),
+          reward: { 
+            normalTickets: Number(d.rewardNormal || 0),
+            premiumTickets: Number(d.rewardPremium || 0)
+          },
           rewardNormal: Number(d.rewardNormal || 0),
           rewardPremium: Number(d.rewardPremium || 0),
           imageUrl: d.imageUrl || ''
@@ -174,19 +192,35 @@ export class ManageMissionsComponent implements OnInit {
       title: '',
       description: '',
       type: 'DAILY',
+      goal: { type: 'LOGIN_DAYS', target: 7 },
+      reward: { normalTickets: 0, premiumTickets: 0 },
       requirement: '',
       autoComplete: false,
       rewardNormal: 0,
       rewardPremium: 0,
       active: true,
-      createdAt: new Date()
-      , dailyRewards: [{ day: 1, label: 'Day 1', rewardNormal: 0, rewardPremium: 0, imageUrl: '' }]
+      createdAt: new Date(),
+      dailyRewards: [{ 
+        day: 1, 
+        label: 'Day 1', 
+        reward: { normalTickets: 0, premiumTickets: 0 },
+        rewardNormal: 0, 
+        rewardPremium: 0, 
+        imageUrl: '' 
+      }]
     };
   }
 
   addDailyDay() {
     const dr = this.editingMission.dailyRewards || [];
-    dr.push({ day: dr.length + 1, label: `Day ${dr.length + 1}`, rewardNormal: 0, rewardPremium: 0, imageUrl: '' });
+    dr.push({ 
+      day: dr.length + 1, 
+      label: `Day ${dr.length + 1}`, 
+      reward: { normalTickets: 0, premiumTickets: 0 },
+      rewardNormal: 0, 
+      rewardPremium: 0, 
+      imageUrl: '' 
+    });
     this.editingMission.dailyRewards = dr;
     this.selectedDailyIndex = dr.length - 1; // Select the new day
   }
@@ -206,8 +240,10 @@ export class ManageMissionsComponent implements OnInit {
     const reward = this.editingMission.dailyRewards[index];
     if (type === 'normal') {
       reward.rewardNormal = (reward.rewardNormal || 0) + 1;
+      if (reward.reward) reward.reward.normalTickets = reward.rewardNormal;
     } else {
       reward.rewardPremium = (reward.rewardPremium || 0) + 1;
+      if (reward.reward) reward.reward.premiumTickets = reward.rewardPremium;
     }
   }
 

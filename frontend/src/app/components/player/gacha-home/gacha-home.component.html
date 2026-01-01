@@ -57,8 +57,8 @@
   </div>
 
   <!-- Modal de Abertura de Caixa -->
-  <div class="modal-overlay" *ngIf="selectedBox" (click)="closeModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" *ngIf="selectedBox">
+    <div class="modal-content">
       
       <!-- Resultado -->
       <div class="box-result" *ngIf="showResult">
@@ -82,6 +82,13 @@
 
         <!-- Resultado Múltiplo -->
         <div class="multi-result" *ngIf="openMode === 'multi'">
+          <!-- Botão Pular Revelação -->
+          <button class="btn btn-warning skip-btn" 
+                  (click)="skipToAllItems()" 
+                  *ngIf="revealedMultiResults.length < multiResults.length && currentMultiIndex >= 0">
+            <i class="bi bi-fast-forward-fill"></i> Pular Revelação
+          </button>
+
           <h2 class="multi-title" *ngIf="revealedMultiResults.length < multiResults.length">
             <i class="bi bi-trophy-fill"></i>
             Item {{ currentMultiIndex + 1 }} de {{ multiResults.length }}
@@ -94,41 +101,52 @@
           <p class="multi-subtitle" *ngIf="revealedMultiResults.length === multiResults.length">Você ganhou {{ multiResults.length }} itens!</p>
           
           <!-- Modo de visualização sequencial (um item por vez) -->
-          <div class="current-item-display" *ngIf="revealedMultiResults.length < multiResults.length && revealedMultiResults.length > 0">
+          <div class="current-item-display" *ngIf="revealedMultiResults.length < multiResults.length && currentMultiIndex < multiResults.length">
             <div class="result-card" 
-                 [style.border-color]="getRarityColor(revealedMultiResults[0].rarity)"
-                 [style.--rarity-color]="getRarityColor(revealedMultiResults[0].rarity)"
-                 [style.--rarity-glow]="getRarityColor(revealedMultiResults[0].rarity)"
+                 [style.border-color]="getRarityColor(multiResults[currentMultiIndex].rarity)"
+                 [style.background]="getRarityColor(multiResults[currentMultiIndex].rarity)"
                  [ngClass]="{
                    'item-exiting': isItemTransitioning, 
                    'item-entering': !isItemTransitioning && currentMultiIndex > 0, 
                    'first-item': currentMultiIndex === 0,
-                   'card-revealing': !isItemTransitioning && currentMultiIndex >= 0
+                   'card-revealing': !isItemTransitioning && currentMultiIndex >= 0,
+                   'last-item': currentMultiIndex === multiResults.length - 1
                  }"
-                 (click)="nextMultiItem()">
-              <div class="rarity-glow" [style.background]="getRarityColor(revealedMultiResults[0].rarity)"></div>
-              <img [src]="revealedMultiResults[0].imageUrl" 
-                   [alt]="revealedMultiResults[0].name" 
+                 (click)="currentMultiIndex < multiResults.length - 1 && nextMultiItem()">
+              <img [src]="multiResults[currentMultiIndex].imageUrl" 
+                   [alt]="multiResults[currentMultiIndex].name" 
                    class="item-image">
-              <h2>{{ revealedMultiResults[0].name }}</h2>
-              <div class="rarity-badge" [ngClass]="getRarityClass(revealedMultiResults[0].rarity)">
-                {{ revealedMultiResults[0].rarity }}
+              <h2>{{ multiResults[currentMultiIndex].name }}</h2>
+              <div class="rarity-badge" [ngClass]="getRarityClass(multiResults[currentMultiIndex].rarity)">
+                {{ multiResults[currentMultiIndex].rarity }}
               </div>
               <div class="item-stats">
                 <span class="power-stat">
-                  <i class="bi bi-lightning-fill"></i> Poder: {{ revealedMultiResults[0].power }}
+                  <i class="bi bi-lightning-fill"></i> Poder: {{ multiResults[currentMultiIndex].power }}
                 </span>
               </div>
+              
+              <!-- Botão para último item -->
+              <button class="btn btn-success mt-3" (click)="closeModal(); $event.stopPropagation()" 
+                      *ngIf="currentMultiIndex === multiResults.length - 1"
+                      style="position: relative; z-index: 10;">
+                <i class="bi bi-check-circle"></i> Continuar
+              </button>
             </div>
           </div>
 
-          <!-- Modo de visualização completa (todos os itens) -->
-          <div class="multi-items-grid" *ngIf="revealedMultiResults.length === multiResults.length" #multiGrid>
-            <div class="multi-item-card" *ngFor="let item of revealedMultiResults; let i = index" [style.border-color]="getRarityColor(item.rarity)" [style.animationDelay]="(i * 0.12) + 's'" [style.animationFillMode]="'forwards'">
-              <div class="rarity-glow" [style.background]="getRarityColor(item.rarity)"></div>
+          <!-- Grid de itens revelados (após pular ou terminar) -->
+          <div class="multi-items-grid" 
+               *ngIf="revealedMultiResults.length === multiResults.length"
+               [class.grid-5]="multiResults.length === 5" 
+               [class.grid-10]="multiResults.length === 10">
+            <div class="multi-item-card" *ngFor="let item of revealedMultiResults; let i = index" 
+                 [style.border-color]="getRarityColor(item.rarity)"
+                 [style.background]="getRarityColor(item.rarity)"
+                 [style.animationDelay]="(i * 0.08) + 's'">
               <img [src]="item.imageUrl" [alt]="item.name" class="multi-item-image">
               <div class="multi-item-info">
-                <h4 [ngClass]="getRarityClass(item.rarity)">{{ item.name }}</h4>
+                <h4>{{ item.name }}</h4>
                 <span class="rarity-badge" [ngClass]="getRarityClass(item.rarity)">
                   {{ item.rarity }}
                 </span>
@@ -139,7 +157,7 @@
             </div>
           </div>
 
-          <button class="btn btn-success mt-4" (click)="closeModal()" *ngIf="currentMultiIndex >= multiResults.length - 1 || revealedMultiResults.length === multiResults.length">
+          <button class="btn btn-success mt-4" (click)="closeModal()" *ngIf="revealedMultiResults.length === multiResults.length">
             <i class="bi bi-check-circle"></i> Continuar
           </button>
         </div>
@@ -235,61 +253,42 @@
 
         <!-- Modal de Animação do Portal -->
         <div *ngIf="isAnimating" class="portal-animation-overlay">
-          <div class="portal-animation-modal">
-            <div class="portal-header">
-              <h3>Revelando...</h3>
-              <div class="portal-subtitle">
-                <i class="bi bi-card-text"></i>
-                <span>{{ selectedBox.name }}</span>
-              </div>
-            </div>
+          <!-- Botão de pular fixo no topo -->
+          <button class="skip-animation-btn" 
+                  *ngIf="canSkipAnimation" 
+                  (click)="skipAnimation()">
+            <i class="bi bi-skip-forward-fill"></i> Pular
+          </button>
 
-            <div class="portal-animation-container">
-              <!-- Vídeo ou GIF de abertura personalizado -->
-              <div class="custom-opening-animation">
-                <video #openingVideo *ngIf="effectiveAnimationType === 'video' && effectiveAnimationSrc" 
-                       autoplay 
-                       muted 
-                       volume="0"
-                       playsinline
-                       preload="metadata"
-                       class="opening-video"
-                       (ended)="onAnimationComplete()"
-                       (error)="onVideoError()"
-                       (loadedmetadata)="onVideoMetadata($event)">
-                  <source [src]="effectiveAnimationSrc" type="video/mp4">
-                  <source [src]="effectiveAnimationSrc!.replace('.mp4', '.webm')" type="video/webm">
-                  <source [src]="effectiveAnimationSrc!.replace('.mp4', '.avi')" type="video/avi">
-                  Seu navegador não suporta vídeos.
-                </video>
-                
-                <img *ngIf="effectiveAnimationType === 'gif' && effectiveAnimationSrc" 
-                     [src]="effectiveAnimationSrc" 
-                     alt="Animação de abertura" 
-                     class="opening-gif"
-                     (load)="onGifLoaded()"
-                     (error)="onGifError()">
-                     
-                <!-- Fallback para quando não há animação específica da caixa -->
-                <div *ngIf="!effectiveAnimationSrc" class="animation-fallback">
-                  <div class="fallback-spinner">
-                    <i class="bi bi-stars text-warning"></i>
-                    <div class="fallback-text">Revelando...</div>
-                  </div>
-                </div>
+          <!-- Vídeo ou GIF de abertura em tela cheia -->
+          <div class="fullscreen-animation-container">
+            <video #openingVideo *ngIf="effectiveAnimationType === 'video' && effectiveAnimationSrc" 
+                   autoplay 
+                   muted 
+                   volume="0"
+                   playsinline
+                   preload="metadata"
+                   class="fullscreen-opening-video"
+                   (ended)="onAnimationComplete()"
+                   (error)="onVideoError()"
+                   (loadedmetadata)="onVideoMetadata($event)">
+              <source [src]="effectiveAnimationSrc" type="video/mp4">
+              <source [src]="effectiveAnimationSrc!.replace('.mp4', '.webm')" type="video/webm">
+              <source [src]="effectiveAnimationSrc!.replace('.mp4', '.avi')" type="video/avi">
+            </video>
+            
+            <img *ngIf="effectiveAnimationType === 'gif' && effectiveAnimationSrc" 
+                 [src]="effectiveAnimationSrc" 
+                 alt="Animação de abertura" 
+                 class="fullscreen-opening-gif"
+                 (load)="onGifLoaded()"
+                 (error)="onGifError()">
+                 
+            <!-- Fallback para quando não há animação específica da caixa -->
+            <div *ngIf="!effectiveAnimationSrc" class="animation-fallback-fullscreen">
+              <div class="fallback-spinner">
+                <i class="bi bi-stars"></i>
               </div>
-            </div>
-
-            <div class="portal-footer">
-              <div class="loading-indicator">
-                <i class="bi bi-star-fill text-warning"></i>
-                <span class="loading-message">Revelando Itens...</span>
-              </div>
-              <button class="btn btn-outline-light btn-sm skip-animation-btn" 
-                      *ngIf="canSkipAnimation" 
-                      (click)="skipAnimation()">
-                <i class="bi bi-skip-forward"></i> Pular
-              </button>
             </div>
           </div>
         </div>

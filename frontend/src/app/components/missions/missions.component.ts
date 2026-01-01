@@ -18,7 +18,7 @@ export class MissionsComponent implements OnInit {
   notification = {
     show: false,
     message: '',
-    type: 'success'
+    type: 'success' as 'success' | 'error' | 'info'
   };
 
   constructor(
@@ -27,9 +27,13 @@ export class MissionsComponent implements OnInit {
   ) { }
 
   async ngOnInit() {
-    this.currentUserId = await this.userService.getCurrentUserId() || '';
-    if (this.currentUserId) {
-      await this.loadMissions();
+    try {
+      this.currentUserId = await this.userService.getCurrentUserId() || '';
+      if (this.currentUserId) {
+        await this.loadMissions();
+      }
+    } catch (error) {
+      console.error('Erro ao inicializar missões:', error);
     }
   }
 
@@ -41,12 +45,12 @@ export class MissionsComponent implements OnInit {
         this.missionService.getActiveMissions()
       ]);
 
-      this.userMissions = userMissions;
+      this.userMissions = userMissions || [];
       
-      // Filtrar missões disponíveis (não iniciadas)
-      const startedMissionIds = userMissions.map(um => um.missionId);
-      this.availableMissions = activeMissions.filter(m => !startedMissionIds.includes(m.id || ''));
+      const startedMissionIds = this.userMissions.map(um => um.missionId);
+      this.availableMissions = (activeMissions || []).filter(m => !startedMissionIds.includes(m.id || ''));
     } catch (error) {
+      console.error('Erro ao carregar missões:', error);
       this.showNotification('Erro ao carregar missões', 'error');
     } finally {
       this.isLoading = false;
@@ -64,35 +68,29 @@ export class MissionsComponent implements OnInit {
       this.showNotification('Missão iniciada!', 'success');
       await this.loadMissions();
     } catch (error) {
+      console.error('Erro ao iniciar missão:', error);
       this.showNotification('Erro ao iniciar missão', 'error');
     }
   }
 
   async claimReward(userMission: UserMission & { mission?: Mission }) {
     if (!userMission.mission || !userMission.id) return;
+    
     try {
-      if (userMission.mission.type === 'DAILY') {
-        // For daily missions, claim next available day
-        const nextDay = this.getNextUnclaimedDay(userMission);
-        if (!nextDay) {
-          this.showNotification('Nenhum dia disponível para coletar', 'info');
-          return;
-        }
-        await this.claimDaily(userMission, nextDay);
-        return;
-      }
-
-      // Non-daily: whole mission claim
       if (userMission.claimed) {
         this.showNotification('Recompensa já coletada', 'info');
         return;
       }
 
+      if (!userMission.completed) {
+        this.showNotification('Missão ainda não completada', 'info');
+        return;
+      }
+
       await this.missionService.claimMission(userMission.id);
 
-      // Adicionar recompensas ao usuário (defensive: garantir number)
-      const normal = Number(userMission.mission.rewardNormal || 0);
-      const premium = Number(userMission.mission.rewardPremium || 0);
+      const normal = Number(userMission.mission.reward?.normalTickets || 0);
+      const premium = Number(userMission.mission.reward?.premiumTickets || 0);
 
       if (isFinite(normal) && normal > 0) {
         await this.userService.addTickets(this.currentUserId, normal, 'normal');
@@ -103,7 +101,8 @@ export class MissionsComponent implements OnInit {
 
       this.showNotification('Recompensa coletada!', 'success');
       await this.loadMissions();
-    } catch (error:any) {
+    } catch (error: any) {
+      console.error('Erro ao coletar recompensa:', error);
       this.showNotification(error?.message || 'Erro ao coletar recompensa', 'error');
     }
   }
@@ -111,80 +110,97 @@ export class MissionsComponent implements OnInit {
   getNextUnclaimedDay(um: UserMission & { mission?: Mission }): number | null {
     if (!um.mission || !um.mission.dailyRewards) return null;
     const total = um.mission.dailyRewards.length;
-    const claimed: number[] = (um.claimedDays || []).slice();
+    const claimed: number[] = (um.claimedDays || []);
     for (let d = 1; d <= total; d++) {
       if (!claimed.includes(d)) return d;
     }
     return null;
   }
 
-  isDayClaimed(um: UserMission & { mission?: Mission }, day: number) {
+  isDayClaimed(um: UserMission & { mission?: Mission }, day: number): boolean {
     return (um.claimedDays || []).includes(day);
   }
 
   async claimDaily(um: UserMission & { mission?: Mission }, day: number) {
     if (!um || !um.id) return;
+    
     try {
-      if (!confirm(`Coletar recompensa do Dia ${day}?`)) return;
       await this.missionService.claimDaily(um.id, day);
-      // grant reward to user according to mission.dailyRewards[day-1]
-      const d = (um.mission?.dailyRewards || [])[day - 1];
-      const normal = Number(d?.rewardNormal || 0);
-      const premium = Number(d?.rewardPremium || 0);
-      if (isFinite(normal) && normal > 0) await this.userService.addTickets(this.currentUserId, normal, 'normal');
-      if (isFinite(premium) && premium > 0) await this.userService.addTickets(this.currentUserId, premium, 'premium');
+      
+      const dayReward = (um.mission?.dailyRewards || [])[day - 1];
+      if (dayReward) {
+        const normal = Number(dayReward.reward?.normalTickets || 0);
+        const premium = Number(dayReward.reward?.premiumTickets || 0);
+        
+        if (isFinite(normal) && normal > 0) {
+          await this.userService.addTickets(this.currentUserId, normal, 'normal');
+        }
+        if (isFinite(premium) && premium > 0) {
+          await this.userService.addTickets(this.currentUserId, premium, 'premium');
+        }
+      }
 
-      this.showNotification(`Recompensa do Dia ${day} coletada!`, 'success');
-      // small delay to allow animation to show (CSS handles pop-in when .day-collected appears)
-      await new Promise(res => setTimeout(res, 300));
+      this.showNotification(`Dia ${day} coletado!`, 'success');
       await this.loadMissions();
-    } catch (err:any) {
+    } catch (err: any) {
+      console.error('Erro ao coletar dia:', err);
       this.showNotification(err?.message || 'Erro ao coletar dia', 'error');
     }
   }
 
-  isDayAvailable(um: UserMission & { mission?: Mission }) {
+  isDayAvailable(um: UserMission & { mission?: Mission }): boolean {
     if (!um || !um.mission) return false;
     const na = um.nextAvailableAt as any;
     if (!na) return true;
-    const naMs = na.seconds ? na.seconds * 1000 : (na.toMillis ? na.toMillis() : Date.parse(na));
-    return Date.now() >= naMs;
+    
+    try {
+      const naMs = na.seconds ? na.seconds * 1000 : (na.toMillis ? na.toMillis() : Date.parse(na));
+      return Date.now() >= naMs;
+    } catch {
+      return true;
+    }
   }
 
   timeUntilNext(um: UserMission & { mission?: Mission }): string {
     const na = um.nextAvailableAt as any;
     if (!na) return '';
-    const naMs = na.seconds ? na.seconds * 1000 : (na.toMillis ? na.toMillis() : Date.parse(na));
-    const diff = naMs - Date.now();
-    if (diff <= 0) return '';
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    if (hours > 0) return `${hours}h ${mins}m`;
-    return `${mins}m`;
+    
+    try {
+      const naMs = na.seconds ? na.seconds * 1000 : (na.toMillis ? na.toMillis() : Date.parse(na));
+      const diff = naMs - Date.now();
+      if (diff <= 0) return '';
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      if (hours > 0) return `${hours}h ${mins}m`;
+      return `${mins}m`;
+    } catch {
+      return '';
+    }
   }
 
-  getMissionIcon(type: string): string {
-    const icons: any = {
-      'DAILY': 'bi-calendar-check',
-      'WEEKLY': 'bi-calendar-week',
-      'SPECIAL': 'bi-star-fill'
-    };
-    return icons[type] || 'bi-check-circle';
+  getMissionIcon(mission?: Mission): string {
+    if (!mission) return 'bi-check-circle';
+    return this.missionService.getMissionIconClass(mission);
+  }
+
+  getMissionDescription(mission?: Mission): string {
+    if (!mission) return '';
+    return this.missionService.getMissionDescription(mission);
   }
 
   getCurrentDailyDay(um: UserMission & { mission?: Mission }): number {
-    const total = (um.mission && um.mission.dailyRewards && um.mission.dailyRewards.length) || 7;
-    const pct = typeof um.progress === 'number' ? um.progress : 0;
-    const day = Math.min(total, Math.max(1, Math.floor((pct / (100 / total)) + 1)));
-    return day;
+    const total = (um.mission?.dailyRewards?.length) || 7;
+    const claimed = (um.claimedDays || []).length;
+    return Math.min(total, claimed + 1);
   }
 
   get dailyUserMissions() {
-    return this.userMissions.filter(u => (u.mission && u.mission.type === 'DAILY'));
+    return this.userMissions.filter(u => u.mission?.type === 'DAILY');
   }
 
   get otherUserMissions() {
-    return this.userMissions.filter(u => !(u.mission && u.mission.type === 'DAILY'));
+    return this.userMissions.filter(u => u.mission?.type !== 'DAILY');
   }
 
   get dailyAvailable() {
@@ -197,8 +213,11 @@ export class MissionsComponent implements OnInit {
 
   getProgressPercentage(userMission: UserMission & { mission?: Mission }): number {
     if (!userMission.mission) return 0;
-    // Simplifique: retornar progresso direto
-    return Math.min(100, userMission.progress);
+    return this.missionService.getProgressPercentage(userMission);
+  }
+
+  canClaimMission(userMission: UserMission & { mission?: Mission }): boolean {
+    return this.missionService.canClaimMission(userMission);
   }
 
   showNotification(message: string, type: 'success' | 'error' | 'info') {

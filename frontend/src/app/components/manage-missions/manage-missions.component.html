@@ -147,11 +147,11 @@
         <p>{{ mission.description }}</p>
         <span class="badge">{{ mission.type }}</span>
         <div class="rewards-display">
-          <div class="reward-item" *ngIf="mission.rewardNormal > 0">
+          <div class="reward-item" *ngIf="mission.rewardNormal && mission.rewardNormal > 0">
             <span class="reward-icon">🎫</span>
             <span class="reward-text">{{ mission.rewardNormal }} Normais</span>
           </div>
-          <div class="reward-item" *ngIf="mission.rewardPremium > 0">
+          <div class="reward-item" *ngIf="mission.rewardPremium && mission.rewardPremium > 0">
             <span class="reward-icon">💎</span>
             <span class="reward-text">{{ mission.rewardPremium }} Premium</span>
           </div>
