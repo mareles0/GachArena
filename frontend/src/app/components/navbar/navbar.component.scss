@@ -2,7 +2,7 @@
   /* navbar leve (acima de fundo, abaixo de modais/toasts) */
   position: relative;
   /* manter abaixo de modais (~2000) e toasts (20000), mas acima do fundo */
-  z-index: 10;
+  z-index: 1000;
 
   &.low-z {
     /* when route requests low stacking, keep navbar above most content but below modals/toasts */

@@ -4,18 +4,24 @@ import { environment } from '../../environments/environment';
 import { User } from '../models/user.model';
 import { TicketService } from './ticket.service';
 import { getAuth } from 'firebase/auth';
+import { EventService } from './event.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
 
-  constructor(private http: HttpClient, private ticketService: TicketService) { }
+  constructor(
+    private http: HttpClient,
+    private ticketService: TicketService,
+    private eventService: EventService
+  ) { }
 
   // Salvar dados do usuário
   async saveUser(uid: string, userData: any) {
     try {
       await this.http.post(`${environment.backendUrl}/users/${uid}`, userData).toPromise();
+      this.eventService.userDataChanged();
     } catch (error) {
       throw error;
     }
@@ -56,6 +62,7 @@ export class UserService {
   async updateUser(uid: string, data: Partial<User>): Promise<void> {
     try {
       await this.http.put(`${environment.backendUrl}/users/${uid}`, data).toPromise();
+      this.eventService.userDataChanged();
     } catch (error) {
       console.error('Erro ao atualizar usuário:', error);
       throw error;
@@ -66,6 +73,8 @@ export class UserService {
   async addTickets(uid: string, amount: number, type: 'normal' | 'premium' = 'normal'): Promise<void> {
     try {
       await this.http.post(`${environment.backendUrl}/users/${uid}/tickets`, { amount, type }).toPromise();
+      this.eventService.ticketsChanged();
+      this.eventService.userDataChanged();
     } catch (error) {
       console.error('Erro ao adicionar tickets:', error);
       throw error;

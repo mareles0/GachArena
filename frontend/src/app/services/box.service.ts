@@ -2,16 +2,19 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Box } from '../models/box.model';
+import { EventService } from './event.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BoxService {
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private eventService: EventService) { }
 
   async createBox(box: Omit<Box, 'id' | 'createdAt'>): Promise<string> {
     const result = await this.http.post(`${environment.backendUrl}/boxes`, box).toPromise() as any;
+    // Admin CRUD de caixas impacta listas e telas que dependem de /boxes
+    this.eventService.boxesOpened();
     return result.id;
   }
 
@@ -34,9 +37,11 @@ export class BoxService {
 
   async updateBox(boxId: string, data: Partial<Box>): Promise<void> {
     await this.http.put(`${environment.backendUrl}/boxes/${boxId}`, data).toPromise();
+    this.eventService.boxesOpened();
   }
 
   async deleteBox(boxId: string): Promise<void> {
     await this.http.delete(`${environment.backendUrl}/boxes/${boxId}`).toPromise();
+    this.eventService.boxesOpened();
   }
 }

@@ -19,20 +19,22 @@ export class TicketService {
     return tickets;
   }
 
-  async useTicket(userId: string, type: 'NORMAL' | 'PREMIUM'): Promise<boolean> {
+  async useTicket(userId: string, type: 'NORMAL' | 'PREMIUM', count: number = 1): Promise<boolean> {
     try {
-      await this.http.post(`${environment.backendUrl}/users/${userId}/use-ticket`, { type }).toPromise();
+      console.log('[TicketService] Fazendo POST use-ticket:', userId, type, count);
+      await this.http.post(`${environment.backendUrl}/users/${userId}/use-ticket`, { type, count }).toPromise();
+      console.log('[TicketService] POST use-ticket completado');
       // Atualizar o subject
       const tickets = this.ticketsSubject.value;
-      if (type === 'NORMAL' && tickets.normalTickets > 0) {
+      if (type === 'NORMAL' && tickets.normalTickets >= count) {
         this.ticketsSubject.next({
           ...tickets,
-          normalTickets: tickets.normalTickets - 1
+          normalTickets: tickets.normalTickets - count
         });
-      } else if (type === 'PREMIUM' && tickets.premiumTickets > 0) {
+      } else if (type === 'PREMIUM' && tickets.premiumTickets >= count) {
         this.ticketsSubject.next({
           ...tickets,
-          premiumTickets: tickets.premiumTickets - 1
+          premiumTickets: tickets.premiumTickets - count
         });
       }
       return true;

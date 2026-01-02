@@ -90,14 +90,21 @@ router.get('/:uid/tickets', async (req, res) => {
 router.post('/:uid/use-ticket', async (req, res) => {
   try {
     const uid = req.params.uid;
-    const { type } = req.body;
+    const { type, count = 1 } = req.body; // count para pulls múltiplos
+    console.log(`[Users] use-ticket: uid=${uid}, type=${type}, count=${count}`);
     const docRef = admin.firestore().collection('users').doc(uid);
     const doc = await docRef.get();
     if (doc.exists) {
       const data = doc.data();
       const field = type === 'PREMIUM' ? 'premiumTickets' : 'normalTickets';
-      if (data[field] > 0) {
-        await docRef.update({ [field]: admin.firestore.FieldValue.increment(-1) });
+      if (data[field] >= count) {
+        // Decrementar tickets e incrementar contadores de progresso de missões
+        await docRef.update({ 
+          [field]: admin.firestore.FieldValue.increment(-count),
+          boxesOpened: admin.firestore.FieldValue.increment(count),
+          gachaPulls: admin.firestore.FieldValue.increment(count)
+        });
+        console.log(`[Users] Contadores atualizados: boxesOpened +${count}, gachaPulls +${count}`);
         res.json({ success: true });
       } else {
         res.status(400).json({ error: 'Not enough tickets' });
@@ -106,6 +113,7 @@ router.post('/:uid/use-ticket', async (req, res) => {
       res.status(404).json({ error: 'User not found' });
     }
   } catch (error) {
+    console.error('[Users] Erro ao usar ticket:', error);
     res.status(500).json({ error: error.message });
   }
 });

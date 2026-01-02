@@ -17,7 +17,7 @@
   width: 100vw;
   height: 100vh;
   object-fit: cover;
-  z-index: -2;
+  z-index: -1;
   pointer-events: none;
   filter: brightness(0.75) saturate(0.95);
   opacity: 0.95;
@@ -46,6 +46,445 @@
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
+  position: relative;
+  z-index: 10;
+
+  .missions-view {
+    position: relative;
+    z-index: 50;
+  }
+
+  .form-view {
+    position: relative;
+    z-index: 50;
+  }
+
+  // MODAL FLUTUANTE
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .modal-container {
+    background: linear-gradient(180deg, rgba(20,20,40,0.98), rgba(10,10,25,0.98));
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.1);
+    max-width: 900px;
+    max-height: 90vh;
+    width: 90%;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+  }
+
+  .modal-header {
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(59,130,246,0.15));
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .btn-close-modal {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      color: #ffffff;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        background: rgba(239,68,68,0.8);
+        transform: scale(1.1);
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 2rem;
+    max-height: calc(90vh - 80px);
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(139,92,246,0.5);
+      border-radius: 4px;
+
+      &:hover {
+        background: rgba(139,92,246,0.7);
+      }
+    }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  // Estilos do formulário
+  .form-content {
+    .form-row {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+
+      &.two-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      &.full-width {
+        width: 100%;
+      }
+
+      label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: rgba(255,255,255,0.9);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        i {
+          color: #8b5cf6;
+        }
+      }
+
+      .input-primary {
+        padding: 0.75rem 1rem;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(139,92,246,0.3);
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+
+        &:focus {
+          outline: none;
+          border-color: #8b5cf6;
+          background: rgba(255,255,255,0.08);
+          box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+        }
+
+        &::placeholder {
+          color: rgba(255,255,255,0.4);
+        }
+      }
+
+      select.input-primary {
+        cursor: pointer;
+        background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(59,130,246,0.15));
+        border: 1px solid rgba(139,92,246,0.4);
+        padding-right: 2.5rem;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238b5cf6' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 16px;
+        appearance: none;
+        
+        option {
+          background: #1a1a2e;
+          color: #ffffff;
+          padding: 0.5rem;
+        }
+
+        &:hover {
+          border-color: #8b5cf6;
+          background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(59,130,246,0.2));
+        }
+
+        &:focus {
+          background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(59,130,246,0.25));
+        }
+      }
+
+      textarea.input-primary {
+        resize: vertical;
+        min-height: 80px;
+      }
+    }
+
+    .rewards-section {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: rgba(139,92,246,0.08);
+      border: 1px solid rgba(139,92,246,0.2);
+      border-radius: 12px;
+
+      h3 {
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        i {
+          color: #8b5cf6;
+        }
+      }
+
+      .reward-field label {
+        font-size: 1rem;
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(255,255,255,0.1);
+
+      .btn-save-primary {
+        flex: 1;
+        padding: 0.875rem 1.5rem;
+        background: linear-gradient(135deg, #8b5cf6, #6366f1);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(139,92,246,0.4);
+        }
+      }
+
+      .btn-cancel-secondary {
+        padding: 0.875rem 1.5rem;
+        background: rgba(255,255,255,0.05);
+        color: rgba(255,255,255,0.7);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        &:hover {
+          background: rgba(255,255,255,0.1);
+          color: #ffffff;
+        }
+      }
+    }
+
+    // Editor de dias (Daily Missions)
+    .daily-rewards-editor {
+      margin-top: 1.5rem;
+
+      h3 {
+        margin: 0 0 1.5rem 0;
+        font-size: 1.2rem;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        i {
+          color: #8b5cf6;
+        }
+      }
+
+      .daily-editor-container {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .daily-days-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        .daily-day-card {
+          padding: 1rem;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(139,92,246,0.2);
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          position: relative;
+
+          &:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(139,92,246,0.4);
+          }
+
+          &.selected {
+            background: rgba(139,92,246,0.15);
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 2px rgba(139,92,246,0.2);
+          }
+
+          .day-number {
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+          }
+
+          .day-rewards {
+            display: flex;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+
+            span {
+              background: rgba(0,0,0,0.3);
+              padding: 0.25rem 0.5rem;
+              border-radius: 4px;
+            }
+          }
+
+          .btn-remove-day {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(239,68,68,0.8);
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s;
+
+            &:hover {
+              background: rgba(239,68,68,1);
+            }
+          }
+
+          &:hover .btn-remove-day {
+            opacity: 1;
+          }
+        }
+
+        .btn-add-day {
+          padding: 0.875rem;
+          background: rgba(139,92,246,0.1);
+          border: 1px dashed rgba(139,92,246,0.4);
+          border-radius: 8px;
+          color: #8b5cf6;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+
+          &:hover {
+            background: rgba(139,92,246,0.2);
+            border-style: solid;
+          }
+        }
+      }
+
+      .daily-day-editor {
+        padding: 1.5rem;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+
+        h4 {
+          margin: 0 0 1.5rem 0;
+          font-size: 1.1rem;
+          color: #ffffff;
+        }
+
+        .day-actions {
+          display: flex;
+          gap: 0.75rem;
+          margin-top: 1.5rem;
+
+          .btn-move {
+            flex: 1;
+            padding: 0.625rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+
+            &:hover:not(:disabled) {
+              background: rgba(255,255,255,0.1);
+              color: #ffffff;
+            }
+
+            &:disabled {
+              opacity: 0.3;
+              cursor: not-allowed;
+            }
+          }
+        }
+      }
+    }
+  }
 
   .header {
     display: flex;
@@ -245,20 +684,78 @@
   .muted{ color: #ffffff; font-size:13px }
 }
 
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #ffffff;
+  
+  p {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+  }
+}
+
 .missions-list {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  position: relative;
+  z-index: 20;
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 1rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    color: rgba(255, 255, 255, 0.7);
+    
+    i {
+      font-size: 4rem;
+      color: rgba(255, 255, 255, 0.3);
+      margin-bottom: 1rem;
+      display: block;
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+    
+    p {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+  }
 
   .mission-item {
-    background: white;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
     padding: 1.5rem;
     border-radius: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 2rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    }
 
     .mission-info {
       flex: 1;
@@ -272,6 +769,28 @@
       p {
         color: #6b7280;
         margin: 0 0 0.75rem 0;
+      }
+
+      .daily-info {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.8rem;
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 8px;
+        margin: 0.5rem 0;
+        
+        i {
+          color: #3b82f6;
+          font-size: 1rem;
+        }
+        
+        span {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: #3b82f6;
+        }
       }
 
       .badge {

@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { ItemService } from './services/item.service';
+import { RealtimeService } from './services/realtime.service';
 
 @Component({
   selector: 'app-root',
@@ -10,7 +11,14 @@ import { ItemService } from './services/item.service';
 export class AppComponent {
   title = 'GachArena';
 
-  constructor(private router: Router, private itemService: ItemService) {
+  constructor(
+    private router: Router,
+    private itemService: ItemService,
+    private realtimeService: RealtimeService
+  ) {
+    // Conecta no canal realtime (admin e jogadores se atualizam entre si)
+    this.realtimeService.connect();
+
     // Função global para migração (acessível via console)
     (window as any).migrateItems = async () => {
       console.log('Iniciando migração de itens...');

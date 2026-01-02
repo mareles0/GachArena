@@ -1,18 +1,20 @@
-import { Component, OnInit, ViewChild, ElementRef, TemplateRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, TemplateRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ProfileService } from '../../services/profile.service';
 import { ItemService } from '../../services/item.service';
 import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
+import { EventService } from '../../services/event.service';
 import { UserProfile } from '../../models/user-profile.model';
 import { FriendService } from '../../services/friend.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnDestroy {
   userId: string | null = null;
   profile: UserProfile | null = null;
   username: string | null = null;
@@ -41,6 +43,8 @@ export class ProfileComponent implements OnInit {
   // ownership and meta
   isOwner = false;
   level?: number | null = null;
+  
+  private eventSubscription?: Subscription;
 
   constructor(
     private route: ActivatedRoute,
@@ -48,7 +52,8 @@ export class ProfileComponent implements OnInit {
     private itemService: ItemService,
     public auth: AuthService,
     private friendService: FriendService,
-    private userService: UserService
+    private userService: UserService,
+    private eventService: EventService
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -71,8 +76,14 @@ export class ProfileComponent implements OnInit {
       this.isFriend = await this.friendService.areFriends(me.uid, this.userId);
       this.isOwner = me.uid === this.userId;
     }
-
-
+    
+    // Escutar eventos para atualizar perfil em tempo real
+    this.eventSubscription = this.eventService.events$.subscribe(event => {
+      if (event === 'itemsChanged' || event === 'userDataChanged') {
+        console.log('[Profile] Evento recebido:', event, '- recarregando perfil');
+        this.loadProfile();
+      }
+    });
   }
 
   async loadProfile() {
@@ -182,6 +193,8 @@ export class ProfileComponent implements OnInit {
       this.editing = false;
       await this.loadProfile();
       console.log('saveEdit - profile reloaded');
+      // Emitir evento para atualizar outros componentes
+      this.eventService.userDataChanged();
     } catch (err) {
       console.error('Erro ao salvar perfil', err);
       this.error = 'Erro ao salvar perfil. Tente novamente.';
@@ -240,4 +253,10 @@ export class ProfileComponent implements OnInit {
 
   openTrade() { this.showTradeModal = true; }
   closeTrade(result:boolean) { this.showTradeModal = false; if (result) alert('Proposta enviada'); }
+  
+  ngOnDestroy() {
+    if (this.eventSubscription) {
+      this.eventSubscription.unsubscribe();
+    }
+  }
 }

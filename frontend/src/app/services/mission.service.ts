@@ -2,19 +2,31 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Mission, UserMission, UserMissionStats } from '../models/mission.model';
+import { Subject } from 'rxjs';
+import { EventService } from './event.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MissionService {
+  // Subject para notificar quando missões devem ser atualizadas
+  private missionProgressChanged = new Subject<void>();
+  public missionProgressChanged$ = this.missionProgressChanged.asObservable();
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private eventService: EventService) { }
+  
+  // Método para triggar atualização de progresso de missões
+  notifyProgressChanged(): void {
+    console.log('[MissionService] Notificando mudança de progresso');
+    this.missionProgressChanged.next();
+  }
 
   // ===== CRUD Missões =====
   
   async createMission(mission: Omit<Mission, 'id' | 'createdAt'>): Promise<string> {
     try {
       const response = await this.http.post<{ id: string }>(`${environment.backendUrl}/missions`, mission).toPromise();
+      this.eventService.missionsChanged();
       return response!.id;
     } catch (error) {
       console.error('Erro ao criar missão:', error);
@@ -34,10 +46,13 @@ export class MissionService {
 
   async getAllMissions(): Promise<Mission[]> {
     try {
+      console.log('[MissionService] Fazendo requisição para:', `${environment.backendUrl}/missions`);
       const missions = await this.http.get<Mission[]>(`${environment.backendUrl}/missions`).toPromise();
+      console.log('[MissionService] Resposta recebida:', missions);
+      console.log('[MissionService] Total de missões:', missions?.length || 0);
       return missions || [];
     } catch (error) {
-      console.error('Erro ao buscar missões:', error);
+      console.error('[MissionService] Erro ao buscar missões:', error);
       return [];
     }
   }
@@ -59,6 +74,7 @@ export class MissionService {
         throw new Error('Invalid mission id provided to updateMission');
       }
       await this.http.put(`${environment.backendUrl}/missions/${id}`, mission).toPromise();
+      this.eventService.missionsChanged();
     } catch (error) {
       console.error('Erro ao atualizar missão:', error);
       throw error;
@@ -72,6 +88,7 @@ export class MissionService {
         throw new Error('Invalid mission id provided to deleteMission');
       }
       await this.http.delete(`${environment.backendUrl}/missions/${id}`).toPromise();
+      this.eventService.missionsChanged();
     } catch (error) {
       console.error('Erro ao deletar missão:', error);
       throw error;
@@ -111,6 +128,8 @@ export class MissionService {
         `${environment.backendUrl}/missions/user-mission/${userMissionId}/claim`, 
         {}
       ).toPromise();
+      this.eventService.missionsChanged();
+      this.eventService.ticketsChanged();
     } catch (error) {
       console.error('Erro ao marcar missão como coletada:', error);
       throw error;
@@ -123,6 +142,8 @@ export class MissionService {
         `${environment.backendUrl}/missions/user-mission/${userMissionId}/claim-daily`, 
         { day }
       ).toPromise();
+      this.eventService.missionsChanged();
+      this.eventService.ticketsChanged();
     } catch (error) {
       console.error('Erro ao coletar dia:', error);
       throw error;
@@ -150,6 +171,19 @@ export class MissionService {
     } catch (error) {
       console.error('Erro ao completar missão:', error);
       throw error;
+    }
+  }
+
+  async calculateProgress(userId: string, missionId: string): Promise<{ progress: number; currentValue: number; targetValue: number; completed: boolean }> {
+    try {
+      const result = await this.http.post<{ progress: number; currentValue: number; targetValue: number; completed: boolean }>(
+        `${environment.backendUrl}/missions/user/${userId}/calculate-progress/${missionId}`,
+        {}
+      ).toPromise();
+      return result!;
+    } catch (error) {
+      console.error('Erro ao calcular progresso:', error);
+      return { progress: 0, currentValue: 0, targetValue: 0, completed: false };
     }
   }
 
@@ -207,41 +241,80 @@ export class MissionService {
   }
 
   getMissionDescription(mission: Mission): string {
-    const goal = mission.goal;
-    
-    switch (goal.type) {
-      case 'TICKETS_SPENT':
-        return `Gaste ${goal.target} tickets ${goal.ticketType === 'PREMIUM' ? 'premium' : 'normais'}`;
-      case 'BOXES_OPENED':
-        return `Abra ${goal.target} caixas`;
-      case 'ITEMS_COLLECTED':
-        return `Colete ${goal.target} itens${goal.rarity ? ` ${goal.rarity.toLowerCase()}s` : ''}`;
-      case 'TOTAL_POWER':
-        return `Atinja ${goal.target} de poder total`;
-      case 'RARITY_COLLECTED':
-        return `Colete ${goal.target} itens ${goal.rarity?.toLowerCase()}s`;
-      case 'LOGIN_DAYS':
-        return `Faça login por ${goal.target} dias consecutivos`;
-      case 'TRADES_COMPLETED':
-        return `Complete ${goal.target} trocas`;
-      case 'FRIENDS_ADDED':
-        return `Adicione ${goal.target} amigos`;
-      default:
-        return mission.description;
+    // Usar description diretamente se existir
+    if (mission.description && mission.description.trim() !== '') {
+      return mission.description;
     }
+
+    // Fallback para gerar descrição baseado no requirement (novo sistema)
+    if (mission.requirement) {
+      const amount = (mission as any).requirementAmount || 0;
+      switch (mission.requirement) {
+        case 'TOTAL_POWER':
+          return `Atinja ${amount} de poder total`;
+        case 'ITEM_COUNT':
+          return `Colete ${amount} itens`;
+        case 'RARITY_COMMON':
+          return 'Ganhe um item Comum';
+        case 'RARITY_RARE':
+          return 'Ganhe um item Raro';
+        case 'RARITY_EPIC':
+          return 'Ganhe um item Épico';
+        case 'RARITY_LEGENDARY':
+          return 'Ganhe um item Lendário';
+        case 'RARITY_MYTHIC':
+          return 'Ganhe um item Mítico';
+        case 'OPEN_BOXES':
+          return `Abra ${amount} caixas`;
+        case 'GACHA_PULLS':
+          return `Faça ${amount} gachas`;
+        case 'COMPLETE_TRADES':
+          return `Complete ${amount} trocas`;
+        default:
+          return mission.title || 'Missão';
+      }
+    }
+
+    // Fallback para sistema antigo (goal)
+    const goal = mission.goal;
+    if (goal) {
+      switch (goal.type) {
+        case 'TICKETS_SPENT':
+          return `Gaste ${goal.target} tickets ${goal.ticketType === 'PREMIUM' ? 'premium' : 'normais'}`;
+        case 'BOXES_OPENED':
+          return `Abra ${goal.target} caixas`;
+        case 'ITEMS_COLLECTED':
+          return `Colete ${goal.target} itens${goal.rarity ? ` ${goal.rarity.toLowerCase()}s` : ''}`;
+        case 'TOTAL_POWER':
+          return `Atinja ${goal.target} de poder total`;
+        case 'RARITY_COLLECTED':
+          return `Colete ${goal.target} itens ${goal.rarity?.toLowerCase()}s`;
+        case 'LOGIN_DAYS':
+          return `Faça login por ${goal.target} dias consecutivos`;
+        case 'TRADES_COMPLETED':
+          return `Complete ${goal.target} trocas`;
+        case 'FRIENDS_ADDED':
+          return `Adicione ${goal.target} amigos`;
+        default:
+          return mission.title || 'Missão';
+      }
+    }
+
+    return mission.title || 'Missão';
   }
 
   getProgressPercentage(userMission: UserMission): number {
-    if (!userMission.mission) return 0;
-    const target = userMission.mission.goal.target;
-    if (target === 0) return 100;
-    return Math.min(100, (userMission.progress / target) * 100);
+    if (!userMission || typeof userMission.progress !== 'number') {
+      return 0;
+    }
+    // O progresso já vem em porcentagem (0-100) do backend
+    return Math.min(100, Math.max(0, userMission.progress));
   }
 
   canClaimMission(userMission: UserMission): boolean {
-    if (!userMission.mission) return false;
-    return userMission.progress >= userMission.mission.goal.target && 
-           !userMission.claimed;
+    if (!userMission || !userMission.mission) return false;
+    // Missão está completada e ainda não foi coletada
+    return userMission.completed && !userMission.claimed;
   }
 }
 

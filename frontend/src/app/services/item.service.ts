@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Item, UserItem } from '../models/item.model';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, deleteDoc, updateDoc, addDoc } from 'firebase/firestore';
+import { EventService } from './event.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,10 +11,11 @@ import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, d
 export class ItemService {
   private db = getFirestore();
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private eventService: EventService) { }
 
   async createItem(item: Omit<Item, 'id' | 'createdAt'>): Promise<string> {
     const result = await this.http.post(`${environment.backendUrl}/items`, item).toPromise() as any;
+    this.eventService.itemsChanged();
     return result.id;
   }
 
@@ -32,6 +34,7 @@ export class ItemService {
 
   async updateItem(itemId: string, data: Partial<Item>): Promise<void> {
     await this.http.put(`${environment.backendUrl}/items/${itemId}`, data).toPromise();
+    this.eventService.itemsChanged();
   }
 
   // Função auxiliar para calcular pontos baseado na raridade e rarityLevel
@@ -213,6 +216,7 @@ export class ItemService {
   async deleteItem(itemId: string): Promise<void> {
     const docRef = doc(this.db, 'items', itemId);
     await deleteDoc(docRef);
+    this.eventService.itemsChanged();
   }
 
   async deleteAllItems(): Promise<void> {
@@ -308,12 +312,18 @@ export class ItemService {
   }
 
   async getUserItemById(id: string): Promise<UserItem | null> {
-    const data = await this.http.get(`${environment.backendUrl}/userItems/${id}`).toPromise() as any;
-    if (data) {
+    try {
+      const data = await this.http.get(`${environment.backendUrl}/userItems/${id}`).toPromise() as any;
+      if (!data) return null;
+
       const item = await this.getItemById(data.itemId);
       return { id, ...data, item } as UserItem;
+    } catch (error) {
+      // 404 é comum quando um trade antigo referencia um userItem que foi transferido/deletado.
+      // Não devemos quebrar a tela inteira por isso.
+      console.warn('[ItemService] getUserItemById falhou para', id, error);
+      return null;
     }
-    return null;
   }
 
   async getUserRarestItemInBox(userId: string, boxId: string): Promise<UserItem | null> {

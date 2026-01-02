@@ -22,8 +22,28 @@
 
   <!-- Header -->
   <div class="missions-header">
-    <h1><i class="bi bi-calendar-check-fill"></i> Login Diário</h1>
-    <p class="subtitle">Complete dias consecutivos para ganhar recompensas!</p>
+    <div class="header-content">
+      <h1><i class="bi bi-calendar-check-fill"></i> Missões</h1>
+      <p class="subtitle">Complete missões para ganhar recompensas!</p>
+    </div>
+    
+    <div class="filter-buttons">
+      <button class="filter-btn" 
+              [class.active]="missionFilter === 'all'"
+              (click)="missionFilter = 'all'">
+        <i class="bi bi-grid-fill"></i> Todas
+      </button>
+      <button class="filter-btn" 
+              [class.active]="missionFilter === 'daily'"
+              (click)="missionFilter = 'daily'">
+        <i class="bi bi-calendar-check-fill"></i> Diárias
+      </button>
+      <button class="filter-btn" 
+              [class.active]="missionFilter === 'regular'"
+              (click)="missionFilter = 'regular'">
+        <i class="bi bi-trophy-fill"></i> Regulares
+      </button>
+    </div>
   </div>
 
   <!-- Loading -->
@@ -122,8 +142,64 @@
       </div>
     </div>
 
+    <!-- Missões Regulares -->
+    <div *ngIf="otherUserMissions.length > 0" class="regular-missions-container">
+      <h3><i class="bi bi-trophy-fill"></i> Missões Regulares</h3>
+      <div class="regular-missions-grid">
+        <div class="regular-mission-card" *ngFor="let um of otherUserMissions">
+          <div class="card-header">
+            <i [class]="getMissionIcon(um.mission)"></i>
+            <h4>{{ um.mission?.title || 'Missão' }}</h4>
+          </div>
+          <p class="card-description">{{ getMissionDescription(um.mission) }}</p>
+          
+          <div class="progress-section">
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="getProgressPercentage(um)"></div>
+            </div>
+            <span class="progress-text">{{ getProgressPercentage(um) }}%</span>
+          </div>
+
+          <div class="card-rewards">
+            <div *ngIf="(um.mission?.reward?.normalTickets || 0) > 0" class="reward-item">
+              <img src="https://static.wikitide.net/cravesagawiki/4/46/Platinum_Gacha_Ticket.png" alt="Normal">
+              <span>×{{ um.mission?.reward?.normalTickets }}</span>
+            </div>
+            <div *ngIf="(um.mission?.reward?.premiumTickets || 0) > 0" class="reward-item">
+              <img src="https://static.wikitide.net/cravesagawiki/f/fe/SR_or_Higher_Gacha_Ticket.png" alt="Premium">
+              <span>×{{ um.mission?.reward?.premiumTickets }}</span>
+            </div>
+          </div>
+
+          <button *ngIf="canClaimMission(um)" 
+                  class="btn-claim-mission"
+                  (click)="claimReward(um)">
+            <i class="bi bi-gift-fill"></i> Resgatar Recompensa
+          </button>
+          <div *ngIf="um.claimed" class="claimed-badge">
+            <i class="bi bi-check-circle-fill"></i> Concluída
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Missões Regulares Disponíveis -->
+    <div *ngIf="otherAvailable.length > 0" class="available-missions regular">
+      <h3><i class="bi bi-plus-circle"></i> Missões Regulares Disponíveis</h3>
+      <div class="available-grid">
+        <div class="available-card regular" *ngFor="let mission of otherAvailable" (click)="startMission(mission.id!)">
+          <i [class]="getMissionIcon(mission)"></i>
+          <h4>{{ mission.title }}</h4>
+          <p>{{ getMissionDescription(mission) }}</p>
+          <button class="btn-start">
+            <i class="bi bi-play-fill"></i> Iniciar
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Empty State -->
-    <div *ngIf="dailyUserMissions.length === 0 && dailyAvailable.length === 0 && !isLoading" class="empty-state">
+    <div *ngIf="dailyUserMissions.length === 0 && dailyAvailable.length === 0 && otherUserMissions.length === 0 && otherAvailable.length === 0 && !isLoading" class="empty-state">
       <i class="bi bi-calendar-x"></i>
       <h3>Nenhuma missão diária disponível</h3>
       <p>Aguarde novas missões serem criadas pelo administrador</p>

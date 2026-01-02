@@ -1,20 +1,24 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { RankingService, RankingEntry } from '../../services/ranking.service';
 import { BoxService } from '../../services/box.service';
 import { Box } from '../../models/box.model';
+import { EventService } from '../../services/event.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-ranking',
   templateUrl: './ranking.component.html',
   styleUrls: ['./ranking.component.scss']
 })
-export class RankingComponent implements OnInit {
+export class RankingComponent implements OnInit, OnDestroy {
   globalRanking: RankingEntry[] = [];
   boxRanking: RankingEntry[] = [];
   boxes: Box[] = [];
   selectedBoxId: string = '';
   viewMode: 'global' | 'box' = 'global';
   isLoading = false;
+  
+  private eventSubscription?: Subscription;
 
   // Modal de detalhes do item
   showItemDetails: boolean = false;
@@ -28,12 +32,25 @@ export class RankingComponent implements OnInit {
 
   constructor(
     private rankingService: RankingService,
-    private boxService: BoxService
+    private boxService: BoxService,
+    private eventService: EventService
   ) { }
 
   async ngOnInit() {
     await this.loadBoxes();
     await this.loadGlobalRanking();
+    
+    // Escutar eventos para atualizar ranking em tempo real
+    this.eventSubscription = this.eventService.events$.subscribe(event => {
+      if (event === 'userDataChanged' || event === 'itemsChanged') {
+        console.log('[Ranking] Evento recebido:', event, '- recarregando ranking');
+        if (this.viewMode === 'global') {
+          this.loadGlobalRanking();
+        } else if (this.selectedBoxId) {
+          this.loadBoxRanking();
+        }
+      }
+    });
   }
 
   async loadBoxes() {
@@ -130,5 +147,11 @@ export class RankingComponent implements OnInit {
     setTimeout(() => {
       this.notification.show = false;
     }, 4000);
+  }
+  
+  ngOnDestroy() {
+    if (this.eventSubscription) {
+      this.eventSubscription.unsubscribe();
+    }
   }
 }

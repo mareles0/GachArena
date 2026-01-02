@@ -5,6 +5,59 @@ const router = express.Router();
 // Get Firestore instance
 const db = admin.firestore();
 
+async function enrichTradesWithUserItems(trades) {
+  const allIds = new Set();
+  for (const t of trades) {
+    for (const id of (t.offeredUserItemIds || [])) allIds.add(id);
+    for (const id of (t.requestedUserItemIds || [])) allIds.add(id);
+  }
+
+  const ids = Array.from(allIds);
+  if (ids.length === 0) {
+    return trades.map(t => ({ ...t, offeredItems: [], requestedItems: [] }));
+  }
+
+  // Buscar userItems em batch
+  const refs = ids.map(id => db.collection('userItems').doc(id));
+  const userItemSnaps = await db.getAll(...refs);
+  const userItemsById = new Map();
+
+  const missingItemIds = new Set();
+  for (const snap of userItemSnaps) {
+    if (!snap.exists) continue;
+    const data = snap.data();
+    userItemsById.set(snap.id, { id: snap.id, ...data });
+    if (!data.item && data.itemId) {
+      missingItemIds.add(data.itemId);
+    }
+  }
+
+  // Buscar itens faltantes (caso algum userItem não tenha item aninhado)
+  const itemById = new Map();
+  if (missingItemIds.size > 0) {
+    const itemRefs = Array.from(missingItemIds).map(itemId => db.collection('items').doc(itemId));
+    const itemSnaps = await db.getAll(...itemRefs);
+    for (const snap of itemSnaps) {
+      if (!snap.exists) continue;
+      itemById.set(snap.id, { id: snap.id, ...snap.data() });
+    }
+  }
+
+  // Enriquecer userItems com item quando necessário
+  for (const [id, ui] of userItemsById.entries()) {
+    if (!ui.item && ui.itemId && itemById.has(ui.itemId)) {
+      ui.item = itemById.get(ui.itemId);
+    }
+    userItemsById.set(id, ui);
+  }
+
+  return trades.map(t => {
+    const offeredItems = (t.offeredUserItemIds || []).map(id => userItemsById.get(id)).filter(Boolean);
+    const requestedItems = (t.requestedUserItemIds || []).map(id => userItemsById.get(id)).filter(Boolean);
+    return { ...t, offeredItems, requestedItems };
+  });
+}
+
 // Create trade
 router.post('/', async (req, res) => {
   try {
@@ -42,7 +95,12 @@ router.get('/:id', async (req, res) => {
 router.get('/user/:userId/sent', async (req, res) => {
   try {
     const snapshot = await db.collection('trades').where('fromUserId', '==', req.params.userId).get();
-    const trades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let trades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    if (req.query.includeItems === '1' || req.query.includeItems === 'true') {
+      trades = await enrichTradesWithUserItems(trades);
+    }
+
     res.json(trades);
   } catch (error) {
     console.error('Erro ao buscar trades enviados:', error);
@@ -54,7 +112,12 @@ router.get('/user/:userId/sent', async (req, res) => {
 router.get('/user/:userId/received', async (req, res) => {
   try {
     const snapshot = await db.collection('trades').where('toUserId', '==', req.params.userId).get();
-    const trades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let trades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    if (req.query.includeItems === '1' || req.query.includeItems === 'true') {
+      trades = await enrichTradesWithUserItems(trades);
+    }
+
     res.json(trades);
   } catch (error) {
     console.error('Erro ao buscar trades recebidos:', error);

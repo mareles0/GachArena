@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
+const http = require('http');
+const { Server } = require('socket.io');
 
 // Use environment variables for credentials (safer than file)
 if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
@@ -21,6 +23,26 @@ if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && proce
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// HTTP server (necessário para Socket.IO)
+const server = http.createServer(app);
+
+// Socket.IO (tempo real entre usuários)
+const io = new Server(server, {
+  cors: {
+    origin: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
+  }
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log('[Socket.IO] Cliente conectado:', socket.id);
+  socket.on('disconnect', () => {
+    console.log('[Socket.IO] Cliente desconectado:', socket.id);
+  });
+});
 
 // Middleware
 app.use(cors());
@@ -53,6 +75,6 @@ app.get('/', (req, res) => {
 
 // Add more routes here as we migrate services
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

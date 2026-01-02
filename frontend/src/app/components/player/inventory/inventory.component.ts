@@ -1,20 +1,24 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { ItemService } from 'src/app/services/item.service';
+import { EventService } from 'src/app/services/event.service';
 import { UserItem } from 'src/app/models/item.model';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-inventory',
   templateUrl: './inventory.component.html',
   styleUrls: ['./inventory.component.scss']
 })
-export class InventoryComponent implements OnInit {
+export class InventoryComponent implements OnInit, OnDestroy {
   userItems: UserItem[] = [];
   filteredItems: UserItem[] = [];
   loading: boolean = false;
   selectedRarity: string = 'ALL';
   userId: string = '';
+  
+  private eventSubscription?: Subscription;
 
   rarities = ['ALL', 'COMUM', 'RARO', 'EPICO', 'LENDARIO', 'MITICO'];
 
@@ -32,7 +36,8 @@ export class InventoryComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private itemService: ItemService,
-    private router: Router
+    private router: Router,
+    private eventService: EventService
   ) { }
 
   async ngOnInit() {
@@ -44,6 +49,14 @@ export class InventoryComponent implements OnInit {
 
     this.userId = user.uid;
     await this.loadInventory();
+    
+    // Escutar eventos itemsChanged para atualizar inventário automaticamente
+    this.eventSubscription = this.eventService.events$.subscribe(event => {
+      if (event === 'itemsChanged') {
+        console.log('[Inventory] Evento itemsChanged recebido - recarregando inventário');
+        this.loadInventory();
+      }
+    });
   }
 
   showNotification(message: string, type: 'success' | 'error' | 'info' = 'success') {
@@ -132,5 +145,11 @@ export class InventoryComponent implements OnInit {
   closeItemDetailsModal() {
     this.showItemDetails = false;
     this.selectedItemForDetails = null;
+  }
+  
+  ngOnDestroy() {
+    if (this.eventSubscription) {
+      this.eventSubscription.unsubscribe();
+    }
   }
 }

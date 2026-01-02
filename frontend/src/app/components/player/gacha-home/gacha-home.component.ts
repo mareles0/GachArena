@@ -4,6 +4,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { BoxService } from 'src/app/services/box.service';
 import { ItemService } from 'src/app/services/item.service';
 import { TicketService } from 'src/app/services/ticket.service';
+import { EventService } from 'src/app/services/event.service';
 import { Box } from 'src/app/models/box.model';
 import { Ticket } from 'src/app/models/ticket.model';
 import { Item } from 'src/app/models/item.model';
@@ -101,8 +102,7 @@ export class GachaHomeComponent implements OnInit {
     private authService: AuthService,
     private boxService: BoxService,
     private itemService: ItemService,
-    private ticketService: TicketService,
-    private router: Router
+    private ticketService: TicketService,    private eventService: EventService,    private router: Router
     , private cd: ChangeDetectorRef
   ) { }
 
@@ -272,6 +272,11 @@ export class GachaHomeComponent implements OnInit {
     this.drawnRarityLevel = await this.itemService.addItemToUser(this.userId, this.drawnItem.id);
     await this.ticketService.refreshTickets(this.userId); // Atualizar tickets na navbar
     console.log('[GachaHome] openSingleBox: drawnItem=', this.drawnItem);
+    
+    // Emitir eventos para atualizar sistema
+    this.eventService.boxesOpened();
+    this.eventService.itemsChanged();
+    this.eventService.ticketsChanged();
 
     if (hasAnimation) {
       // Marcar que os resultados estão prontos
@@ -314,14 +319,15 @@ export class GachaHomeComponent implements OnInit {
     try {
       // Abrir caixas baseado no tipo selecionado - PROCESSAMENTO EM PARALELO
       if (this.selectedBox.type === 'NORMAL') {
+        // Usar todos os tickets de uma vez (incrementa contadores corretamente)
+        const used = await this.ticketService.useTicket(this.userId, 'NORMAL', required.normal);
+        if (!used) {
+          throw new Error('Falha ao usar tickets normais');
+        }
+        
         // Abrir 10 caixas normais em paralelo
         const promises = Array.from({ length: required.normal }, async (_, i) => {
           try {
-            const used = await this.ticketService.useTicket(this.userId, 'NORMAL');
-            if (!used) {
-              console.error(`[GachaHome] Falha ao usar ticket ${i+1}`);
-              return null;
-            }
             const item = await this.itemService.drawRandomItem(this.selectedBox!.id);
             await this.itemService.addItemToUser(this.userId, item.id);
             console.log(`[GachaHome] Item ${i+1} obtido:`, item.name);
@@ -335,14 +341,15 @@ export class GachaHomeComponent implements OnInit {
         const results = await Promise.all(promises);
         this.multiResults = results.filter((item): item is Item => item !== null);
       } else {
+        // Usar todos os tickets de uma vez (incrementa contadores corretamente)
+        const used = await this.ticketService.useTicket(this.userId, 'PREMIUM', required.premium);
+        if (!used) {
+          throw new Error('Falha ao usar tickets premium');
+        }
+        
         // Abrir 5 caixas premium em paralelo
         const promises = Array.from({ length: required.premium }, async (_, i) => {
           try {
-            const used = await this.ticketService.useTicket(this.userId, 'PREMIUM');
-            if (!used) {
-              console.error(`[GachaHome] Falha ao usar ticket premium ${i+1}`);
-              return null;
-            }
             const item = await this.itemService.drawRandomItem(this.selectedBox!.id);
             await this.itemService.addItemToUser(this.userId, item.id);
             console.log(`[GachaHome] Item ${i+1} obtido:`, item.name);
@@ -359,6 +366,11 @@ export class GachaHomeComponent implements OnInit {
 
       this.tickets = await this.ticketService.getUserTickets(this.userId);
       this.showNotification(`🎉 Você abriu ${totalOpens} caixas e ganhou ${this.multiResults.length} itens!`, 'success');
+      
+      // Emitir eventos para atualizar sistema
+      this.eventService.boxesOpened();
+      this.eventService.itemsChanged();
+      this.eventService.ticketsChanged();
 
       if (hasAnimation) {
         // Marcar que os resultados estão prontos

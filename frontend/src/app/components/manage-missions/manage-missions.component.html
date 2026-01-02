@@ -2,10 +2,10 @@
 
   <img src="https://i.pinimg.com/originals/1b/3c/58/1b3c5821c4ef798f196b30cc3eb46ac2.gif" class="bg-gif" alt="" aria-hidden="true">
      
-    <video autoplay muted loop class="bg-video">
-        <source src="assets/backgrounds/welcome.webm" type="video/webm">
-        <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
-    </video>
+  <video autoplay muted loop class="bg-video">
+    <source src="assets/backgrounds/welcome.webm" type="video/webm">
+    <source src="assets/backgrounds/welcome.mp4" type="video/mp4">
+  </video>
     
   <div class="notification-container" *ngIf="notification.show">
     <div class="notification" [ngClass]="notification.type">{{ notification.message }}</div>
@@ -21,6 +21,7 @@
     </div>
   </div>
 
+  <!-- HEADER -->
   <div class="header">
     <h1><i class="bi bi-list-task"></i> Gerenciar Missões</h1>
     <div class="create-buttons" *ngIf="!isEditing">
@@ -29,140 +30,219 @@
     </div>
   </div>
 
-  <div class="form-section" *ngIf="isEditing">
-    <h2>{{ editingMission.type === 'DAILY' ? (editingMission.id ? 'Editar Missão Diária' : 'Nova Missão Diária') : (editingMission.id ? 'Editar Missão' : 'Nova Missão') }}</h2>
-    <div class="form-grid">
-      <div class="main-fields" *ngIf="editingMission.type !== 'DAILY'">
-        <label>Título</label>
-        <input [(ngModel)]="editingMission.title" placeholder="Título">
-
-        <label>Descrição</label>
-        <textarea [(ngModel)]="editingMission.description" placeholder="Descrição"></textarea>
-
-        <label>Tipo</label>
-        <select [(ngModel)]="editingMission.type" *ngIf="!isCreating">
-          <option value="DAILY">Diária</option>
-          <option value="WEEKLY">Semanal</option>
-          <option value="SPECIAL">Especial</option>
-        </select>
-        <div *ngIf="isCreating" class="type-display">Regular</div>
-
-        <label>Requisito (opcional)</label>
-        <input [(ngModel)]="editingMission.requirement" placeholder="Requisito">
-
-        <div class="reward-section">
-          <h4>Recompensas (Missão)</h4>
-          <div class="reward-inputs">
-            <div class="reward-input">
-              <label>🎫 Tickets Normais:</label>
-              <input type="number" [(ngModel)]="editingMission.rewardNormal" placeholder="0" min="0">
-            </div>
-            <div class="reward-input">
-              <label>💎 Tickets Premium:</label>
-              <input type="number" [(ngModel)]="editingMission.rewardPremium" placeholder="0" min="0">
-            </div>
-          </div>
-        </div>
-
-      <aside class="side-panel">
-        <h4>Configurações Rápidas</h4>
-        <div class="muted">Ative/desative e ajuste recompensas.</div>
-        <div style="height:18px"></div>
-        <div class="form-actions-compact">
-          <button (click)="saveMission()" class="btn-save">Salvar</button>
-          <button (click)="cancelEdit()" class="btn-cancel">Cancelar</button>
-        </div>
-      </aside>
+  <!-- LISTA DE MISSÕES (quando não está editando) -->
+  <div class="missions-view" *ngIf="!isEditing">
+    
+    <!-- Loading -->
+    <div class="loading-container" *ngIf="isLoading">
+      <div class="spinner-border text-light" role="status">
+        <span class="visually-hidden">Carregando...</span>
+      </div>
+      <p>Carregando missões...</p>
     </div>
 
-    <!-- Daily editor if DAILY -->
-    <div *ngIf="editingMission.type === 'DAILY'" class="daily-editor-section">
-      <h4>Recompensas Diárias</h4>
+    <!-- Lista -->
+    <div class="missions-list" *ngIf="!isLoading">
+      <h2 *ngIf="missions.length > 0">Missões Cadastradas ({{ missions.length }})</h2>
+      
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="missions.length === 0">
+        <i class="bi bi-inbox"></i>
+        <h3>Nenhuma missão cadastrada</h3>
+        <p>Clique em "Nova Missão" para criar sua primeira missão</p>
+      </div>
 
-      <!-- Editor separado em painel: lista de cards e painel de edição do card selecionado -->
-      <div class="daily-editor-wrap">
-        <!-- Lista de cards -->
-        <div class="daily-list" role="list">
-          <div class="daily-card" *ngFor="let d of (editingMission.dailyRewards || []); let i = index" [class.selected]="i===selectedDailyIndex" (click)="selectedDailyIndex = i" role="listitem" tabindex="0">
-            <div class="card-top">
-              <div class="day-label">Dia {{ d.day }}</div>
-              <button class="btn-remove" *ngIf="d.day > 1" (click)="removeDailyDay(i); $event.stopPropagation()" title="Remover dia">✕</button>
-            </div>
-            <div class="card-thumb">
-              <div class="reward-preview">
-                <span *ngIf="d.rewardNormal && d.rewardNormal > 0" class="preview-item">🎫 {{ d.rewardNormal }}</span>
-                <span *ngIf="d.rewardNormal && d.rewardNormal > 0 && d.rewardPremium && d.rewardPremium > 0" class="plus">+</span>
-                <span *ngIf="d.rewardPremium && d.rewardPremium > 0" class="preview-item">💎 {{ d.rewardPremium }}</span>
-              </div>
-            </div>
-            <div class="card-badges">
-              <div class="badge ticket-normal">
-                🎫 {{ d.rewardNormal || 0 }}
-                <button class="btn-plus" (click)="addTicket(i, 'normal'); $event.stopPropagation()">+</button>
-              </div>
-              <div class="badge ticket-premium">
-                💎 {{ d.rewardPremium || 0 }}
-                <button class="btn-plus" (click)="addTicket(i, 'premium'); $event.stopPropagation()">+</button>
-              </div>
-            </div>
+      <!-- Mission Items -->
+      <div class="mission-item" *ngFor="let mission of missions; trackBy: trackByMissionId">
+        <div class="mission-info">
+          <h3>{{ mission.title || 'Sem título' }}</h3>
+          <p>{{ mission.description || 'Sem descrição' }}</p>
+          <span class="badge">{{ mission.type || 'N/A' }}</span>
+          
+          <div class="daily-info" *ngIf="mission.type === 'DAILY' && mission.dailyRewards && mission.dailyRewards.length > 0">
+            <i class="bi bi-calendar3"></i>
+            <span>{{ mission.dailyRewards.length }} dias configurados</span>
           </div>
-          <div class="daily-add">
-            <button class="btn" (click)="addDailyDay()">+ Adicionar dia</button>
+          
+          <div class="rewards-display">
+            <div class="reward-item" *ngIf="mission.rewardNormal && mission.rewardNormal > 0">
+              <span class="reward-icon">🎫</span>
+              <span class="reward-text">{{ mission.rewardNormal }} Normais</span>
+            </div>
+            <div class="reward-item" *ngIf="mission.rewardPremium && mission.rewardPremium > 0">
+              <span class="reward-icon">💎</span>
+              <span class="reward-text">{{ mission.rewardPremium }} Premium</span>
+            </div>
           </div>
         </div>
-
-        <!-- Painel de edição do card selecionado -->
-        <div class="daily-edit-panel" *ngIf="(editingMission.dailyRewards?.length || 0) > 0">
-          <h5>Editar Dia {{ selectedDailyReward.day }}</h5>
-          <div class="field">
-            <label>Rótulo</label>
-            <input [(ngModel)]="selectedDailyReward.label" placeholder="Rótulo" />
-          </div>
-
-          <div class="field two-col">
-            <div>
-              <label>Tickets (normal)</label>
-              <input type="number" min="0" [(ngModel)]="selectedDailyReward.rewardNormal" />
-            </div>
-            <div>
-              <label>Tickets (premium)</label>
-              <input type="number" min="0" [(ngModel)]="selectedDailyReward.rewardPremium" />
-            </div>
-          </div>
-
-          <div class="edit-actions">
-            <button class="btn" (click)="moveDailyUp(selectedDailyIndex)" [disabled]="selectedDailyIndex<=0">↑</button>
-            <button class="btn" (click)="moveDailyDown(selectedDailyIndex)" [disabled]="selectedDailyIndex>= (editingMission.dailyRewards?.length || 1)-1">↓</button>
-            <button class="btn btn-save" (click)="saveMission()">Salvar missão</button>
-          </div>
+        <div class="mission-actions">
+          <button (click)="toggleActive(mission)" [class.active]="mission.active" class="btn-toggle">
+            {{ mission.active ? 'Ativa' : 'Inativa' }}
+          </button>
+          <button (click)="startEdit(mission)" class="btn-edit">Editar</button>
+          <button (click)="showDeleteConfirmation(mission)" class="btn-delete">Deletar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="missions-list" *ngIf="!isEditing">
-    <div class="mission-item" *ngFor="let mission of missions">
-      <div class="mission-info">
-        <h3>{{ mission.title }}</h3>
-        <p>{{ mission.description }}</p>
-        <span class="badge">{{ mission.type }}</span>
-        <div class="rewards-display">
-          <div class="reward-item" *ngIf="mission.rewardNormal && mission.rewardNormal > 0">
-            <span class="reward-icon">🎫</span>
-            <span class="reward-text">{{ mission.rewardNormal }} Normais</span>
+  <!-- FORMULÁRIO EM MODAL -->
+  <div class="modal-overlay" *ngIf="isEditing" (click)="cancelEdit()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ editingMission.type === 'DAILY' ? (editingMission.id ? 'Editar Missão Diária' : 'Nova Missão Diária') : (editingMission.id ? 'Editar Missão' : 'Nova Missão') }}</h2>
+        <button class="btn-close-modal" (click)="cancelEdit()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Missão Regular -->
+        <div class="form-content" *ngIf="editingMission.type !== 'DAILY'">
+          
+          <div class="form-row">
+            <div class="form-field full-width">
+              <label><i class="bi bi-pencil"></i> Título da Missão</label>
+              <input [(ngModel)]="editingMission.title" placeholder="Ex: Abrir 10 Caixas Normais" class="input-primary">
+            </div>
           </div>
-          <div class="reward-item" *ngIf="mission.rewardPremium && mission.rewardPremium > 0">
-            <span class="reward-icon">💎</span>
-            <span class="reward-text">{{ mission.rewardPremium }} Premium</span>
+
+          <div class="form-row">
+            <div class="form-field full-width">
+              <label><i class="bi bi-text-paragraph"></i> Descrição</label>
+              <textarea [(ngModel)]="editingMission.description" placeholder="Descreva o objetivo da missão..." rows="3" class="input-primary"></textarea>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field full-width">
+              <label><i class="bi bi-bullseye"></i> Tipo de Requisito</label>
+              <select [(ngModel)]="editingMission.requirement" class="input-primary">
+                <option value="">Selecione um requisito...</option>
+                <option value="TOTAL_POWER">Atingir X de Poder Total</option>
+                <option value="ITEM_COUNT">Coletar X Itens</option>
+                <option value="RARITY_COMMON">Ganhar Item Comum</option>
+                <option value="RARITY_RARE">Ganhar Item Raro</option>
+                <option value="RARITY_EPIC">Ganhar Item Épico</option>
+                <option value="RARITY_LEGENDARY">Ganhar Item Lendário</option>
+                <option value="RARITY_MYTHIC">Ganhar Item Mítico</option>
+                <option value="OPEN_BOXES">Abrir X Caixas</option>
+                <option value="GACHA_PULLS">Fazer X Gachas</option>
+                <option value="COMPLETE_TRADES">Completar X Trocas</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row" *ngIf="requiresAmount()">
+            <div class="form-field full-width">
+              <label><i class="bi bi-123"></i> Quantidade Necessária</label>
+              <input type="number" [(ngModel)]="editingMission.requirementAmount" placeholder="Ex: 10, 50, 100..." min="1" class="input-primary">
+            </div>
+          </div>
+
+          <div class="rewards-section">
+            <h3><i class="bi bi-gift"></i> Recompensas</h3>
+            <div class="form-row two-cols">
+              <div class="form-field reward-field">
+                <label>🎫 Tickets Normais</label>
+                <input type="number" [(ngModel)]="editingMission.rewardNormal" placeholder="0" min="0" class="input-primary">
+              </div>
+              <div class="form-field reward-field">
+                <label>💎 Tickets Premium</label>
+                <input type="number" [(ngModel)]="editingMission.rewardPremium" placeholder="0" min="0" class="input-primary">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button (click)="saveMission()" class="btn-save-primary">
+              <i class="bi bi-check-circle"></i> Salvar Missão
+            </button>
+            <button (click)="cancelEdit()" class="btn-cancel-secondary">
+              <i class="bi bi-x-circle"></i> Cancelar
+            </button>
           </div>
         </div>
-      </div>
-      <div class="mission-actions">
-        <button (click)="toggleActive(mission)" [class.active]="mission.active" class="btn-toggle">
-          {{ mission.active ? 'Ativa' : 'Inativa' }}
-        </button>
-        <button (click)="startEdit(mission)" class="btn-edit">Editar</button>
-        <button (click)="showDeleteConfirmation(mission)" class="btn-delete">Deletar</button>
+
+        <!-- Missão Diária -->
+        <div class="form-content" *ngIf="editingMission.type === 'DAILY'">
+          <div class="form-row">
+            <div class="form-field full-width">
+              <label><i class="bi bi-pencil"></i> Título da Missão Diária</label>
+              <input [(ngModel)]="editingMission.title" placeholder="Ex: Recompensas de Login Diário" class="input-primary">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field full-width">
+              <label><i class="bi bi-text-paragraph"></i> Descrição</label>
+              <textarea [(ngModel)]="editingMission.description" placeholder="Faça login todos os dias para ganhar recompensas progressivas" rows="2" class="input-primary"></textarea>
+            </div>
+          </div>
+
+          <div class="daily-rewards-editor">
+            <h3><i class="bi bi-calendar3"></i> Configurar Dias e Recompensas</h3>
+            
+            <div class="daily-editor-container">
+              <!-- Lista de dias -->
+              <div class="daily-days-list">
+                <div class="daily-day-card" 
+                     *ngFor="let d of (editingMission.dailyRewards || []); let i = index" 
+                     [class.selected]="i===selectedDailyIndex" 
+                     (click)="selectedDailyIndex = i">
+                  <div class="day-number">Dia {{ d.day }}</div>
+                  <div class="day-rewards">
+                    <span *ngIf="(d.rewardNormal || 0) > 0">🎫 {{ d.rewardNormal }}</span>
+                    <span *ngIf="(d.rewardPremium || 0) > 0">💎 {{ d.rewardPremium }}</span>
+                  </div>
+                  <button class="btn-remove-day" *ngIf="d.day > 1" (click)="removeDailyDay(i); $event.stopPropagation()">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                <button class="btn-add-day" (click)="addDailyDay()">
+                  <i class="bi bi-plus-circle"></i> Adicionar Dia
+                </button>
+              </div>
+
+              <!-- Editor do dia selecionado -->
+              <div class="daily-day-editor" *ngIf="(editingMission.dailyRewards?.length || 0) > 0">
+                <h4>Editar Dia {{ selectedDailyReward.day }}</h4>
+                
+                <div class="form-field">
+                  <label><i class="bi bi-tag"></i> Rótulo do Dia</label>
+                  <input [(ngModel)]="selectedDailyReward.label" placeholder="Ex: Dia 1, Primeiro Dia" class="input-primary" />
+                </div>
+
+                <div class="form-row two-cols">
+                  <div class="form-field">
+                    <label><i class="bi bi-ticket-perforated"></i> Tickets Normais</label>
+                    <input type="number" min="0" [(ngModel)]="selectedDailyReward.rewardNormal" class="input-primary" />
+                  </div>
+                  <div class="form-field">
+                    <label><i class="bi bi-gem"></i> Tickets Premium</label>
+                    <input type="number" min="0" [(ngModel)]="selectedDailyReward.rewardPremium" class="input-primary" />
+                  </div>
+                </div>
+
+                <div class="day-actions">
+                  <button class="btn-move" (click)="moveDailyUp(selectedDailyIndex)" [disabled]="selectedDailyIndex<=0">
+                    <i class="bi bi-arrow-up"></i> Mover para Cima
+                  </button>
+                  <button class="btn-move" (click)="moveDailyDown(selectedDailyIndex)" [disabled]="selectedDailyIndex>= (editingMission.dailyRewards?.length || 1)-1">
+                    <i class="bi bi-arrow-down"></i> Mover para Baixo
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button (click)="saveMission()" class="btn-save-primary">
+                <i class="bi bi-check-circle"></i> Salvar Missão Diária
+              </button>
+              <button (click)="cancelEdit()" class="btn-cancel-secondary">
+                <i class="bi bi-x-circle"></i> Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -1,53 +1,100 @@
-import { Component, OnInit, ChangeDetectorRef, NgZone, ApplicationRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone, ApplicationRef, ChangeDetectionStrategy } from '@angular/core';
 import { MissionService } from '../../services/mission.service';
+import { EventService } from '../../services/event.service';
 import { Mission } from '../../models/mission.model';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-manage-missions',
   templateUrl: './manage-missions.component.html',
   styleUrls: ['./manage-missions.component.scss']
 })
-export class ManageMissionsComponent implements OnInit {
+export class ManageMissionsComponent implements OnInit, OnDestroy {
   missions: Mission[] = [];
   isEditing = false;
   editingMission: Mission = this.getEmptyMission();
   isLoading = false;
   selectedDailyIndex: number = 0;
   isCreating = false;
+  
+  private eventSubscription?: Subscription;
 
   notification = { show: false, message: '', type: 'success' };
   confirmation: { show: boolean; message: string; mission?: Mission | null } = { show: false, message: '', mission: null };
 
-  constructor(private missionService: MissionService, private cdr: ChangeDetectorRef, private ngZone: NgZone, private appRef: ApplicationRef) { }
+  constructor(
+    private missionService: MissionService,
+    private eventService: EventService,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone,
+    private appRef: ApplicationRef
+  ) { }
+
+  trackByMissionId(index: number, mission: Mission): string {
+    return mission.id || index.toString();
+  }
 
   async ngOnInit() {
     console.log('ManageMissionsComponent ngOnInit');
+    this.isEditing = false;
+    this.isCreating = false;
+    console.log('[ManageMissions] Estado inicial - isEditing:', this.isEditing, 'isCreating:', this.isCreating);
     this.ngZone.run(async () => {
       await this.loadMissions();
     });
+
+    // Atualizar em tempo real quando missões forem alteradas em qualquer parte do app
+    this.eventSubscription = this.eventService.events$.subscribe((event) => {
+      if (event !== 'missionsChanged') return;
+      this.ngZone.run(async () => {
+        // Evitar competir com o carregamento inicial
+        if (this.isLoading) return;
+        await this.loadMissions();
+      });
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.eventSubscription?.unsubscribe();
   }
 
   async loadMissions() {
     this.isLoading = true;
+    console.log('[ManageMissions] Iniciando carregamento...');
+    console.log('[ManageMissions] isLoading:', this.isLoading);
+    console.log('[ManageMissions] isEditing:', this.isEditing);
+    
     try {
+      console.log('[ManageMissions] Chamando missionService.getAllMissions()...');
       const missions = await this.missionService.getAllMissions();
-      this.ngZone.run(() => {
-        this.missions = [...missions];
-        setTimeout(() => {
-          this.cdr.markForCheck();
-          this.appRef.tick();
-          this.cdr.detectChanges();
-        }, 0);
-      });
+      console.log('[ManageMissions] Missões recebidas do service:', missions);
+      console.log('[ManageMissions] Total de missões recebidas:', missions.length);
+      
+      if (missions.length > 0) {
+        console.log('[ManageMissions] Primeira missão:', missions[0]);
+      }
+      
+      this.missions = [...missions];
+      console.log('[ManageMissions] Missões atribuídas ao componente:', this.missions.length);
+      console.log('[ManageMissions] Array this.missions:', this.missions);
+      
+      // Force change detection
+      this.cdr.detectChanges();
+      console.log('[ManageMissions] Change detection forçada');
+      
       // Diagnostic: log any missions missing id
       const missingId = this.missions.filter(m => !m.id || typeof m.id !== 'string' || m.id.trim() === '');
       if (missingId.length > 0) {
-        console.error('Loaded missions with missing id:', missingId);
+        console.error('[ManageMissions] Missões sem ID:', missingId);
       }
     } catch (error) {
+      console.error('[ManageMissions] Erro ao carregar missões:', error);
       this.showNotification('Erro ao carregar missões', 'error');
     } finally {
       this.isLoading = false;
+      console.log('[ManageMissions] isLoading definido como false');
+      console.log('[ManageMissions] Estado final - missions.length:', this.missions.length);
+      this.cdr.detectChanges();
     }
   }
 
@@ -56,7 +103,8 @@ export class ManageMissionsComponent implements OnInit {
     this.isCreating = true;
     this.editingMission = this.getEmptyMission();
     if (type === 'regular') {
-      this.editingMission.type = 'WEEKLY';
+      // Não definir type para missões regulares (deixar undefined)
+      this.editingMission.type = undefined;
       this.editingMission.dailyRewards = undefined;
     } else {
       this.editingMission.type = 'DAILY';
@@ -93,6 +141,29 @@ export class ManageMissionsComponent implements OnInit {
 
   async saveMission() {
     try {
+      // Validação de duplicatas para missões regulares
+      if (this.editingMission.type !== 'DAILY') {
+        const duplicate = this.missions.find(m => 
+          m.id !== this.editingMission.id && 
+          m.type !== 'DAILY' &&
+          m.requirement === this.editingMission.requirement && 
+          (m as any).requirementAmount === this.editingMission.requirementAmount
+        );
+        
+        if (duplicate) {
+          this.showNotification('Já existe uma missão com esse requisito e quantidade!', 'error');
+          return;
+        }
+        
+        // Validar que quantidade foi preenchida se requisito foi selecionado
+        if (this.editingMission.requirement && 
+            this.editingMission.requirement !== '' && 
+            (!this.editingMission.requirementAmount || this.editingMission.requirementAmount <= 0)) {
+          this.showNotification('Defina a quantidade para o requisito!', 'error');
+          return;
+        }
+      }
+
       // Ensure dailyRewards exists if type is DAILY
       if (this.editingMission.type === 'DAILY' && !this.editingMission.dailyRewards) {
         this.editingMission.dailyRewards = [{ 
@@ -191,10 +262,11 @@ export class ManageMissionsComponent implements OnInit {
       id: '',
       title: '',
       description: '',
-      type: 'DAILY',
+      // type: undefined para missões regulares, será definido em startCreate se necessário
       goal: { type: 'LOGIN_DAYS', target: 7 },
       reward: { normalTickets: 0, premiumTickets: 0 },
       requirement: '',
+      requirementAmount: 0,
       autoComplete: false,
       rewardNormal: 0,
       rewardPremium: 0,
@@ -265,6 +337,11 @@ export class ManageMissionsComponent implements OnInit {
 
   get selectedDailyReward() {
     return this.editingMission.dailyRewards?.[this.selectedDailyIndex] || { day: 0, label: '', rewardNormal: 0, rewardPremium: 0, imageUrl: '' };
+  }
+
+  requiresAmount(): boolean {
+    const req = this.editingMission.requirement;
+    return req === 'TOTAL_POWER' || req === 'ITEM_COUNT' || req === 'OPEN_BOXES' || req === 'GACHA_PULLS' || req === 'COMPLETE_TRADES';
   }
 
   showNotification(message: string, type: 'success' | 'error' | 'info') {

@@ -35,7 +35,7 @@ export interface Mission {
   id?: string;
   title: string;
   description: string;
-  type: MissionType;
+  type?: MissionType;  // Opcional: apenas missões diárias terão type: 'DAILY'
   goal: MissionGoal;
   reward: MissionReward;
   active: boolean;
@@ -45,6 +45,7 @@ export interface Mission {
   
   // Campos legados (compatibilidade)
   requirement?: string;
+  requirementAmount?: number;
   autoComplete?: boolean;
   rewardNormal?: number;
   rewardPremium?: number;
