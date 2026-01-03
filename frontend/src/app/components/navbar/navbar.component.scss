@@ -1,16 +1,12 @@
 .navbar {
-  /* navbar leve (acima de fundo, abaixo de modais/toasts) */
   position: relative;
-  /* manter abaixo de modais (~2000) e toasts (20000), mas acima do fundo */
   z-index: 1000;
 
   &.low-z {
-    /* when route requests low stacking, keep navbar above most content but below modals/toasts */
     z-index: 50 !important;
   }
 
   &.high-z {
-    /* when route requests high stacking, keep navbar above most content and some overlays */
     z-index: 100 !important;
   }
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -53,27 +49,25 @@
 
   .nav-compact { gap: 0.6rem; margin-left: 0.5rem; }
 
-/* Compact avatar: visual minimal (removido fundo de botão) */
 .nav-compact .nav-compact-user {
-  background: transparent; /* sem fundo */
+  background: transparent;
   border-radius: 50%;
-  padding: 0; /* sem padding extra para não parecer botão */
+  padding: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
-  border: none; /* remover borda do botão */
+  border: none;
 }
 .nav-compact .nav-compact-user:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.20); /* hover sutil */
+  box-shadow: 0 6px 18px rgba(0,0,0,0.20);
   background: transparent;
 }
 
 
 
-/* Make the small-screen toggler a bit nicer and aligned with compact area */
 .nav-compact .navbar-toggler {
   padding: 6px 10px;
   border-radius: 8px;
@@ -84,7 +78,6 @@
 }
 .nav-compact .navbar-toggler:hover { transform: translateY(-2px); background: rgba(255,255,255,0.06); }
 
-/* Ensure original desktop navbar-toggler (if present) remains hidden on large screens */
 @media (min-width: 992px) {
   .nav-compact .navbar-toggler { display: none !important; }
 }
@@ -153,7 +146,6 @@
       animation: premiumGlow 2s infinite;
     }
 
-    /* Versão compacta (quando dentro .nav-compact) */
     .nav-compact & {
       padding: 0.25rem 0.5rem;
 

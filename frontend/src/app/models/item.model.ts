@@ -7,8 +7,8 @@ export interface Item {
   boxName: string;
   theme: string;
   power: number;
-  points: number; // Pontos que o item vale
-  dropRate: number; // Porcentagem de chance de drop (0-100)
+  points: number;
+  dropRate: number;
   createdAt: Date;
 }
 
@@ -19,6 +19,6 @@ export interface UserItem {
   item: Item;
   obtainedAt: Date;
   quantity: number;
-  rarityLevel?: number; // Nível de raridade aleatório (1-1000) gerado ao ganhar o item
-  points?: number; // Pontos calculados baseado na raridade e rarityLevel
+  rarityLevel?: number;
+  points?: number;
 }

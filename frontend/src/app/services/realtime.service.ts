@@ -18,7 +18,6 @@ export class RealtimeService {
     if (this.started) return;
     this.started = true;
 
-    // backendUrl vem como http://localhost:3000/api
     const serverUrl = environment.backendUrl.replace(/\/api\/?$/, '');
 
     this.socket = io(serverUrl, {

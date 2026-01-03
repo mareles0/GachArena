@@ -59,7 +59,6 @@
     z-index: 50;
   }
 
-  // MODAL FLUTUANTE
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -163,7 +162,6 @@
     }
   }
 
-  // Estilos do formulário
   .form-content {
     .form-row {
       display: flex;
@@ -326,7 +324,6 @@
       }
     }
 
-    // Editor de dias (Daily Missions)
     .daily-rewards-editor {
       margin-top: 1.5rem;
 
@@ -606,7 +603,6 @@
         position: relative;
       }
 
-      /* checked state: green background with white check */
       input[type="checkbox"]:checked {
         background: linear-gradient(135deg, #10b981, #059669);
         border-color: transparent;
@@ -871,7 +867,7 @@
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 9999;
+  z-index: 10000;
 }
 
 .confirmation-container {
@@ -976,7 +972,6 @@
       }
     }
 
-    /* Daily editor styles (card list + edit panel) */
     .daily-editor-section {
       margin-top: 2rem;
       border-top: 1px solid rgba(255,255,255,0.1);

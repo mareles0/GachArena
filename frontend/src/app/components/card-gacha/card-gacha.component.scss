@@ -10,7 +10,6 @@
   background: radial-gradient(ellipse at center, rgba(20, 20, 40, 0.95) 0%, rgba(0, 0, 0, 0.98) 100%);
 }
 
-// Canvas de partículas
 .particle-canvas {
   position: absolute;
   top: 0;
@@ -21,7 +20,6 @@
   z-index: 150;
 }
 
-// Background overlay melhorado
 .background-overlay {
   position: absolute;
   top: 0;
@@ -90,7 +88,6 @@
   to { transform: rotate(360deg); }
 }
 
-// Container dos cards melhorado
 .cards-container {
   position: relative;
   display: flex;
@@ -105,14 +102,12 @@
   transform-style: preserve-3d;
 }
 
-/* Centralizar melhor no modo x1 (um único card grande) */
 .cards-container.mode-x1 {
   align-items: center;
   justify-content: center;
   min-height: 70vh;
 }
 
-// Loading card épico
 .loading-card {
   position: absolute;
   display: flex;
@@ -253,7 +248,6 @@
   }
 }
 
-// Cards individuais ULTRA melhorados
 .gacha-card {
   position: relative;
   width: 180px;
@@ -285,7 +279,6 @@
   }
 }
 
-// Camada holográfica premium
 .holo-layer {
   position: absolute;
   inset: 0;
@@ -313,7 +306,6 @@
   75% { background-position: 0% 100%; }
 }
 
-// Reel (caça-níquel) melhorado
 .reel {
   position: absolute;
   inset: 18px auto 18px auto;
@@ -332,7 +324,6 @@
   
   &::before {
 
-/* Destaque para o item que parar no slot central */
 .reel-item.selected {
   transform: scale(1.06);
   z-index: 6;
@@ -353,7 +344,6 @@
     z-index: 10;
   }
 
-  /* Janela central (slot) */
   &::after {
     content: '';
     position: absolute;
@@ -421,7 +411,6 @@
   &.rarity-legendary { --rarity-color: #ffd54f; }
   &.rarity-mythic { --rarity-color: #ff6f00; }
 
-  /* fundos por raridade (mais visíveis) */
   &.rarity-common { background-image: linear-gradient(180deg, rgba(158,158,158,0.12), rgba(0,0,0,0.28)); }
   &.rarity-rare { background-image: linear-gradient(180deg, rgba(79,195,247,0.12), rgba(0,0,0,0.28)); }
   &.rarity-epic { background-image: linear-gradient(180deg, rgba(186,104,200,0.12), rgba(0,0,0,0.3)); }
@@ -431,7 +420,6 @@
 
 .reel-inner { transition: transform 0.8s cubic-bezier(.2,.8,.2,1); }
 
-/* Painel de status (debug) */
 .gacha-status {
   position: absolute;
   bottom: 22px;
@@ -488,7 +476,6 @@
   50% { transform: translateY(-5px) scale(1.1); }
 }
 
-// Verso do card melhorado
 .card-back {
   position: absolute;
   width: 100%;
@@ -530,7 +517,6 @@
   }
 }
 
-// Frente do card ULTRA melhorada
 .card-front {
   position: absolute;
   width: 100%;
@@ -745,10 +731,8 @@
   50% { opacity: 0.65; transform: scale(1.1); }
 }
 
-// Layouts por modo MELHORADOS
 .mode-x1 {
   .reel { width: 78%; }
-  /* modo x1: card grande e quadrado */
   .gacha-card {
     width: min(520px, 90vw);
     height: auto;
@@ -776,7 +760,6 @@
     font-size: 30px;
   }
 
-  /* slot maior para modo x1 */
   .reel { --slot-height: 140px; }
   .reel-item { height: 140px; }
   .reel-item .reel-label { font-size: 18px; padding: 8px 18px; }
@@ -816,7 +799,6 @@
   }
 }
 
-// Responsive melhorado
 @media (max-width: 768px) {
   .mode-x1 .gacha-card {
     width: 280px;

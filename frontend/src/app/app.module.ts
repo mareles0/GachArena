@@ -56,9 +56,7 @@ import { ManageMissionsComponent } from './components/manage-missions/manage-mis
     ManageItemsComponent,
     ManageUsersComponent,
     ManageMissionsComponent,
-    // Profile
     ProfileComponent,
-    // Trade
     TradeModalComponent,
     TradesComponent
   ],

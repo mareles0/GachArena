@@ -43,11 +43,9 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
       await this.loadMissions();
     });
 
-    // Atualizar em tempo real quando missões forem alteradas em qualquer parte do app
     this.eventSubscription = this.eventService.events$.subscribe((event) => {
       if (event !== 'missionsChanged') return;
       this.ngZone.run(async () => {
-        // Evitar competir com o carregamento inicial
         if (this.isLoading) return;
         await this.loadMissions();
       });
@@ -78,11 +76,9 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
       console.log('[ManageMissions] Missões atribuídas ao componente:', this.missions.length);
       console.log('[ManageMissions] Array this.missions:', this.missions);
       
-      // Force change detection
       this.cdr.detectChanges();
       console.log('[ManageMissions] Change detection forçada');
       
-      // Diagnostic: log any missions missing id
       const missingId = this.missions.filter(m => !m.id || typeof m.id !== 'string' || m.id.trim() === '');
       if (missingId.length > 0) {
         console.error('[ManageMissions] Missões sem ID:', missingId);
@@ -103,7 +99,6 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
     this.isCreating = true;
     this.editingMission = this.getEmptyMission();
     if (type === 'regular') {
-      // Não definir type para missões regulares (deixar undefined)
       this.editingMission.type = undefined;
       this.editingMission.dailyRewards = undefined;
     } else {
@@ -112,7 +107,6 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
       this.editingMission.description = 'Complete os dias consecutivos para ganhar recompensas progressivas.';
       this.editingMission.requirement = 'Fazer login diariamente';
       this.editingMission.autoComplete = true;
-      // dailyRewards already set in getEmptyMission
     }
   }
 
@@ -120,7 +114,6 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
     this.isEditing = true;
     this.isCreating = false;
     this.editingMission = { ...mission };
-    // ensure dailyRewards exists for daily missions when editing
     if (this.editingMission.type === 'DAILY' && (!this.editingMission.dailyRewards || this.editingMission.dailyRewards.length === 0)) {
       this.editingMission.dailyRewards = [{ 
         day: 1, 
@@ -141,7 +134,6 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
 
   async saveMission() {
     try {
-      // Validação de duplicatas para missões regulares
       if (this.editingMission.type !== 'DAILY') {
         const duplicate = this.missions.find(m => 
           m.id !== this.editingMission.id && 
@@ -155,7 +147,6 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
           return;
         }
         
-        // Validar que quantidade foi preenchida se requisito foi selecionado
         if (this.editingMission.requirement && 
             this.editingMission.requirement !== '' && 
             (!this.editingMission.requirementAmount || this.editingMission.requirementAmount <= 0)) {
@@ -164,7 +155,6 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Ensure dailyRewards exists if type is DAILY
       if (this.editingMission.type === 'DAILY' && !this.editingMission.dailyRewards) {
         this.editingMission.dailyRewards = [{ 
           day: 1, 
@@ -175,10 +165,8 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
           imageUrl: '' 
         }];
       }
-      // Ensure numeric fields are numbers
       this.editingMission.rewardNormal = Number(this.editingMission.rewardNormal || 0);
       this.editingMission.rewardPremium = Number(this.editingMission.rewardPremium || 0);
-      // Normalize dailyRewards numbers
       if (this.editingMission.dailyRewards && this.editingMission.dailyRewards.length) {
         this.editingMission.dailyRewards = this.editingMission.dailyRewards.map(d => ({
           day: Number(d.day || 0),
@@ -198,12 +186,10 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
         this.showNotification('Missão atualizada!', 'success');
       } else {
         const newId = await this.missionService.createMission(this.editingMission as any);
-        // assign returned id to the mission (defensive)
         this.editingMission.id = newId;
         this.showNotification('Missão criada!', 'success');
       }
-      this.cancelEdit();
-      await this.loadMissions();
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       this.showNotification('Erro ao salvar missão', 'error');
     }
@@ -236,7 +222,7 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
     try {
       await this.missionService.deleteMission(id);
       this.showNotification('Missão deletada', 'success');
-      await this.loadMissions();
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       this.showNotification('Erro ao deletar missão', 'error');
     }
@@ -251,7 +237,7 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
       }
       await this.missionService.updateMission(mission.id, { active: !mission.active });
       this.showNotification(mission.active ? 'Missão desativada' : 'Missão ativada', 'success');
-      await this.loadMissions();
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       this.showNotification('Erro ao atualizar missão', 'error');
     }
@@ -262,7 +248,6 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
       id: '',
       title: '',
       description: '',
-      // type: undefined para missões regulares, será definido em startCreate se necessário
       goal: { type: 'LOGIN_DAYS', target: 7 },
       reward: { normalTickets: 0, premiumTickets: 0 },
       requirement: '',
@@ -294,13 +279,12 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
       imageUrl: '' 
     });
     this.editingMission.dailyRewards = dr;
-    this.selectedDailyIndex = dr.length - 1; // Select the new day
+    this.selectedDailyIndex = dr.length - 1;
   }
 
   removeDailyDay(index: number) {
     if (!this.editingMission.dailyRewards) return;
     this.editingMission.dailyRewards.splice(index, 1);
-    // renumber days
     this.editingMission.dailyRewards = this.editingMission.dailyRewards.map((d, i) => ({ ...d, day: i + 1 }));
     if (this.selectedDailyIndex >= this.editingMission.dailyRewards.length) {
       this.selectedDailyIndex = Math.max(0, this.editingMission.dailyRewards.length - 1);
@@ -346,6 +330,6 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
 
   showNotification(message: string, type: 'success' | 'error' | 'info') {
     this.notification = { show: true, message, type };
-    setTimeout(() => this.notification.show = false, 5000); // Aumentado para 5 segundos
+    setTimeout(() => this.notification.show = false, 5000);
   }
 }

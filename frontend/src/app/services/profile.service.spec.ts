@@ -18,7 +18,6 @@ describe('ProfileService', () => {
       ]
     });
 
-    // Inject manually with spies
     service = new ProfileService(httpSpy, userServiceSpy);
   });
 

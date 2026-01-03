@@ -23,13 +23,11 @@ export class MissionsComponent implements OnInit, OnDestroy {
   private eventSubscription?: Subscription;
   private reloadQueued = false;
   
-  // Map para armazenar dados calculados de missões diárias (evita recalcular no template)
   dailyMissionData = new Map<string, {
     nextUnclaimedDay: number | null;
     isDayAvailable: boolean;
   }>();
   
-  // Map para cachear percentual de progresso (evita recalcular no template)
   progressCache = new Map<string, number>();
 
   notification = {
@@ -47,7 +45,6 @@ export class MissionsComponent implements OnInit, OnDestroy {
   async ngOnInit() {
     console.log('[Missions] ngOnInit iniciado');
     
-    // Escutar eventos do sistema para atualizar automaticamente
     this.eventSubscription = this.eventService.events$.subscribe((event) => {
       console.log('[Missions] Evento recebido:', event);
       if (this.currentUserId && event === 'missionsChanged') {
@@ -57,14 +54,12 @@ export class MissionsComponent implements OnInit, OnDestroy {
       }
       if (this.currentUserId && (event === 'boxesOpened' || event === 'itemsChanged' || event === 'tradesChanged' || event === 'userDataChanged')) {
         console.log('[Missions] Atualizando progresso das missões...');
-        // Se o componente está ativo, atualizar apenas o progresso
         if (this.userMissions.length > 0) {
           this.updateMissionsProgress();
         }
       }
     });
     
-    // Escutar mudanças de autenticação
     this.unsubscribeAuth = onAuthStateChanged(auth, async (user: User | null) => {
       console.log('[Missions] Usuário mudou:', user?.uid);
       if (user?.uid) {
@@ -90,6 +85,7 @@ export class MissionsComponent implements OnInit, OnDestroy {
 
   async loadMissions() {
     this.isLoading = true;
+    this.progressCache.clear();
     try {
       const [userMissions, activeMissions] = await Promise.all([
         this.missionService.getUserMissions(this.currentUserId),
@@ -99,16 +95,13 @@ export class MissionsComponent implements OnInit, OnDestroy {
       console.log('[Missions] userMissions:', userMissions);
       console.log('[Missions] activeMissions:', activeMissions);
 
-      // Filtrar apenas userMissions que têm uma missão válida (não deletada)
       this.userMissions = (userMissions || []).filter(um => um.mission && um.mission.id);
       
-      // Calcular progresso para missões regulares não completadas
       await this.updateMissionsProgress();
       
       const startedMissionIds = this.userMissions.map(um => um.missionId);
       this.availableMissions = (activeMissions || []).filter(m => !startedMissionIds.includes(m.id || ''));
 
-      // Calcular dados das missões diárias (uma vez só)
       this.calculateDailyMissionData();
       
       console.log('[Missions] this.userMissions (filtradas):', this.userMissions);
@@ -125,7 +118,6 @@ export class MissionsComponent implements OnInit, OnDestroy {
 
       if (this.reloadQueued) {
         this.reloadQueued = false;
-        // Rodar mais uma vez, mas sem empilhar múltiplos reloads
         this.loadMissions();
       }
     }
@@ -145,6 +137,13 @@ export class MissionsComponent implements OnInit, OnDestroy {
     
     for (const um of this.userMissions) {
       if (um.mission?.type === 'DAILY' && um.id) {
+        console.log('[Missions] Processando missão diária:', {
+          id: um.id,
+          claimedDays: um.claimedDays,
+          nextAvailableAt: um.nextAvailableAt,
+          progress: um.progress
+        });
+        
         const nextDay = this.calculateNextUnclaimedDay(um);
         const isAvailable = this.calculateDayAvailability(um);
         
@@ -157,17 +156,16 @@ export class MissionsComponent implements OnInit, OnDestroy {
       }
     }
     
+    console.log('[Missions] dailyMissionData final:', Array.from(this.dailyMissionData.entries()));
     console.log('[Missions] Dados calculados:', this.dailyMissionData.size, 'missões');
   }
 
   async updateMissionsProgress() {
     console.log('[Missions] updateMissionsProgress iniciado para', this.userMissions.length, 'missões');
     
-    // Limpar cache de progresso antes de recalcular
     this.progressCache.clear();
     
     for (const um of this.userMissions) {
-      // Apenas calcular para missões regulares não completadas
       if (um.mission?.type !== 'DAILY' && !um.completed && um.mission?.id) {
         console.log('[Missions] Calculando progresso para missão:', um.mission.id, um.mission.title);
         try {
@@ -175,12 +173,10 @@ export class MissionsComponent implements OnInit, OnDestroy {
           um.progress = progressData.progress;
           console.log('[Missions] Progresso calculado:', um.mission.id, '=', um.progress, '%');
           
-          // Atualizar cache
           if (um.id) {
             this.progressCache.set(um.id, um.progress);
           }
           
-          // Se completou, atualizar no backend
           if (progressData.completed && !um.completed && um.id) {
             console.log('[Missions] Missão completada, marcando como concluída:', um.mission.id);
             await this.missionService.completeMission(um.id);
@@ -188,7 +184,6 @@ export class MissionsComponent implements OnInit, OnDestroy {
           }
         } catch (error: any) {
           console.error('[Missions] Erro ao calcular progresso da missão:', um.mission?.id, error);
-          // Se for 404, a missão não existe mais no backend, setar progresso como 0
           if (error?.status === 404) {
             console.warn('[Missions] Missão não encontrada no backend, setando progresso como 0');
             um.progress = 0;
@@ -198,7 +193,6 @@ export class MissionsComponent implements OnInit, OnDestroy {
           }
         }
       } else if (um.id) {
-        // Para missões diárias ou já completadas, cachear o progresso atual
         this.progressCache.set(um.id, um.progress || 0);
       }
     }
@@ -238,11 +232,10 @@ export class MissionsComponent implements OnInit, OnDestroy {
 
       await this.missionService.claimMission(userMission.id);
 
-      // Recompensa é aplicada no backend. Aqui só atualizamos a UI.
       await this.ticketService.refreshTickets(this.currentUserId);
 
       this.showNotification('Recompensa coletada!', 'success');
-      await this.loadMissions();
+      setTimeout(() => window.location.reload(), 800);
     } catch (error: any) {
       console.error('Erro ao coletar recompensa:', error);
       this.showNotification(error?.message || 'Erro ao coletar recompensa', 'error');
@@ -263,7 +256,6 @@ export class MissionsComponent implements OnInit, OnDestroy {
     return null;
   }
   
-  // Getter rápido para usar no template (sem recalcular)
   getNextUnclaimedDay(um: UserMission & { mission?: Mission }): number | null {
     if (!um.id) return null;
     return this.dailyMissionData.get(um.id)?.nextUnclaimedDay ?? null;
@@ -285,11 +277,10 @@ export class MissionsComponent implements OnInit, OnDestroy {
     try {
       await this.missionService.claimDaily(um.id, day);
 
-      // Recompensa é aplicada no backend. Aqui só atualizamos a UI.
       await this.ticketService.refreshTickets(this.currentUserId);
 
       this.showNotification(`Dia ${day} coletado!`, 'success');
-      await this.loadMissions();
+      setTimeout(() => window.location.reload(), 800);
     } catch (err: any) {
       console.error('[Missions] Erro ao coletar dia:', err);
       this.showNotification(err?.message || 'Erro ao coletar dia', 'error');
@@ -298,25 +289,116 @@ export class MissionsComponent implements OnInit, OnDestroy {
 
   calculateDayAvailability(um: UserMission & { mission?: Mission }): boolean {
     if (!um || !um.mission) {
+      console.log('[Missions] calculateDayAvailability: missão inválida');
       return false;
     }
+    
+    const nextDay = this.calculateNextUnclaimedDay(um);
+    const claimedDaysCount = (um.claimedDays || []).length;
+    
+    console.log('[Missions] calculateDayAvailability:', {
+      missionId: um.id,
+      nextUnclaimedDay: nextDay,
+      claimedDays: um.claimedDays,
+      claimedDaysCount,
+      nextAvailableAt: um.nextAvailableAt,
+      lastDailyClaimAt: um.lastDailyClaimAt
+    });
+    
     const na = um.nextAvailableAt as any;
+    const lastClaim = um.lastDailyClaimAt as any;
+    
+    if (!na && !lastClaim) {
+      if (claimedDaysCount === 0) {
+        console.log('[Missions] Primeira coleta, disponível');
+        return true;
+      } else {
+        console.log('[Missions] Sem nextAvailableAt e lastDailyClaimAt, mas já tem dias coletados - bloqueando por segurança');
+        return false;
+      }
+    }
+    
+    if (lastClaim) {
+      try {
+        let lastClaimMs: number;
+        
+        if (lastClaim.seconds !== undefined) {
+          lastClaimMs = lastClaim.seconds * 1000;
+        } else if (lastClaim.toMillis) {
+          lastClaimMs = lastClaim.toMillis();
+        } else if (typeof lastClaim === 'string') {
+          lastClaimMs = Date.parse(lastClaim);
+        } else if (lastClaim instanceof Date) {
+          lastClaimMs = lastClaim.getTime();
+        } else {
+          lastClaimMs = 0;
+        }
+        
+        if (lastClaimMs) {
+          const lastClaimDate = new Date(lastClaimMs);
+          const today = new Date();
+          lastClaimDate.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+          
+          console.log('[Missions] Verificação de última coleta:', {
+            lastClaimDate: lastClaimDate.toISOString(),
+            today: today.toISOString(),
+            sameDay: lastClaimDate.getTime() === today.getTime()
+          });
+          
+          if (lastClaimDate.getTime() === today.getTime()) {
+            console.log('[Missions] Já coletou hoje, não disponível');
+            return false;
+          }
+        }
+      } catch (err) {
+        console.error('[Missions] Erro ao processar lastDailyClaimAt:', err);
+      }
+    }
+    
     if (!na) {
+      console.log('[Missions] Sem nextAvailableAt, mas passou verificação de lastClaim');
       return true;
     }
     
     try {
-      const naMs = na.seconds ? na.seconds * 1000 : (na.toMillis ? na.toMillis() : Date.parse(na));
+      let naMs: number;
+      
+      if (na.seconds !== undefined) {
+        naMs = na.seconds * 1000;
+      } else if (na.toMillis) {
+        naMs = na.toMillis();
+      } else if (typeof na === 'string') {
+        naMs = Date.parse(na);
+      } else if (na instanceof Date) {
+        naMs = na.getTime();
+      } else {
+        console.error('[Missions] Formato de data desconhecido:', na);
+        return false;
+      }
+      
+      if (!naMs || isNaN(naMs)) {
+        console.error('[Missions] Data inválida resultou em NaN:', { na, naMs });
+        return false;
+      }
+      
       const now = Date.now();
       const available = now >= naMs;
+      
+      console.log('[Missions] calculateDayAvailability:', {
+        now: new Date(now).toISOString(),
+        nextAvailable: new Date(naMs).toISOString(),
+        isAvailable: available,
+        diff: (naMs - now) / 1000 / 60 + ' minutos'
+      });
+      
       return available;
     } catch (err) {
       console.error('[Missions] Erro ao processar data', err);
-      return true;
+      return false;
     }
   }
   
-  // Getter rápido para usar no template (sem recalcular)
   isDayAvailable(um: UserMission & { mission?: Mission }): boolean {
     if (!um.id) return false;
     return this.dailyMissionData.get(um.id)?.isDayAvailable ?? false;
@@ -324,18 +406,60 @@ export class MissionsComponent implements OnInit, OnDestroy {
 
   timeUntilNext(um: UserMission & { mission?: Mission }): string {
     const na = um.nextAvailableAt as any;
-    if (!na) return '';
+    console.log('[Missions] timeUntilNext:', { missionId: um.id, nextAvailableAt: na });
+    
+    if (!na) {
+      console.log('[Missions] timeUntilNext: sem nextAvailableAt');
+      return '';
+    }
     
     try {
-      const naMs = na.seconds ? na.seconds * 1000 : (na.toMillis ? na.toMillis() : Date.parse(na));
+      let naMs: number;
+      
+      if (na.seconds !== undefined) {
+        naMs = na.seconds * 1000;
+      } else if (na.toMillis) {
+        naMs = na.toMillis();
+      } else if (typeof na === 'string') {
+        naMs = Date.parse(na);
+      } else if (na instanceof Date) {
+        naMs = na.getTime();
+      } else {
+        console.error('[Missions] Formato de data desconhecido:', na);
+        return '';
+      }
+      
+      if (!naMs || isNaN(naMs)) {
+        console.error('[Missions] Data inválida resultou em NaN:', { na, naMs });
+        return '';
+      }
+      
       const diff = naMs - Date.now();
-      if (diff <= 0) return '';
+      
+      console.log('[Missions] timeUntilNext calc:', {
+        naMs,
+        now: Date.now(),
+        diff,
+        nextAvailable: new Date(naMs).toISOString()
+      });
+      
+      if (diff <= 0) {
+        console.log('[Missions] timeUntilNext: diff negativo ou zero');
+        return '';
+      }
       
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (isNaN(hours) || isNaN(mins)) {
+        console.error('[Missions] timeUntilNext: NaN detectado', { hours, mins, diff, naMs });
+        return '';
+      }
+      
       if (hours > 0) return `${hours}h ${mins}m`;
       return `${mins}m`;
-    } catch {
+    } catch (err) {
+      console.error('[Missions] Erro ao calcular tempo:', err);
       return '';
     }
   }
@@ -378,14 +502,16 @@ export class MissionsComponent implements OnInit, OnDestroy {
 
   getProgressPercentage(userMission: UserMission & { mission?: Mission }): number {
     if (!userMission.id) return 0;
+    if (!userMission.mission) return 0;
     
-    // Usar cache se disponível
+    if (userMission.completed) {
+      return 100;
+    }
+    
     if (this.progressCache.has(userMission.id)) {
       return this.progressCache.get(userMission.id)!;
     }
     
-    // Se não estiver no cache, calcular e armazenar
-    if (!userMission.mission) return 0;
     const percentage = this.missionService.getProgressPercentage(userMission);
     this.progressCache.set(userMission.id, percentage);
     

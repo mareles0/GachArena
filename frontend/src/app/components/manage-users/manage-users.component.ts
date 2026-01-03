@@ -1,19 +1,22 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { UserService } from '../../services/user.service';
 import { ItemService } from '../../services/item.service';
+import { EventService } from '../../services/event.service';
 import { User } from '../../models/user.model';
 import { Item, UserItem } from '../../models/item.model';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-manage-users',
   templateUrl: './manage-users.component.html',
   styleUrls: ['./manage-users.component.scss']
 })
-export class ManageUsersComponent implements OnInit {
+export class ManageUsersComponent implements OnInit, OnDestroy {
   users: User[] = [];
   filteredUsers: User[] = [];
   searchTerm = '';
   isLoading = false;
+  private eventSubscription?: Subscription;
 
   notification = { show: false, message: '', type: 'success' };
   showTicketModal = false;
@@ -33,10 +36,26 @@ export class ManageUsersComponent implements OnInit {
   rarityLevel = 1;
   removeQuantities: { [key: string]: number } = {};
 
-  constructor(private userService: UserService, private itemService: ItemService) { }
+  constructor(
+    private userService: UserService,
+    private itemService: ItemService,
+    private eventService: EventService
+  ) { }
 
   async ngOnInit() {
     await this.loadUsers();
+    
+    this.eventSubscription = this.eventService.events$.subscribe((event) => {
+      if (event === 'userDataChanged') {
+        this.loadUsers();
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.eventSubscription) {
+      this.eventSubscription.unsubscribe();
+    }
   }
 
   async loadUsers() {
@@ -67,7 +86,6 @@ export class ManageUsersComponent implements OnInit {
     try {
       await this.userService.updateUser(user.id || '', { isBanned: !user.isBanned });
       this.showNotification(user.isBanned ? 'Usuário desbanido' : 'Usuário banido', 'success');
-      await this.loadUsers();
       this.filterUsers();
     } catch (error) {
       this.showNotification('Erro ao atualizar usuário', 'error');
@@ -93,13 +111,7 @@ export class ManageUsersComponent implements OnInit {
     try {
       await this.userService.addTickets(this.selectedUser.id || '', this.ticketAmount, this.ticketType);
       this.showNotification(`${this.ticketAmount} tickets ${this.ticketType === 'normal' ? 'normais' : 'premium'} adicionados para ${this.selectedUser.username}`, 'success');
-      this.closeTicketModal();
-
-      // Pequeno delay para garantir que o Firestore seja atualizado
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      await this.loadUsers();
-      this.filterUsers();
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       this.showNotification('Erro ao adicionar tickets', 'error');
     }
@@ -122,9 +134,7 @@ export class ManageUsersComponent implements OnInit {
     try {
       await this.userService.updateUser(this.selectedUser.id || '', { userType: this.newUserType });
       this.showNotification(`Cargo alterado para ${this.newUserType}`, 'success');
-      this.closeRoleModal();
-      await this.loadUsers();
-      this.filterUsers();
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       this.showNotification('Erro ao alterar cargo', 'error');
     }
@@ -159,8 +169,7 @@ export class ManageUsersComponent implements OnInit {
     try {
       await this.itemService.removeItemFromUser(userItem.id, qty);
       this.showNotification('Item removido', 'success');
-      // Recarregar inventário
-      this.userItems = await this.itemService.getUserItems(this.selectedUser.id || '');
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       this.showNotification('Erro ao remover item', 'error');
     }
@@ -194,9 +203,7 @@ export class ManageUsersComponent implements OnInit {
       const rl = (this.selectedItem && (this.selectedItem.rarity === 'LENDARIO' || this.selectedItem.rarity === 'MITICO')) ? this.rarityLevel : undefined;
       await this.itemService.addItemToUser(this.selectedUser.id || '', this.selectedItemId, rl);
       this.showNotification('Item adicionado', 'success');
-      this.closeAddItemModal();
-      // Recarregar inventário
-      this.userItems = await this.itemService.getUserItems(this.selectedUser.id || '');
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       this.showNotification('Erro ao adicionar item', 'error');
     }
@@ -204,6 +211,6 @@ export class ManageUsersComponent implements OnInit {
 
   showNotification(message: string, type: 'success' | 'error' | 'info') {
     this.notification = { show: true, message, type };
-    setTimeout(() => this.notification.show = false, 5000); // Aumentado para 5 segundos
+    setTimeout(() => this.notification.show = false, 5000);
   }
 }

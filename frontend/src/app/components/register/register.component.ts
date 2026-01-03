@@ -47,7 +47,6 @@ export class RegisterComponent implements OnInit {
       this.errorMessage = '';
       const result = await this.authService.register(this.email, this.password);
       
-      // Salvar username no Firestore
       if (result.user) {
         await this.userService.saveUser(result.user.uid, {
           uid: result.user.uid,
@@ -71,7 +70,6 @@ export class RegisterComponent implements OnInit {
       this.loading = true;
       this.errorMessage = '';
       await this.authService.loginWithGoogle();
-      // Sempre redirecionar para completar perfil no registro
       this.router.navigate(['/completar-perfil']);
     } catch (error: any) {
       this.errorMessage = error;

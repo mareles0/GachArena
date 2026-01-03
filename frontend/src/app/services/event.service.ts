@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 
 export type AppEvent = 
-  | 'itemsChanged'      // Quando itens são adicionados/removidos
-  | 'ticketsChanged'    // Quando tickets são usados/adicionados
-  | 'missionsChanged'   // Quando missões são completadas/atualizadas
-  | 'tradesChanged'     // Quando trades são criadas/aceitas
-  | 'userDataChanged'   // Quando dados do usuário mudam (power, stats)
-  | 'boxesOpened';      // Quando caixas são abertas
+  | 'itemsChanged'
+  | 'ticketsChanged'
+  | 'missionsChanged'
+  | 'tradesChanged'
+  | 'userDataChanged'
+  | 'boxesChanged'
+  | 'boxesOpened';
 
 @Injectable({
   providedIn: 'root'
@@ -25,7 +26,6 @@ export class EventService {
     this.eventSubject.next(event);
   }
 
-  // Métodos helper para emitir eventos específicos
   itemsChanged() {
     this.emit('itemsChanged');
   }
@@ -48,5 +48,9 @@ export class EventService {
 
   boxesOpened() {
     this.emit('boxesOpened');
+  }
+
+  boxesChanged() {
+    this.emit('boxesChanged');
   }
 }

@@ -22,11 +22,9 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
   rarities = ['ALL', 'COMUM', 'RARO', 'EPICO', 'LENDARIO', 'MITICO'];
 
-  // Modal de detalhes do item
   showItemDetails: boolean = false;
   selectedItemForDetails: any = null;
 
-  // Sistema de notificações
   notification = {
     show: false,
     message: '',
@@ -50,7 +48,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.userId = user.uid;
     await this.loadInventory();
     
-    // Escutar eventos itemsChanged para atualizar inventário automaticamente
     this.eventSubscription = this.eventService.events$.subscribe(event => {
       if (event === 'itemsChanged') {
         console.log('[Inventory] Evento itemsChanged recebido - recarregando inventário');
@@ -92,11 +89,9 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
   sortByRarity() {
     this.filteredItems.sort((a, b) => {
-      // Calcular score baseado na raridade e rarityLevel
       let scoreA = a.item.points || 0;
       let scoreB = b.item.points || 0;
       
-      // Para itens lendários e míticos, aplicar multiplicador do rarityLevel
       if ((a.item.rarity === 'LENDARIO' || a.item.rarity === 'MITICO') && a.rarityLevel) {
         const rarityMultiplierA = 1 + ((1000 - a.rarityLevel) / 1000);
         scoreA = scoreA * rarityMultiplierA;
@@ -107,7 +102,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
         scoreB = scoreB * rarityMultiplierB;
       }
       
-      return scoreB - scoreA; // Ordenação decrescente
+      return scoreB - scoreA;
     });
   }
 

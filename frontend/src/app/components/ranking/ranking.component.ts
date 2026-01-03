@@ -20,7 +20,6 @@ export class RankingComponent implements OnInit, OnDestroy {
   
   private eventSubscription?: Subscription;
 
-  // Modal de detalhes do item
   showItemDetails: boolean = false;
   selectedItemForDetails: any = null;
 
@@ -40,7 +39,6 @@ export class RankingComponent implements OnInit, OnDestroy {
     await this.loadBoxes();
     await this.loadGlobalRanking();
     
-    // Escutar eventos para atualizar ranking em tempo real
     this.eventSubscription = this.eventService.events$.subscribe(event => {
       if (event === 'userDataChanged' || event === 'itemsChanged') {
         console.log('[Ranking] Evento recebido:', event, '- recarregando ranking');
@@ -98,7 +96,6 @@ export class RankingComponent implements OnInit, OnDestroy {
     } else if (mode === 'box' && this.selectedBoxId) {
       await this.loadBoxRanking();
     } else if (mode === 'box' && !this.selectedBoxId && this.boxes.length > 0) {
-      // auto-select first box when switching to box view if none selected
       this.selectedBoxId = this.boxes[0].id;
       await this.loadBoxRanking();
     }

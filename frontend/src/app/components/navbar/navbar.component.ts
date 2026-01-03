@@ -37,7 +37,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     console.log('[Navbar] Inicializando...');
     await this.checkUserStatus();
     
-    // Inscrever-se nas atualizações de tickets
     this.ticketsSubscription = this.ticketService.tickets$.subscribe(tickets => {
       console.log('[Navbar] Tickets atualizados:', tickets);
       this.tickets = tickets;
@@ -51,14 +50,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
         const hideOn = ['/', '/login', '/register', '/recuperar-senha'];
         const path = url.split('?')[0];
         this.showNavbar = !hideOn.includes(path);
-        // routes where navbar should sit lower in z stacking
         this.lowZ = path === '/gacha';
-        // routes where navbar should sit higher in z stacking
         this.highZ = path === '/trades';
         this.checkUserStatus();
       });
 
-    // definir valor inicial baseado na rota atual
     const current = this.router.url.split('?')[0];
     const hideOnInit = ['/', '/login', '/register', '/recuperar-senha'];
     this.showNavbar = !hideOnInit.includes(current);
@@ -89,13 +85,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
       
       if (userData) {
         this.username = userData.username || 'Usuário';
-        // Preferir o avatar escolhido (profileIcon) sobre photoURL
         this.photoURL = (userData as any).profileIcon || userData.photoURL || '';
         this.isAdmin = userData.userType === 'ADMINISTRADOR';
         console.log('[Navbar] Username:', this.username, 'IsAdmin:', this.isAdmin);
       }
-      // Os tickets serão carregados automaticamente pelo observable
-        // Forçar atualização inicial dos tickets
         await this.ticketService.refreshTickets(this.userId);
     } else {
       console.log('[Navbar] Nenhum usuário autenticado');
@@ -109,7 +102,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   async loadTickets() {
-    // Método mantido para compatibilidade, mas os tickets são atualizados automaticamente
     if (this.userId) {
       console.log('[Navbar] Forçando atualização de tickets para:', this.userId);
       await this.ticketService.refreshTickets(this.userId);

@@ -16,10 +16,8 @@ export class AppComponent {
     private itemService: ItemService,
     private realtimeService: RealtimeService
   ) {
-    // Conecta no canal realtime (admin e jogadores se atualizam entre si)
     this.realtimeService.connect();
 
-    // Função global para migração (acessível via console)
     (window as any).migrateItems = async () => {
       console.log('Iniciando migração de itens...');
       try {

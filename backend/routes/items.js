@@ -2,7 +2,6 @@ const express = require('express');
 const admin = require('firebase-admin');
 const router = express.Router();
 
-// Create item
 router.post('/', async (req, res) => {
   try {
     const item = req.body;
@@ -11,13 +10,14 @@ router.post('/', async (req, res) => {
       createdAt: new Date()
     };
     const docRef = await admin.firestore().collection('items').add(itemData);
+    const io = req.app.get('io');
+    io && io.emit('appEvent', { type: 'itemsChanged' });
     res.json({ id: docRef.id });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get all items
 router.get('/', async (req, res) => {
   try {
     const snapshot = await admin.firestore().collection('items').get();
@@ -32,7 +32,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get items by box
 router.get('/by-box/:boxId', async (req, res) => {
   try {
     const boxId = req.params.boxId;
@@ -48,7 +47,6 @@ router.get('/by-box/:boxId', async (req, res) => {
   }
 });
 
-// Get item by id
 router.get('/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -67,29 +65,30 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Update item
 router.put('/:id', async (req, res) => {
   try {
     const id = req.params.id;
     const data = req.body;
     await admin.firestore().collection('items').doc(id).update(data);
+    const io = req.app.get('io');
+    io && io.emit('appEvent', { type: 'itemsChanged' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Delete item
 router.delete('/:id', async (req, res) => {
   try {
     const id = req.params.id;
     await admin.firestore().collection('items').doc(id).delete();
+    const io = req.app.get('io');
+    io && io.emit('appEvent', { type: 'itemsChanged' });
+    res.json({ success: true });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
-
-// Add more routes as needed for UserItem, etc.
 
 module.exports = router;

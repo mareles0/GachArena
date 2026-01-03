@@ -166,7 +166,6 @@ table {
   &.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
 }
 
-// Modal de Tickets
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -336,7 +335,6 @@ table {
   }
 }
 
-// Modal de Alterar Cargo
 .role-select {
   width: 100%;
   padding: 0.5rem;
@@ -346,7 +344,6 @@ table {
   color: black;
 }
 
-// Modal de Inventário
 .large-modal {
   max-width: 800px;
   max-height: 80vh;

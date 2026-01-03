@@ -18,54 +18,53 @@ export class LoadingCardComponent implements OnInit {
   @Input() showParticles: boolean = true;
   @Input() showSparkles: boolean = true;
 
-  // Itens simulados para a roleta (8 itens para formar um círculo completo)
   rouletteItems: RouletteItem[] = [
     {
       id: '1',
       name: 'Goku SSJ',
-      imageUrl: 'https://static.wikitide.net/cravesagawiki/thumb/4/4a/Goku_SS_God.png/200px-Goku_SS_God.png',
+      imageUrl: 'https:
       rarity: 'MITICO'
     },
     {
       id: '2',
       name: 'Vegeta SSJ',
-      imageUrl: 'https://static.wikitide.net/cravesagawiki/thumb/8/8e/Vegeta_SS_God.png/200px-Vegeta_SS_God.png',
+      imageUrl: 'https:
       rarity: 'LENDARIO'
     },
     {
       id: '3',
       name: 'Naruto',
-      imageUrl: 'https://static.wikitide.net/cravesagawiki/thumb/2/27/Naruto.png/200px-Naruto.png',
+      imageUrl: 'https:
       rarity: 'EPICO'
     },
     {
       id: '4',
       name: 'Sasuke',
-      imageUrl: 'https://static.wikitide.net/cravesagawiki/thumb/2/21/Sasuke_Part_1.png/200px-Sasuke_Part_1.png',
+      imageUrl: 'https:
       rarity: 'RARO'
     },
     {
       id: '5',
       name: 'Luffy',
-      imageUrl: 'https://static.wikitide.net/cravesagawiki/thumb/6/6d/Monkey_D._Luffy.png/200px-Monkey_D._Luffy.png',
+      imageUrl: 'https:
       rarity: 'COMUM'
     },
     {
       id: '6',
       name: 'Zoro',
-      imageUrl: 'https://static.wikitide.net/cravesagawiki/thumb/5/52/Roronoa_Zoro.png/200px-Roronoa_Zoro.png',
+      imageUrl: 'https:
       rarity: 'EPICO'
     },
     {
       id: '7',
       name: 'Ichigo',
-      imageUrl: 'https://static.wikitide.net/cravesagawiki/thumb/2/2a/Ichigo_Kurosaki.png/200px-Ichigo_Kurosaki.png',
+      imageUrl: 'https:
       rarity: 'LENDARIO'
     },
     {
       id: '8',
       name: 'Light Yagami',
-      imageUrl: 'https://static.wikitide.net/cravesagawiki/thumb/8/8b/Light_Yagami.png/200px-Light_Yagami.png',
+      imageUrl: 'https:
       rarity: 'MITICO'
     }
   ];
@@ -73,7 +72,6 @@ export class LoadingCardComponent implements OnInit {
   constructor() { }
 
   ngOnInit(): void {
-    // Embaralhar os itens para tornar a roleta mais dinâmica
     this.rouletteItems = this.shuffleArray(this.rouletteItems);
   }
 

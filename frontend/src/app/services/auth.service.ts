@@ -26,7 +26,6 @@ export class AuthService {
     });
   }
 
-  // Registrar novo usuário
   async register(email: string, password: string) {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
@@ -39,11 +38,9 @@ export class AuthService {
     }
   }
 
-  // Login
   async login(email: string, password: string) {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      // Verificar se o email foi verificado
       if (result.user && !result.user.emailVerified) {
         await signOut(auth);
         throw 'Por favor, verifique seu email antes de fazer login.';
@@ -59,14 +56,12 @@ export class AuthService {
     }
   }
 
-  // Logout
   async logout() {
     await signOut(auth);
     this.currentUser = null;
     this.router.navigate(['/login']);
   }
 
-  // Recuperar senha
   async resetPassword(email: string) {
     try {
       await sendPasswordResetEmail(auth, email);
@@ -76,12 +71,10 @@ export class AuthService {
     }
   }
 
-  // Verificar se está logado
   isLoggedIn(): boolean {
     return this.currentUser !== null;
   }
 
-  // Reenviar email de verificação
   async resendVerificationEmail() {
     try {
       if (this.currentUser) {
@@ -94,7 +87,6 @@ export class AuthService {
     }
   }
 
-  // Verificar se email foi verificado
   isEmailVerified(): boolean {
     return this.currentUser?.emailVerified || false;
   }
@@ -113,7 +105,6 @@ export class AuthService {
     });
   }
 
-  // Login com Google
   async loginWithGoogle() {
     try {
       const provider = new GoogleAuthProvider();
@@ -126,7 +117,6 @@ export class AuthService {
     }
   }
 
-  // Tratar erros
   private handleError(error: any): string {
     switch (error.code) {
       case 'auth/email-already-in-use':

@@ -30,17 +30,14 @@ export class ProfileComponent implements OnInit, OnDestroy {
     return /\.(gif)$/i.test(url);
   }
 
-  // showcase items
   showcasedItems: any[] = [];
 
   loading = false;
   error = '';
 
-  // friendship & trade modal
   isFriend = false;
   showTradeModal = false;
 
-  // ownership and meta
   isOwner = false;
   level?: number | null = null;
   
@@ -70,14 +67,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.backgrounds = await this.profileService.listAvailableBackgrounds();
     this.backgroundsLoaded = (this.backgrounds || []).length > 0;
 
-    // verificar se somos amigos
     const me = this.auth.currentUser;
     if (me && this.userId) {
       this.isFriend = await this.friendService.areFriends(me.uid, this.userId);
       this.isOwner = me.uid === this.userId;
     }
     
-    // Escutar eventos para atualizar perfil em tempo real
     this.eventSubscription = this.eventService.events$.subscribe(event => {
       if (event === 'itemsChanged' || event === 'userDataChanged') {
         console.log('[Profile] Evento recebido:', event, '- recarregando perfil');
@@ -90,14 +85,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
     if (!this.userId) return;
     this.loading = true;
     this.profile = await this.profileService.getProfile(this.userId);
-    // Buscar username
     const userDoc = await this.userService.getUserById(this.userId);
     this.username = userDoc?.username || null;
     console.log('Profile loaded:', { userId: this.userId, showcasedCards: this.profile?.showcasedCards });
 
     if (this.profile?.showcasedCards && this.profile.showcasedCards.length) {
       try {
-        // pegar itens do usuário e filtrar apenas os indicados
         const items = await this.itemService.getUserItems(this.userId);
         this.showcasedItems = items.filter((it: any) => this.profile?.showcasedCards?.includes(it.id));
       } catch (err) {
@@ -118,11 +111,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
   @ViewChild('loadingTpl', { static: true }) loadingTpl!: TemplateRef<any>;
 
   async startEdit() { 
-    // só o dono pode editar
     const me = this.auth.currentUser;
     if (!me || this.userId !== me.uid) return;
 
-    // recarregar profile para garantir dados atualizados (especialmente showcasedCards após trocas)
     await this.loadProfile();
 
     this.editing = true;
@@ -130,14 +121,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.modalCancelRequested = false;
     let timedOut = false;
     try {
-      // carregar itens do próprio usuário para seleção de showcase com timeout
       const timeoutMs = 8000;
       const items: any[] = await Promise.race<any>([
         this.itemService.getUserItems(me.uid),
         new Promise((res) => setTimeout(() => { timedOut = true; res([]); }, timeoutMs))
       ]);
 
-      if (this.modalCancelRequested) return; // usuário cancelou enquanto carregava
+      if (this.modalCancelRequested) return;
 
       if (timedOut) {
         this.error = 'Tempo de carregamento excedido. Tente novamente.';
@@ -147,7 +137,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
       }
       console.log('myItemsForShowcase loaded:', { count: this.myItemsForShowcase.length, items: this.myItemsForShowcase.map(i => ({ id: i.id, itemId: i.itemId, name: i.item?.name })) });
 
-      // inicializar seleção com os já escolhidos
       this.showcasedSelection = new Set(this.profile?.showcasedCards || []);
       console.log('showcasedSelection initialized:', { size: this.showcasedSelection.size, items: Array.from(this.showcasedSelection) });
     } catch (err) {
@@ -158,7 +147,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
       if (!this.modalCancelRequested) this.modalLoading = false;
     }
 
-    // dar foco no campo de nome ao abrir o modal (após carregamento)
     setTimeout(() => {
       try{ this.descriptionTextarea?.nativeElement?.focus(); }catch(e){}
     }, 120);
@@ -176,7 +164,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
       this.loading = true;
       console.log('saveEdit - showcasedSelection:', { size: this.showcasedSelection.size, items: Array.from(this.showcasedSelection) });
       
-      // aplicar selections de showcase (validar limite)
       if (this.showcasedSelection && this.showcasedSelection.size > 6) {
         this.error = 'Você só pode destacar até 6 cartas.';
         return;
@@ -187,14 +174,10 @@ export class ProfileComponent implements OnInit, OnDestroy {
         console.log('saveEdit - profile.showcasedCards updated:', this.profile.showcasedCards);
       }
 
-      // construir payload com campos definidos será tratado pelo service
       await this.profileService.updateProfile(this.userId, this.profile);
       console.log('saveEdit - profile updated in database');
       this.editing = false;
-      await this.loadProfile();
-      console.log('saveEdit - profile reloaded');
-      // Emitir evento para atualizar outros componentes
-      this.eventService.userDataChanged();
+      setTimeout(() => window.location.reload(), 800);
     } catch (err) {
       console.error('Erro ao salvar perfil', err);
       this.error = 'Erro ao salvar perfil. Tente novamente.';
@@ -211,7 +194,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   toggleShowcase(id: string, checked: boolean) {
-    // só o dono pode editar seleção de destaque
     const me = this.auth.currentUser;
     if (!me || this.userId !== me.uid) return;
 
@@ -236,7 +218,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
     const me = this.auth.currentUser;
     if (!me || !this.userId) return;
     try {
-      // garantir que passamos username (não displayName)
       const meDoc = await this.userService.getUserById(me.uid);
       const myName = meDoc?.username || me.email || '';
 
@@ -245,6 +226,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
       await this.friendService.sendFriendRequest(me.uid, this.userId, myName, targetName, (me as any).profileIcon || me.photoURL || '');
       alert('Solicitação enviada');
+      setTimeout(() => window.location.reload(), 800);
     } catch (err:any) {
       console.error('Erro ao enviar solicitação', err);
       alert(err?.message || 'Erro ao enviar solicitação');

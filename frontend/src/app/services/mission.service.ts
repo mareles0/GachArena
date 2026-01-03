@@ -9,24 +9,38 @@ import { EventService } from './event.service';
   providedIn: 'root'
 })
 export class MissionService {
-  // Subject para notificar quando missões devem ser atualizadas
   private missionProgressChanged = new Subject<void>();
   public missionProgressChanged$ = this.missionProgressChanged.asObservable();
+  private missionsCache: Mission[] | null = null;
+  private cacheTimestamp: number = 0;
+  private CACHE_DURATION = 30000;
 
-  constructor(private http: HttpClient, private eventService: EventService) { }
+  constructor(private http: HttpClient, private eventService: EventService) {
+    this.eventService.events$.subscribe((event) => {
+      if (event === 'missionsChanged') {
+        this.clearCache();
+      }
+    });
+  }
   
-  // Método para triggar atualização de progresso de missões
+  private clearCache() {
+    this.missionsCache = null;
+    this.cacheTimestamp = 0;
+  }
+
+  private isCacheValid(): boolean {
+    return this.missionsCache !== null && (Date.now() - this.cacheTimestamp) < this.CACHE_DURATION;
+  }
+  
   notifyProgressChanged(): void {
     console.log('[MissionService] Notificando mudança de progresso');
     this.missionProgressChanged.next();
   }
 
-  // ===== CRUD Missões =====
-  
   async createMission(mission: Omit<Mission, 'id' | 'createdAt'>): Promise<string> {
     try {
       const response = await this.http.post<{ id: string }>(`${environment.backendUrl}/missions`, mission).toPromise();
-      this.eventService.missionsChanged();
+      this.clearCache();
       return response!.id;
     } catch (error) {
       console.error('Erro ao criar missão:', error);
@@ -44,13 +58,20 @@ export class MissionService {
     }
   }
 
-  async getAllMissions(): Promise<Mission[]> {
+  async getAllMissions(forceRefresh: boolean = false): Promise<Mission[]> {
+    if (!forceRefresh && this.isCacheValid() && this.missionsCache) {
+      console.log('[MissionService] Retornando missões do cache');
+      return this.missionsCache;
+    }
+    
     try {
       console.log('[MissionService] Fazendo requisição para:', `${environment.backendUrl}/missions`);
       const missions = await this.http.get<Mission[]>(`${environment.backendUrl}/missions`).toPromise();
       console.log('[MissionService] Resposta recebida:', missions);
       console.log('[MissionService] Total de missões:', missions?.length || 0);
-      return missions || [];
+      this.missionsCache = missions || [];
+      this.cacheTimestamp = Date.now();
+      return this.missionsCache;
     } catch (error) {
       console.error('[MissionService] Erro ao buscar missões:', error);
       return [];
@@ -74,7 +95,7 @@ export class MissionService {
         throw new Error('Invalid mission id provided to updateMission');
       }
       await this.http.put(`${environment.backendUrl}/missions/${id}`, mission).toPromise();
-      this.eventService.missionsChanged();
+      this.clearCache();
     } catch (error) {
       console.error('Erro ao atualizar missão:', error);
       throw error;
@@ -95,8 +116,6 @@ export class MissionService {
     }
   }
 
-  // ===== Missões do Usuário =====
-  
   async getUserMissions(userId: string): Promise<(UserMission & { mission?: Mission })[]> {
     try {
       const userMissions = await this.http.get<(UserMission & { mission?: Mission })[]>(
@@ -187,8 +206,6 @@ export class MissionService {
     }
   }
 
-  // ===== Estatísticas do Usuário =====
-  
   async getUserStats(userId: string): Promise<UserMissionStats | null> {
     try {
       const stats = await this.http.get<UserMissionStats>(
@@ -213,8 +230,6 @@ export class MissionService {
     }
   }
 
-  // ===== Helpers =====
-  
   getMissionIconClass(mission: Mission): string {
     if (mission.icon) return mission.icon;
     
@@ -241,12 +256,10 @@ export class MissionService {
   }
 
   getMissionDescription(mission: Mission): string {
-    // Usar description diretamente se existir
     if (mission.description && mission.description.trim() !== '') {
       return mission.description;
     }
 
-    // Fallback para gerar descrição baseado no requirement (novo sistema)
     if (mission.requirement) {
       const amount = (mission as any).requirementAmount || 0;
       switch (mission.requirement) {
@@ -275,7 +288,6 @@ export class MissionService {
       }
     }
 
-    // Fallback para sistema antigo (goal)
     const goal = mission.goal;
     if (goal) {
       switch (goal.type) {
@@ -304,16 +316,23 @@ export class MissionService {
   }
 
   getProgressPercentage(userMission: UserMission): number {
-    if (!userMission || typeof userMission.progress !== 'number') {
+    if (!userMission) {
       return 0;
     }
-    // O progresso já vem em porcentagem (0-100) do backend
+    
+    if (userMission.completed) {
+      return 100;
+    }
+    
+    if (typeof userMission.progress !== 'number') {
+      return 0;
+    }
+    
     return Math.min(100, Math.max(0, userMission.progress));
   }
 
   canClaimMission(userMission: UserMission): boolean {
     if (!userMission || !userMission.mission) return false;
-    // Missão está completada e ainda não foi coletada
     return userMission.completed && !userMission.claimed;
   }
 }

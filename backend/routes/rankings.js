@@ -2,15 +2,12 @@ const express = require('express');
 const admin = require('firebase-admin');
 const router = express.Router();
 
-// Get Firestore instance
 const db = admin.firestore();
 
-// Get global ranking
 router.get('/global/:limit?', async (req, res) => {
   try {
     const limitCount = parseInt(req.params.limit) || 50;
 
-    // Buscar todos os usuários
     const usersSnapshot = await db.collection('users').get();
     const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -20,11 +17,9 @@ router.get('/global/:limit?', async (req, res) => {
       if (!user.id) continue;
 
       try {
-        // Buscar itens do usuário diretamente do Firestore
         const userItemsSnapshot = await db.collection('userItems').where('userId', '==', user.id).get();
         const userItems = userItemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Buscar detalhes dos itens
         const userItemsWithDetails = await Promise.all(userItems.map(async (ui) => {
           const itemDoc = await db.collection('items').doc(ui.itemId).get();
           const item = itemDoc.exists ? { id: itemDoc.id, ...itemDoc.data() } : null;
@@ -37,7 +32,6 @@ router.get('/global/:limit?', async (req, res) => {
           continue;
         }
 
-        // Calcular score baseado nos pontos dos itens
         let totalScore = 0;
 
         userItemsFiltered.forEach(ui => {
@@ -45,16 +39,14 @@ router.get('/global/:limit?', async (req, res) => {
           totalScore += itemPoints;
         });
 
-        // Encontrar o item com mais pontos de nível de raridade
         let rarestItem = userItemsFiltered[0];
         let maxRarityScore = 0;
 
         userItemsFiltered.forEach(ui => {
           let rarityScore = ui.item.points || 0;
 
-            // Para itens lendários e míticos, aplicar multiplicador do rarityLevel
             if ((ui.item.rarity === 'LENDARIO' || ui.item.rarity === 'MITICO') && ui.rarityLevel) {
-              const rarityMultiplier = 1 + ((1000 - ui.rarityLevel) / 1000); // 1.0 a 2.0
+              const rarityMultiplier = 1 + ((1000 - ui.rarityLevel) / 1000);
               rarityScore = rarityScore * rarityMultiplier;
             }
 
@@ -79,7 +71,6 @@ router.get('/global/:limit?', async (req, res) => {
       }
     }
 
-    // Ordenar por score
     rankingEntries.sort((a, b) => b.score - a.score);
 
     res.json(rankingEntries.slice(0, limitCount));
@@ -89,7 +80,6 @@ router.get('/global/:limit?', async (req, res) => {
   }
 });
 
-// Get ranking by box
 router.get('/box/:boxId/:limit?', async (req, res) => {
   try {
     const { boxId } = req.params;
@@ -104,13 +94,11 @@ router.get('/box/:boxId/:limit?', async (req, res) => {
       if (!user.id) continue;
 
       try {
-        // Buscar itens do usuário na caixa específica
         const userItemsSnapshot = await db.collection('userItems').where('userId', '==', user.id).get();
         const userItems = userItemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Filtrar itens da caixa específica e buscar detalhes
         const userItemsInBox = await Promise.all(userItems
-          .filter(ui => ui.itemId) // garantir que tem itemId
+          .filter(ui => ui.itemId)
           .map(async (ui) => {
             const itemDoc = await db.collection('items').doc(ui.itemId).get();
             const item = itemDoc.exists ? { id: itemDoc.id, ...itemDoc.data() } : null;
@@ -122,7 +110,6 @@ router.get('/box/:boxId/:limit?', async (req, res) => {
 
         if (validItemsInBox.length === 0) continue;
 
-        // Encontrar o item mais raro na caixa
         let rarestItem = validItemsInBox[0];
         let maxScore = 0;
 

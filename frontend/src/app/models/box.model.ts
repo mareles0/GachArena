@@ -5,10 +5,9 @@ export interface Box {
   imageUrl: string;
   type: 'NORMAL' | 'PREMIUM';
   theme: string;
-  themeColor?: string; // optional hex color to style the card
+  themeColor?: string;
   active: boolean;
   createdAt: Date;
-  // Animação de abertura personalizada
-  openingAnimationType?: 'video' | 'gif' | 'auto'; // tipo de animação
-  openingAnimationSrc?: string; // caminho para o vídeo/gif
+  openingAnimationType?: 'video' | 'gif' | 'auto';
+  openingAnimationSrc?: string;
 }

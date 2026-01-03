@@ -2,7 +2,6 @@ const express = require('express');
 const admin = require('firebase-admin');
 const router = express.Router();
 
-// Save user data
 router.post('/:uid', async (req, res) => {
   try {
     const uid = req.params.uid;
@@ -14,7 +13,6 @@ router.post('/:uid', async (req, res) => {
   }
 });
 
-// Get user data
 router.get('/:uid', async (req, res) => {
   try {
     const uid = req.params.uid;
@@ -29,7 +27,6 @@ router.get('/:uid', async (req, res) => {
   }
 });
 
-// Get all users
 router.get('/', async (req, res) => {
   try {
     const snapshot = await admin.firestore().collection('users').get();
@@ -40,34 +37,34 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Update user
 router.put('/:uid', async (req, res) => {
   try {
     const uid = req.params.uid;
     const data = req.body;
     await admin.firestore().collection('users').doc(uid).update(data);
+    const io = req.app.get('io');
+    io && io.emit('appEvent', { type: 'userDataChanged' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Add tickets (delegate to ticket service logic, but for now simple)
 router.post('/:uid/tickets', async (req, res) => {
   try {
     const uid = req.params.uid;
     const { amount, type } = req.body;
-    // Assuming tickets are in user doc or separate
-    // For simplicity, update user doc
     const increment = admin.firestore.FieldValue.increment(amount);
     const field = type === 'premium' ? 'premiumTickets' : 'normalTickets';
     await admin.firestore().collection('users').doc(uid).update({ [field]: increment });
+    const io = req.app.get('io');
+    io && io.emit('appEvent', { type: 'ticketsChanged' });
+    io && io.emit('appEvent', { type: 'userDataChanged' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
-// Get user tickets
 router.get('/:uid/tickets', async (req, res) => {
   try {
     const uid = req.params.uid;
@@ -86,11 +83,10 @@ router.get('/:uid/tickets', async (req, res) => {
   }
 });
 
-// Use ticket
 router.post('/:uid/use-ticket', async (req, res) => {
   try {
     const uid = req.params.uid;
-    const { type, count = 1 } = req.body; // count para pulls múltiplos
+    const { type, count = 1 } = req.body;
     console.log(`[Users] use-ticket: uid=${uid}, type=${type}, count=${count}`);
     const docRef = admin.firestore().collection('users').doc(uid);
     const doc = await docRef.get();
@@ -98,7 +94,6 @@ router.post('/:uid/use-ticket', async (req, res) => {
       const data = doc.data();
       const field = type === 'PREMIUM' ? 'premiumTickets' : 'normalTickets';
       if (data[field] >= count) {
-        // Decrementar tickets e incrementar contadores de progresso de missões
         await docRef.update({ 
           [field]: admin.firestore.FieldValue.increment(-count),
           boxesOpened: admin.firestore.FieldValue.increment(count),

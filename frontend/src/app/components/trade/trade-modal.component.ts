@@ -26,11 +26,12 @@ export class TradeModalComponent implements OnInit {
   tooltipX: number = 0;
   tooltipY: number = 0;
 
-  readonly maxPerSide = 6; // limite UX
+  readonly maxPerSide = 6;
 
   loading = false;
   error = '';
   success = '';
+  notification = { show: false, message: '', type: 'success' as 'success' | 'error' | 'info' };
 
   get offeredCount() { return this.selectedOffered.size; }
   get requestedCount() { return this.selectedRequested.size; }
@@ -43,10 +44,18 @@ export class TradeModalComponent implements OnInit {
 
   async ngOnInit() {
     const me = this.auth.currentUser;
-    if (!me || !this.targetUserId) { this.error = 'Usuário inválido'; return; }
+    if (!me || !this.targetUserId) { 
+      this.showNotification('❌ Usuário inválido', 'error'); 
+      return; 
+    }
 
-    this.myItems = await this.itemService.getUserItems(me.uid);
-    this.targetItems = await this.itemService.getUserItems(this.targetUserId);
+    try {
+      this.myItems = await this.itemService.getUserItems(me.uid);
+      this.targetItems = await this.itemService.getUserItems(this.targetUserId);
+    } catch (err: any) {
+      console.error('Erro ao carregar itens:', err);
+      this.showNotification('❌ Erro ao carregar itens', 'error');
+    }
   }
 
   toggleOffer(id: string) {
@@ -56,7 +65,7 @@ export class TradeModalComponent implements OnInit {
       return; 
     }
     if (this.selectedOffered.size >= this.maxPerSide) { 
-      this.error = `Você pode oferecer no máximo ${this.maxPerSide} cartas`; 
+      this.showNotification(`❌ Você pode oferecer no máximo ${this.maxPerSide} cartas`, 'error');
       return; 
     }
     this.selectedOffered.add(id); 
@@ -70,7 +79,7 @@ export class TradeModalComponent implements OnInit {
       return; 
     }
     if (this.selectedRequested.size >= this.maxPerSide) { 
-      this.error = `Você pode solicitar no máximo ${this.maxPerSide} cartas`; 
+      this.showNotification(`❌ Você pode solicitar no máximo ${this.maxPerSide} cartas`, 'error');
       return; 
     }
     this.selectedRequested.add(id); 
@@ -81,23 +90,28 @@ export class TradeModalComponent implements OnInit {
     this.error = '';
     this.success = '';
     const me = this.auth.currentUser;
-    if (!me) { this.error = 'Usuário não autenticado'; return; }
-    if (!this.targetUserId) { this.error = 'Destinatário inválido'; return; }
+    if (!me) { 
+      this.showNotification('❌ Usuário não autenticado', 'error'); 
+      return; 
+    }
+    if (!this.targetUserId) { 
+      this.showNotification('❌ Destinatário inválido', 'error'); 
+      return; 
+    }
 
     if (this.selectedOffered.size === 0 || this.selectedRequested.size === 0) {
-      this.error = 'Selecione ao menos 1 carta oferecida e 1 solicitada';
+      this.showNotification('❌ Selecione ao menos 1 carta oferecida e 1 solicitada', 'error');
       return;
     }
 
     if (this.selectedOffered.size > this.maxPerSide || this.selectedRequested.size > this.maxPerSide) {
-      this.error = `Limite excedido: máximo ${this.maxPerSide} por lado.`;
+      this.showNotification(`❌ Limite excedido: máximo ${this.maxPerSide} por lado.`, 'error');
       return;
     }
 
     try {
       this.loading = true;
       
-      // Buscar username do usuário atual
       const meDoc = await this.userService.getUserById(me.uid);
       const fromUsername = meDoc?.username || me.email || '';
       
@@ -111,11 +125,15 @@ export class TradeModalComponent implements OnInit {
       } as any;
 
       const id = await this.tradeService.createTrade(trade);
-      this.success = 'Proposta enviada!';
-      setTimeout(() => this.closed.emit(true), 900);
+      this.showNotification('✅ Proposta enviada com sucesso!', 'success');
+      setTimeout(() => {
+        this.closed.emit(true);
+        window.location.reload();
+      }, 1000);
     } catch (err:any) {
       console.error('Erro ao criar proposta de troca', err);
-      this.error = err?.message || 'Erro ao enviar proposta';
+      const errorMsg = err?.error?.error || err?.message || 'Erro ao enviar proposta';
+      this.showNotification(`❌ ${errorMsg}`, 'error');
     } finally { this.loading = false; }
   }
 
@@ -136,5 +154,10 @@ export class TradeModalComponent implements OnInit {
   hideHover() {
     console.log('leave');
     this.hoveredItem = null;
+  }
+
+  showNotification(message: string, type: 'success' | 'error' | 'info' = 'success') {
+    this.notification = { show: true, message, type };
+    setTimeout(() => this.notification.show = false, 5000);
   }
 }

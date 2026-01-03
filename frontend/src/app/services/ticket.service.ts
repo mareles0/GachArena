@@ -24,7 +24,6 @@ export class TicketService {
       console.log('[TicketService] Fazendo POST use-ticket:', userId, type, count);
       await this.http.post(`${environment.backendUrl}/users/${userId}/use-ticket`, { type, count }).toPromise();
       console.log('[TicketService] POST use-ticket completado');
-      // Atualizar o subject
       const tickets = this.ticketsSubject.value;
       if (type === 'NORMAL' && tickets.normalTickets >= count) {
         this.ticketsSubject.next({
@@ -52,7 +51,6 @@ export class TicketService {
     }
   }
 
-  // Método para forçar atualização dos tickets
   async refreshTickets(userId: string): Promise<void> {
     await this.getUserTickets(userId);
   }

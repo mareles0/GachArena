@@ -10,19 +10,13 @@ export class ProfileService {
 
   constructor(private http: HttpClient, private userService: UserService) {}
 
-  // Lista de ícones disponíveis, organizados por categoria/anime.
-  // O arquivo `assets/avatares/index.json` pode ser:
-  // 1) um array simples de caminhos: ["assets/...png", ...]
-  // 2) um objeto por categorias: { "Naruto": ["assets/...png"], "OnePiece": [...] }
   async listAvailableIconsGrouped(): Promise<Record<string, string[]>> {
     try {
       const res: any = await this.http.get(this.iconsIndexPath).toPromise();
       if (!res) return {};
-      // se for array simples, colocar em 'Geral'
       if (Array.isArray(res)) {
         return { Geral: res };
       }
-      // se for objeto, assumir que já está no formato desejado
       return res as Record<string, string[]>;
     } catch (error) {
       console.error('Erro ao listar icons agrupados:', error);
@@ -30,7 +24,6 @@ export class ProfileService {
     }
   }
 
-  // lista de fundos disponíveis para perfil (assets/backgrounds/index.json)
   async listAvailableBackgrounds(): Promise<Array<{src:string,type:'image'|'video'|'gif'}>> {
     try {
       const res: any = await this.http.get('assets/backgrounds/index.json').toPromise();
@@ -46,12 +39,10 @@ export class ProfileService {
     }
   }
 
-  // Busca perfil (merge com doc de usuário)
   async getProfile(userId: string): Promise<UserProfile | null> {
     try {
       const user = await this.userService.getUserById(userId);
       if (!user) return null;
-      // Sempre usar o `username` do documento de usuário como nome de exibição
       const profile: UserProfile = {
         displayName: user.username,
         profileIcon: (user as any).profileIcon || (user as any).photoURL,
@@ -68,16 +59,12 @@ export class ProfileService {
 
   async updateProfile(userId: string, profile: Partial<UserProfile>): Promise<void> {
     try {
-      // Construir payload apenas com campos definidos (Firestore rejeita `undefined`)
       const payload: any = {};
-      // displayName não é mais usado - username é fixo
-      // if (typeof profile.displayName !== 'undefined') payload.displayName = profile.displayName;
       if (typeof profile.profileIcon !== 'undefined') payload.profileIcon = profile.profileIcon;
       if (typeof profile.profileBackground !== 'undefined') payload.profileBackground = profile.profileBackground;
       if (typeof profile.description !== 'undefined') payload.description = profile.description;
       if (typeof profile.showcasedCards !== 'undefined') payload.showcasedCards = profile.showcasedCards;
 
-      // Se não há nada para atualizar, sair sem chamar o Firestore
       if (Object.keys(payload).length === 0) return;
 
       await this.userService.updateUser(userId, payload);

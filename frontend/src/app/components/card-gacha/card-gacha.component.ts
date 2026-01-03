@@ -148,8 +148,8 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
       const p = this.particles[i];
       p.x += p.vx;
       p.y += p.vy;
-      p.vy += 0.3; // gravity
-      p.vx *= 0.98; // friction
+      p.vy += 0.3;
+      p.vx *= 0.98;
       p.life -= 0.016;
       p.alpha = p.life / p.maxLife;
 
@@ -170,7 +170,6 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
       this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       this.ctx.fill();
       
-      // Glow effect
       this.ctx.shadowBlur = 15;
       this.ctx.shadowColor = p.color;
       this.ctx.fill();
@@ -208,10 +207,8 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
     this.createCards();
     this.statusMessage = 'Iniciando experiência épica...';
 
-    // Ajustar durações dependendo do modo (x1 mais dramático / lento)
     const introFactor = this.config.mode === 'x1' ? 1.4 : this.config.mode === 'x5' ? 1.2 : 1.0;
 
-    // Dramatic entrance with camera shake (longer on x1)
     this.mainTimeline
       .to(this.background.nativeElement, {
         duration: 2 * introFactor,
@@ -226,7 +223,6 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
         rotationX: 0,
         ease: 'elastic.out(1, 0.5)',
         onStart: () => {
-          // Screen shake effect
           gsap.to(this.cardsContainer.nativeElement, {
             duration: 0.12 * introFactor,
             x: '+=10',
@@ -237,7 +233,6 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
         }
       }, `-=${0.9 * introFactor}`)
       .add(() => {
-        // Initial particle burst
         const rect = this.cardsContainer.nativeElement.getBoundingClientRect();
         this.createParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, '#ffffff', 60);
       })
@@ -270,16 +265,13 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
     card.className = `gacha-card rarity-${result.rarity}`;
     card.setAttribute('data-index', index.toString());
 
-    // Enhanced back with holographic effect
     const cardBack = document.createElement('div');
     cardBack.className = 'card-back';
     
-    // Add holographic layer
     const holoLayer = document.createElement('div');
     holoLayer.className = 'holo-layer';
     cardBack.appendChild(holoLayer);
 
-    // Reel system
     const reel = document.createElement('div');
     reel.className = 'reel';
     const reelInner = document.createElement('div');
@@ -305,7 +297,6 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
     reel.appendChild(reelInner);
     cardBack.appendChild(reel);
 
-    // Enhanced front with 3D effects
     const cardFront = document.createElement('div');
     cardFront.className = 'card-front';
     
@@ -347,7 +338,6 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
 
   private createUltraPreviewAndFlips(): gsap.core.Timeline {
     const t = gsap.timeline();
-    // Tornar animações mais longas por modo
     const modeFactor = this.config.mode === 'x1' ? 1.6 : this.config.mode === 'x5' ? 1.25 : 1.0;
     const flipDelay = this.config.mode === 'x1' ? 0 : this.config.mode === 'x5' ? 0.5 : 0.35;
 
@@ -358,7 +348,6 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
 
       const cardTimeline = gsap.timeline();
 
-      // Pre-flip anticipation (mais longo em x1)
       cardTimeline.to(card, {
         duration: 0.3 * modeFactor,
         scale: 1.1,
@@ -366,23 +355,21 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
         ease: 'power2.out'
       });
 
-      // Reel spin with dynamic easing
       const reelInner = card.querySelector('.reel-inner') as HTMLElement;
       if (reelInner) {
         const items = Array.from(reelInner.querySelectorAll('.reel-item')) as HTMLElement[];
         const itemHeight = items[0]?.offsetHeight || 80;
         const posInCycle = this.allRarities.findIndex(r => r.key === result.rarity);
-        const cyclesToSpin = 7 + Math.floor(Math.random() * 3); // mais ciclos para spin mais longo
+        const cyclesToSpin = 7 + Math.floor(Math.random() * 3);
         const targetIndex = cyclesToSpin * this.allRarities.length + posInCycle;
         const targetY = -targetIndex * itemHeight;
 
         cardTimeline.to(reelInner, {
-          duration: (6.5 + (index * 0.3)) * modeFactor, // base maior para tempo ainda mais longo
+          duration: (6.5 + (index * 0.3)) * modeFactor,
           y: targetY,
           ease: 'power4.inOut',
           onStart: () => {
             this.playFlipSound(result.rarity);
-            // Add motion blur effect
             card.style.filter = 'blur(3px)';
           },
           onUpdate: function() {
@@ -396,7 +383,6 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
           }
         });
 
-        // Mechanical bounce (mais notório)
         cardTimeline.to(reelInner, {
           duration: 0.35 * modeFactor,
           y: targetY + 18,
@@ -406,7 +392,6 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
         });
       }
 
-      // Epic card flip with 3D rotation (mais longo para impacto)
       cardTimeline.to(card, {
         duration: 1.6 * modeFactor,
         rotateY: 180,
@@ -424,7 +409,6 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
         onComplete: () => {
           this.itemRevealed.emit({ item: result, index });
           
-          // Legendary+ gets confetti (mais abundante)
           if (result.rarity === 'legendary' || result.rarity === 'mythic') {
             const rect = card.getBoundingClientRect();
             this.createConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, rarityInfo.color);
@@ -432,7 +416,6 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
         }
       });
 
-      // Post-reveal effects (prolongados)
       cardTimeline
         .to(card, {
           duration: 1.0 * modeFactor,
@@ -444,7 +427,6 @@ export class CardGachaComponent implements OnInit, OnChanges, OnDestroy {
           boxShadow: `0 0 80px ${rarityInfo.color}, 0 26px 60px rgba(0,0,0,0.55)`,
           ease: 'power2.out'
         }, `-=${1.0 * modeFactor}`)
-        // Floating animation (mais suave e lento)
         .to(card, {
           duration: 3 * modeFactor,
           y: '+=12',

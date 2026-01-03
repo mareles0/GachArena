@@ -5,7 +5,15 @@
   <div class="bg-overlay"></div>
 
   <div class="notification-container" *ngIf="notification.show">
-    <div class="notification" [ngClass]="notification.type">{{ notification.message }}</div>
+    <div class="notification" [ngClass]="notification.type">
+      <i class="bi" [class.bi-check-circle-fill]="notification.type === 'success'"
+                     [class.bi-x-circle-fill]="notification.type === 'error'"
+                     [class.bi-info-circle-fill]="notification.type === 'info'"></i>
+      <span>{{ notification.message }}</span>
+      <button class="close-btn" (click)="notification.show = false">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
   </div>
 
   <div class="trades-container">
@@ -25,7 +33,7 @@
     <div *ngFor="let t of received" class="trade-item">
       <div class="trade-header">
         <div><strong>{{ t.fromUsername }}</strong> propõe troca</div>
-        <div class="trade-meta">{{ t.createdAt?.toDate ? (t.createdAt.toDate() | date:'short') : (t.createdAt | date:'short') }} - <span class="status">{{ t.status || 'PENDENTE' }}</span></div>
+        <div class="trade-meta">{{ t.createdAt | date:'short' }} - <span class="status">{{ t.status || 'PENDENTE' }}</span></div>
       </div>
 
       <div class="preview-row">
@@ -90,7 +98,7 @@
     <div *ngFor="let t of sent" class="trade-item">
       <div class="trade-header">
         <div>Enviada para <strong>{{ t.toUsername }}</strong></div>
-        <div class="trade-meta">{{ t.createdAt?.toDate ? (t.createdAt.toDate() | date:'short') : (t.createdAt | date:'short') }} - <span class="status">{{ t.status || 'PENDENTE' }}</span></div>
+        <div class="trade-meta">{{ t.createdAt | date:'short' }} - <span class="status">{{ t.status || 'PENDENTE' }}</span></div>
       </div>
 
       <div class="preview-row">
@@ -155,7 +163,7 @@
       <div class="trade-header">
         <div *ngIf="t.fromUsername"><strong>{{ t.fromUsername }}</strong> propôs troca</div>
         <div *ngIf="t.toUsername">Você propôs troca para <strong>{{ t.toUsername }}</strong></div>
-        <div class="trade-meta">{{ t.createdAt?.toDate ? (t.createdAt.toDate() | date:'short') : (t.createdAt | date:'short') }} - <span class="status" [ngClass]="t.status.toLowerCase()">{{ t.status }}</span></div>
+        <div class="trade-meta">{{ t.createdAt | date:'short' }} - <span class="status" [ngClass]="t.status.toLowerCase()">{{ t.status }}</span></div>
       </div>
 
       <div class="preview-row">

@@ -2,7 +2,6 @@ const express = require('express');
 const admin = require('firebase-admin');
 const router = express.Router();
 
-// Get Firestore instance
 const db = admin.firestore();
 
 function normalizeTicketReward(value) {
@@ -23,7 +22,6 @@ function extractRewardFromMission(mission) {
     premiumTickets += normalizeTicketReward(mission.reward.premiumTickets);
   }
 
-  // Campos legados
   normalTickets += normalizeTicketReward(mission.rewardNormal);
   premiumTickets += normalizeTicketReward(mission.rewardPremium);
 
@@ -45,11 +43,9 @@ function extractDailyReward(mission, day) {
       normalTickets += normalizeTicketReward(entry.reward.normalTickets);
       premiumTickets += normalizeTicketReward(entry.reward.premiumTickets);
     }
-    // Campos legados do dailyRewards
     normalTickets += normalizeTicketReward(entry.rewardNormal);
     premiumTickets += normalizeTicketReward(entry.rewardPremium);
 
-    // Fallback: se não tiver nada definido no dia, usar recompensa base da missão
     if (normalTickets === 0 && premiumTickets === 0) {
       return extractRewardFromMission(mission);
     }
@@ -57,11 +53,9 @@ function extractDailyReward(mission, day) {
     return { normalTickets, premiumTickets };
   }
 
-  // Se não houver dailyRewards, usar a recompensa base
   return extractRewardFromMission(mission);
 }
 
-// CRUD Missões
 router.post('/', async (req, res) => {
   try {
     const mission = req.body;
@@ -130,7 +124,6 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     await db.collection('missions').doc(req.params.id).delete();
-    // Deletar todas as UserMissions associadas
     const userMissionsSnapshot = await db.collection('userMissions').where('missionId', '==', req.params.id).get();
     const deletePromises = userMissionsSnapshot.docs.map(doc => doc.ref.delete());
     await Promise.all(deletePromises);
@@ -143,13 +136,11 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// UserMissions
 router.get('/user/:userId', async (req, res) => {
   try {
     const snapshot = await db.collection('userMissions').where('userId', '==', req.params.userId).get();
     const userMissions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // Buscar detalhes da missão
     const missionsWithDetails = await Promise.all(userMissions.map(async (um) => {
       const missionDoc = await db.collection('missions').doc(um.missionId).get();
       const mission = missionDoc.exists ? { id: missionDoc.id, ...missionDoc.data() } : null;
@@ -167,7 +158,6 @@ router.post('/user/:userId/start/:missionId', async (req, res) => {
   try {
     const { userId, missionId } = req.params;
 
-    // Verificar se já existe
     const existing = await db.collection('userMissions')
       .where('userId', '==', userId)
       .where('missionId', '==', missionId)
@@ -177,25 +167,27 @@ router.post('/user/:userId/start/:missionId', async (req, res) => {
       return res.json({ id: existing.docs[0].id });
     }
 
-    // Fetch mission to determine behavior
     const missionDoc = await db.collection('missions').doc(missionId).get();
     if (!missionDoc.exists) {
       return res.status(404).json({ error: 'Missão não encontrada' });
     }
     const mission = missionDoc.data();
     const isDaily = mission && mission.type === 'DAILY';
-    // Auto-complete só faz sentido para missões NÃO-diárias (as diárias usam claim-daily)
     const isAutoComplete = !isDaily && (mission && (mission.autoComplete === true || !mission.requirement || String(mission.requirement).trim() === ''));
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
 
     const payload = {
       userId,
       missionId,
       progress: isAutoComplete ? 100 : 0,
       completed: isAutoComplete ? true : false,
-      // Importante: não marcar como claimed automaticamente, senão a UI bloqueia a coleta e a recompensa nunca é creditada
       claimed: false,
       claimedDays: [],
-      nextAvailableAt: isDaily ? admin.firestore.Timestamp.now() : null,
+      nextAvailableAt: isDaily ? admin.firestore.Timestamp.fromDate(tomorrow) : null,
+      lastDailyClaimAt: null,
       createdAt: admin.firestore.Timestamp.now()
     };
 
@@ -308,23 +300,62 @@ router.put('/user-mission/:userMissionId/claim-daily', async (req, res) => {
         throw new Error('Dia já coletado');
       }
 
-      // ensure day is the next available unclaimed day (sequential rule)
       const allDays = Array.from({ length: totalDays }, (_, i) => i + 1);
       const nextUnclaimed = allDays.find(d => !claimedDays.includes(d));
       if (nextUnclaimed !== dayNumber) {
         throw new Error('Dia não disponível para coleta');
       }
 
-      // check time-based availability
       const nextAvailableTs = umData.nextAvailableAt;
-      if (nextAvailableTs) {
-        const nextAvailableMillis = nextAvailableTs.toMillis();
-        if (Date.now() < nextAvailableMillis) {
-          throw new Error('Dia ainda não disponível');
+      const lastClaimTs = umData.lastDailyClaimAt;
+      
+      console.log('[Missions] Validando disponibilidade:', {
+        dayNumber,
+        nextAvailableTs,
+        lastClaimTs,
+        hasTimestamp: !!nextAvailableTs,
+        hasLastClaim: !!lastClaimTs
+      });
+      
+      if (!nextAvailableTs && !lastClaimTs) {
+        console.log('[Missions] Sem nextAvailableAt e lastDailyClaimAt, primeira coleta - permitindo');
+      } else if (nextAvailableTs) {
+        try {
+          const nextAvailableMillis = nextAvailableTs.toMillis();
+          const now = Date.now();
+          console.log('[Missions] Verificando nextAvailableAt:', {
+            dayNumber,
+            now: new Date(now).toISOString(),
+            nextAvailable: new Date(nextAvailableMillis).toISOString(),
+            isAvailable: now >= nextAvailableMillis
+          });
+          if (now < nextAvailableMillis) {
+            const hoursLeft = Math.ceil((nextAvailableMillis - now) / (1000 * 60 * 60));
+            throw { statusCode: 400, message: `Você precisa esperar ${hoursLeft}h para coletar o próximo dia` };
+          }
+        } catch (err) {
+          if (err.statusCode) {
+            throw err;
+          }
+          console.error('[Missions] Erro ao processar nextAvailableAt:', err);
+        }
+      } else if (lastClaimTs) {
+        const lastClaimDate = new Date(lastClaimTs.toMillis());
+        const today = new Date();
+        lastClaimDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        
+        console.log('[Missions] Verificação de data da última coleta:', {
+          lastClaimDate: lastClaimDate.toISOString(),
+          today: today.toISOString(),
+          sameDay: lastClaimDate.getTime() === today.getTime()
+        });
+        
+        if (lastClaimDate.getTime() === today.getTime()) {
+          throw { statusCode: 400, message: 'Você já coletou uma recompensa diária hoje. Volte amanhã!' };
         }
       }
 
-      // Aplicar recompensa do dia no usuário
       const dailyReward = extractDailyReward(mission, dayNumber);
       if (!dailyReward) {
         throw new Error('Recompensa do dia não encontrada');
@@ -350,10 +381,33 @@ router.put('/user-mission/:userMissionId/claim-daily', async (req, res) => {
         updates.claimed = true;
         updates.claimedAt = admin.firestore.Timestamp.now();
         updates.nextAvailableAt = null;
+        console.log('[Missions] Todos os dias coletados, missão completa');
       } else {
-        // set next available to +24h
-        updates.nextAvailableAt = admin.firestore.Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000);
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        
+        if (isNaN(tomorrow.getTime())) {
+          console.error('[Missions] Data inválida ao calcular tomorrow');
+          tomorrow.setTime(Date.now() + 24 * 60 * 60 * 1000);
+        }
+        
+        updates.nextAvailableAt = admin.firestore.Timestamp.fromDate(tomorrow);
+        console.log('[Missions] Próximo dia disponível em:', {
+          tomorrow: tomorrow.toISOString(),
+          timestamp: updates.nextAvailableAt.toDate().toISOString(),
+          claimedDays: claimedDays.length,
+          totalDays
+        });
       }
+
+      console.log('[Missions] Updates a serem aplicados:', {
+        userMissionId,
+        updates: {
+          ...updates,
+          nextAvailableAt: updates.nextAvailableAt ? updates.nextAvailableAt.toDate().toISOString() : null
+        }
+      });
 
       transaction.update(userMissionRef, updates);
     });
@@ -396,12 +450,10 @@ router.put('/user-mission/:userMissionId/complete', async (req, res) => {
   }
 });
 
-// Calcular progresso de uma missão regular baseado nos dados do usuário
 router.post('/user/:userId/calculate-progress/:missionId', async (req, res) => {
   try {
     const { userId, missionId } = req.params;
 
-    // Buscar a missão
     const missionDoc = await db.collection('missions').doc(missionId).get();
     if (!missionDoc.exists) {
       return res.status(404).json({ error: 'Missão não encontrada' });
@@ -411,7 +463,6 @@ router.post('/user/:userId/calculate-progress/:missionId', async (req, res) => {
     const requirement = mission.requirement;
     const requirementAmount = mission.requirementAmount || 0;
 
-    // Buscar dados do usuário
     const userDoc = await db.collection('users').doc(userId).get();
     if (!userDoc.exists) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -421,7 +472,6 @@ router.post('/user/:userId/calculate-progress/:missionId', async (req, res) => {
     let currentValue = 0;
     let progress = 0;
 
-    // Calcular progresso baseado no tipo de requisito
     switch (requirement) {
       case 'TOTAL_POWER':
         currentValue = userData.totalPower || 0;
@@ -498,6 +548,46 @@ router.post('/user/:userId/calculate-progress/:missionId', async (req, res) => {
   } catch (error) {
     console.error('Erro ao calcular progresso:', error);
     res.status(500).json({ error: 'Erro ao calcular progresso' });
+  }
+});
+
+router.post('/user-mission/:userMissionId/reset-daily', async (req, res) => {
+  try {
+    const userMissionId = req.params.userMissionId;
+    const userMissionRef = db.collection('userMissions').doc(userMissionId);
+    const doc = await userMissionRef.get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'UserMission não encontrado' });
+    }
+    
+    const data = doc.data();
+    const claimedDays = data.claimedDays || [];
+    
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    await userMissionRef.update({
+      nextAvailableAt: admin.firestore.Timestamp.fromDate(tomorrow)
+    });
+    
+    console.log('[Missions] nextAvailableAt resetado:', {
+      userMissionId,
+      claimedDays,
+      newNextAvailable: tomorrow.toISOString()
+    });
+    
+    res.json({ 
+      message: 'nextAvailableAt resetado com sucesso',
+      nextAvailableAt: tomorrow.toISOString()
+    });
+    
+    const io = req.app.get('io');
+    io && io.emit('appEvent', { type: 'missionsChanged' });
+  } catch (error) {
+    console.error('Erro ao resetar daily mission:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

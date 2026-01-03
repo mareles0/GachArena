@@ -13,7 +13,6 @@ export class FriendService {
 
   async sendFriendRequest(fromUserId: string, toUserId: string, fromUserName: string, toUserName: string, fromUserPhoto?: string): Promise<string> {
     try {
-      // Verificar se já existe uma solicitação pendente
       const q = query(
         collection(db, 'friends'),
         where('userId', '==', fromUserId),
@@ -25,13 +24,11 @@ export class FriendService {
         throw new Error('Já existe uma solicitação pendente');
       }
 
-      // Verificar se já são amigos
       const friendshipCheck = await this.areFriends(fromUserId, toUserId);
       if (friendshipCheck) {
         throw new Error('Vocês já são amigos');
       }
 
-      // construir payload sem campos undefined (Firestore não aceita `undefined`)
       const payload: any = {
         userId: fromUserId,
         friendId: toUserId,
@@ -100,7 +97,6 @@ export class FriendService {
       
       const allFriends = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Friend));
       
-      // Filtrar amigos do usuário (pode estar em userId ou friendId)
       return allFriends.filter(friend => 
         friend.userId === userId || friend.friendId === userId
       );
@@ -145,7 +141,6 @@ export class FriendService {
       const usersSnapshot = await getDocs(collection(db, 'users'));
       const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
       
-      // Filtrar usuários que correspondem à busca (exceto o próprio usuário)
       return users.filter(user => 
         user.id !== currentUserId &&
         user.userType === 'PLAYER' &&

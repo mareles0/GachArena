@@ -5,12 +5,11 @@ const admin = require('firebase-admin');
 const http = require('http');
 const { Server } = require('socket.io');
 
-// Use environment variables for credentials (safer than file)
 if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Handle newlines
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
     }),
     databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`,
@@ -24,10 +23,8 @@ if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && proce
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// HTTP server (necessário para Socket.IO)
 const server = http.createServer(app);
 
-// Socket.IO (tempo real entre usuários)
 const io = new Server(server, {
   cors: {
     origin: true,
@@ -44,11 +41,8 @@ io.on('connection', (socket) => {
   });
 });
 
-// Middleware
 app.use(cors());
 app.use(express.json());
-
-// Routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const itemRoutes = require('./routes/items');
@@ -68,12 +62,9 @@ app.use('/api/rankings', rankingRoutes);
 app.use('/api/storage', storageRoutes);
 app.use('/api/trades', tradeRoutes);
 
-// Basic route
 app.get('/', (req, res) => {
   res.json({ message: 'GachArena Backend API' });
 });
-
-// Add more routes here as we migrate services
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

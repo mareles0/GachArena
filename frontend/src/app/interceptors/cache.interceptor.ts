@@ -7,31 +7,27 @@ import { AppEvent, EventService } from '../services/event.service';
 @Injectable()
 export class CacheInterceptor implements HttpInterceptor {
   private cache = new Map<string, { response: HttpResponse<any>, timestamp: number }>();
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+  private readonly CACHE_DURATION = 5 * 60 * 1000;
 
   private pendingEvents = new Set<AppEvent>();
   private invalidateTimer?: any;
 
   constructor(private eventService: EventService) {
-    // Quando algo muda no app, invalidar os caches relacionados.
-    // Isso evita telas “presas” em dados antigos por até 5 minutos.
+
     this.eventService.events$.subscribe((event) => this.queueInvalidate(event));
   }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // Apenas cachear requisições GET
     if (req.method !== 'GET') {
       return next.handle(req);
     }
 
-    // Verificar se existe cache válido
     const cached = this.cache.get(req.urlWithParams);
     if (cached && this.isCacheValid(cached.timestamp)) {
       console.log(`[Cache] Retornando do cache: ${req.urlWithParams}`);
       return of(cached.response.clone());
     }
 
-    // Fazer a requisição e cachear
     return next.handle(req).pipe(
       tap(event => {
         if (event instanceof HttpResponse) {
@@ -42,7 +38,7 @@ export class CacheInterceptor implements HttpInterceptor {
           });
         }
       }),
-      shareReplay(1) // Compartilhar a resposta com múltiplas inscrições
+      shareReplay(1)
     );
   }
 
@@ -74,7 +70,6 @@ export class CacheInterceptor implements HttpInterceptor {
         this.clearCacheBySubstring('/trades');
         break;
       case 'ticketsChanged':
-        // tickets normalmente ficam sob /users/.../tickets
         this.clearCacheBySubstring('/tickets');
         this.clearCacheBySubstring('/users');
         break;
@@ -89,7 +84,6 @@ export class CacheInterceptor implements HttpInterceptor {
         this.clearCacheBySubstring('/users');
         break;
       default:
-        // AppEvent é uma union; não deve cair aqui.
         break;
     }
   }
@@ -98,7 +92,6 @@ export class CacheInterceptor implements HttpInterceptor {
     this.pendingEvents.add(event);
     if (this.invalidateTimer) return;
 
-    // Coalescer eventos em janela pequena evita thrash de rede/render.
     this.invalidateTimer = setTimeout(() => {
       const events = Array.from(this.pendingEvents);
       this.pendingEvents.clear();

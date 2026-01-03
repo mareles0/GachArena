@@ -3,18 +3,15 @@ const admin = require('firebase-admin');
 const multer = require('multer');
 const router = express.Router();
 
-// Configurar multer para upload de arquivos
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 10 * 1024 * 1024,
   }
 });
 
-// Get Firebase Storage bucket
 const bucket = admin.storage().bucket();
 
-// Upload image
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
@@ -43,10 +40,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     stream.on('finish', async () => {
       try {
-        // Make the file publicly accessible
         await file.makePublic();
 
-        const downloadURL = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
+        const downloadURL = `https://storage.googleapis.com/${bucket.name}/${path}`;
         console.log('[Storage API] Upload successful! Download URL:', downloadURL);
         res.json({ downloadURL });
       } catch (error) {
@@ -62,7 +58,6 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// Delete image
 router.delete('/delete', async (req, res) => {
   try {
     const { imageUrl } = req.body;
@@ -70,9 +65,8 @@ router.delete('/delete', async (req, res) => {
       return res.status(400).json({ error: 'URL da imagem não especificada' });
     }
 
-    // Extract file path from URL
     const urlParts = imageUrl.split('/');
-    const fileName = urlParts.slice(-2).join('/'); // Get last two parts (folder/filename)
+    const fileName = urlParts.slice(-2).join('/');
 
     console.log('[Storage API] Deleting file:', fileName);
 

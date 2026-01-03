@@ -24,7 +24,6 @@ export class CompleteProfileComponent implements OnInit {
     if (this.authService.currentUser) {
       this.userEmail = this.authService.currentUser.email || '';
     } else {
-      // Se não há usuário logado, redireciona para login
       this.router.navigate(['/login']);
     }
   }
@@ -44,7 +43,6 @@ export class CompleteProfileComponent implements OnInit {
         throw 'Nenhum usuário logado.';
       }
 
-      // Salvar dados do usuário no Firestore
       await this.userService.saveUser(user.uid, {
         uid: user.uid,
         username: this.username,
@@ -54,8 +52,7 @@ export class CompleteProfileComponent implements OnInit {
         userType: 'JOGADOR'
       });
 
-      // Redirecionar para a página principal
-      this.router.navigate(['/']);
+      setTimeout(() => this.router.navigate(['/']), 500);
     } catch (error: any) {
       this.errorMessage = 'Erro ao salvar username. Tente novamente.';
     } finally {

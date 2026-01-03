@@ -9,14 +9,12 @@ import { CompleteProfileComponent } from './components/complete-profile/complete
 import { ProfileComponent } from './components/profile/profile.component';
 import { TradesComponent } from './components/trades/trades.component';
 
-// Player Components
 import { GachaHomeComponent } from './components/player/gacha-home/gacha-home.component';
 import { InventoryComponent } from './components/player/inventory/inventory.component';
 import { RankingComponent } from './components/ranking/ranking.component';
 import { FriendsComponent } from './components/friends/friends.component';
 import { MissionsComponent } from './components/missions/missions.component';
 
-// Admin Components
 import { ManageBoxesComponent } from './components/admin/manage-boxes/manage-boxes.component';
 import { ManageItemsComponent } from './components/admin/manage-items/manage-items.component';
 import { ManageUsersComponent } from './components/manage-users/manage-users.component';
@@ -30,7 +28,6 @@ const routes: Routes = [
   { path: 'verificar-email', component: EmailVerificationComponent },
   { path: 'completar-perfil', component: CompleteProfileComponent },
   
-  // Player Routes
   { path: 'gacha', component: GachaHomeComponent },
   { path: 'inventario', component: InventoryComponent },
   { path: 'ranking', component: RankingComponent },
@@ -39,7 +36,6 @@ const routes: Routes = [
   { path: 'trades', component: TradesComponent },
   { path: 'missoes', component: MissionsComponent },
   
-  // Admin Routes
   { path: 'admin/caixas', component: ManageBoxesComponent },
   { path: 'admin/itens', component: ManageItemsComponent },
   { path: 'admin/usuarios', component: ManageUsersComponent },
@@ -48,7 +44,6 @@ const routes: Routes = [
 
 @NgModule({
   imports: [RouterModule.forRoot(routes, {
-    // Otimizações de performance
     scrollPositionRestoration: 'enabled',
     anchorScrolling: 'enabled'
   })],

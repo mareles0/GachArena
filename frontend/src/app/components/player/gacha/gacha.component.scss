@@ -180,7 +180,6 @@
   }
 }
 
-// Cores específicas para cada caixa
 .box-card.bleach .box-glow {
   background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
 }
@@ -263,7 +262,6 @@
   }
 }
 
-// Animações
 @keyframes fadeInDown {
   from {
     opacity: 0;
@@ -307,7 +305,6 @@
   }
 }
 
-// Responsividade
 @media (max-width: 768px) {
   .gacha-container {
     padding: 1rem;

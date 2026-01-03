@@ -2,7 +2,6 @@ const express = require('express');
 const admin = require('firebase-admin');
 const router = express.Router();
 
-// Get Firestore instance
 const db = admin.firestore();
 
 async function enrichTradesWithUserItems(trades) {
@@ -17,7 +16,6 @@ async function enrichTradesWithUserItems(trades) {
     return trades.map(t => ({ ...t, offeredItems: [], requestedItems: [] }));
   }
 
-  // Buscar userItems em batch
   const refs = ids.map(id => db.collection('userItems').doc(id));
   const userItemSnaps = await db.getAll(...refs);
   const userItemsById = new Map();
@@ -32,7 +30,6 @@ async function enrichTradesWithUserItems(trades) {
     }
   }
 
-  // Buscar itens faltantes (caso algum userItem não tenha item aninhado)
   const itemById = new Map();
   if (missingItemIds.size > 0) {
     const itemRefs = Array.from(missingItemIds).map(itemId => db.collection('items').doc(itemId));
@@ -43,7 +40,6 @@ async function enrichTradesWithUserItems(trades) {
     }
   }
 
-  // Enriquecer userItems com item quando necessário
   for (const [id, ui] of userItemsById.entries()) {
     if (!ui.item && ui.itemId && itemById.has(ui.itemId)) {
       ui.item = itemById.get(ui.itemId);
@@ -58,7 +54,6 @@ async function enrichTradesWithUserItems(trades) {
   });
 }
 
-// Create trade
 router.post('/', async (req, res) => {
   try {
     const trade = req.body;
@@ -77,7 +72,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Get trade by ID
 router.get('/:id', async (req, res) => {
   try {
     const doc = await db.collection('trades').doc(req.params.id).get();
@@ -91,7 +85,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Get user sent trades
 router.get('/user/:userId/sent', async (req, res) => {
   try {
     const snapshot = await db.collection('trades').where('fromUserId', '==', req.params.userId).get();
@@ -108,7 +101,6 @@ router.get('/user/:userId/sent', async (req, res) => {
   }
 });
 
-// Get user received trades
 router.get('/user/:userId/received', async (req, res) => {
   try {
     const snapshot = await db.collection('trades').where('toUserId', '==', req.params.userId).get();
@@ -125,10 +117,10 @@ router.get('/user/:userId/received', async (req, res) => {
   }
 });
 
-// Accept trade
 router.put('/:id/accept', async (req, res) => {
   try {
     const tradeId = req.params.id;
+    console.log('[Trades] Aceitando trade:', tradeId);
 
     await db.runTransaction(async (transaction) => {
       const tradeRef = db.collection('trades').doc(tradeId);
@@ -139,6 +131,14 @@ router.put('/:id/accept', async (req, res) => {
       }
 
       const trade = tradeDoc.data();
+      console.log('[Trades] Trade data:', { 
+        status: trade.status, 
+        fromUserId: trade.fromUserId, 
+        toUserId: trade.toUserId,
+        offeredUserItemIds: trade.offeredUserItemIds,
+        requestedUserItemIds: trade.requestedUserItemIds
+      });
+      
       if (trade.status !== 'PENDING') {
         throw new Error('Trade já processado');
       }
@@ -146,11 +146,12 @@ router.put('/:id/accept', async (req, res) => {
       const fromUserId = trade.fromUserId;
       const toUserId = trade.toUserId;
 
-      // Get all userItems involved
       const allUserItemIds = [...(trade.offeredUserItemIds || []), ...(trade.requestedUserItemIds || [])];
+      console.log('[Trades] Buscando userItems:', allUserItemIds);
       const userItemDocs = await Promise.all(allUserItemIds.map(id => transaction.get(db.collection('userItems').doc(id))));
+      console.log('[Trades] UserItems encontrados:', userItemDocs.length);
 
-      // Validate ownership
+      const destRefsToRead = [];
       for (const id of trade.offeredUserItemIds) {
         const doc = userItemDocs.find(d => d.id === id);
         if (!doc || !doc.exists) {
@@ -159,6 +160,10 @@ router.put('/:id/accept', async (req, res) => {
         const data = doc.data();
         if (data.userId !== fromUserId) {
           throw new Error('O usuário não possui o item oferecido: ' + id);
+        }
+        if (data.quantity && data.quantity > 1) {
+          const destId = `${toUserId}_${data.itemId}`;
+          destRefsToRead.push({ ref: db.collection('userItems').doc(destId), destId });
         }
       }
 
@@ -171,26 +176,39 @@ router.put('/:id/accept', async (req, res) => {
         if (data.userId !== toUserId) {
           throw new Error('O usuário não possui o item solicitado: ' + id);
         }
+        if (data.quantity && data.quantity > 1) {
+          const destId = `${fromUserId}_${data.itemId}`;
+          destRefsToRead.push({ ref: db.collection('userItems').doc(destId), destId });
+        }
       }
 
-      // Collect transferred userItemIds to clean showcasedCards
+      console.log('[Trades] Lendo destRefs:', destRefsToRead.length);
+      const destDocs = await Promise.all(destRefsToRead.map(item => transaction.get(item.ref)));
+      const destDocsMap = new Map();
+      destRefsToRead.forEach((item, idx) => {
+        destDocsMap.set(item.destId, destDocs[idx]);
+      });
+
+      const fromUserRef = db.collection('users').doc(fromUserId);
+      const toUserRef = db.collection('users').doc(toUserId);
+      const fromUserDoc = await transaction.get(fromUserRef);
+      const toUserDoc = await transaction.get(toUserRef);
+
+      console.log('[Trades] Todas as leituras concluídas, iniciando escritas');
+
       const transferredUserItemIds = new Set([...trade.offeredUserItemIds, ...trade.requestedUserItemIds]);
 
-      // Perform transfers
-      // Transfer offered -> toUserId
       for (const id of trade.offeredUserItemIds) {
         const ref = db.collection('userItems').doc(id);
         const doc = userItemDocs.find(d => d.id === id);
         const data = doc.data();
 
         if (data.quantity && data.quantity > 1) {
-          // Decrement quantity in source document
           transaction.update(ref, { quantity: data.quantity - 1 });
-          // Increment/create destination document
           const destId = `${toUserId}_${data.itemId}`;
           const destRef = db.collection('userItems').doc(destId);
-          const destDoc = await transaction.get(destRef);
-          if (destDoc.exists) {
+          const destDoc = destDocsMap.get(destId);
+          if (destDoc && destDoc.exists) {
             transaction.update(destRef, { quantity: destDoc.data().quantity + 1 });
           } else {
             transaction.set(destRef, {
@@ -202,12 +220,10 @@ router.put('/:id/accept', async (req, res) => {
             });
           }
         } else {
-          // quantity == 1 -> change owner
           transaction.update(ref, { userId: toUserId, obtainedAt: admin.firestore.Timestamp.now() });
         }
       }
 
-      // Transfer requested -> fromUserId
       for (const id of trade.requestedUserItemIds) {
         const ref = db.collection('userItems').doc(id);
         const doc = userItemDocs.find(d => d.id === id);
@@ -217,8 +233,8 @@ router.put('/:id/accept', async (req, res) => {
           transaction.update(ref, { quantity: data.quantity - 1 });
           const destId = `${fromUserId}_${data.itemId}`;
           const destRef = db.collection('userItems').doc(destId);
-          const destDoc = await transaction.get(destRef);
-          if (destDoc.exists) {
+          const destDoc = destDocsMap.get(destId);
+          if (destDoc && destDoc.exists) {
             transaction.update(destRef, { quantity: destDoc.data().quantity + 1 });
           } else {
             transaction.set(destRef, {
@@ -233,13 +249,6 @@ router.put('/:id/accept', async (req, res) => {
           transaction.update(ref, { userId: fromUserId, obtainedAt: admin.firestore.Timestamp.now() });
         }
       }
-
-      // Clean showcasedCards for involved users
-      const fromUserRef = db.collection('users').doc(fromUserId);
-      const toUserRef = db.collection('users').doc(toUserId);
-
-      const fromUserDoc = await transaction.get(fromUserRef);
-      const toUserDoc = await transaction.get(toUserRef);
 
       if (fromUserDoc.exists) {
         const fromUserData = fromUserDoc.data();
@@ -259,7 +268,6 @@ router.put('/:id/accept', async (req, res) => {
         }
       }
 
-      // Update trade status
       transaction.update(tradeRef, {
         status: 'ACCEPTED',
         updatedAt: admin.firestore.Timestamp.now()
@@ -267,13 +275,17 @@ router.put('/:id/accept', async (req, res) => {
     });
 
     res.json({ message: 'Trade aceito com sucesso' });
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('appEvent', { type: 'tradesChanged' });
+      io.emit('appEvent', { type: 'itemsChanged' });
+    }
   } catch (error) {
     console.error('Erro ao aceitar trade:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Reject trade
 router.put('/:id/reject', async (req, res) => {
   try {
     await db.collection('trades').doc(req.params.id).update({
@@ -281,13 +293,16 @@ router.put('/:id/reject', async (req, res) => {
       updatedAt: admin.firestore.Timestamp.now()
     });
     res.json({ message: 'Trade rejeitado com sucesso' });
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('appEvent', { type: 'tradesChanged' });
+    }
   } catch (error) {
     console.error('Erro ao rejeitar trade:', error);
     res.status(500).json({ error: 'Erro ao rejeitar trade' });
   }
 });
 
-// Cancel trade
 router.put('/:id/cancel', async (req, res) => {
   try {
     await db.collection('trades').doc(req.params.id).update({
@@ -295,13 +310,16 @@ router.put('/:id/cancel', async (req, res) => {
       updatedAt: admin.firestore.Timestamp.now()
     });
     res.json({ message: 'Trade cancelado com sucesso' });
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('appEvent', { type: 'tradesChanged' });
+    }
   } catch (error) {
     console.error('Erro ao cancelar trade:', error);
     res.status(500).json({ error: 'Erro ao cancelar trade' });
   }
 });
 
-// Delete trade
 router.delete('/:id', async (req, res) => {
   try {
     await db.collection('trades').doc(req.params.id).delete();

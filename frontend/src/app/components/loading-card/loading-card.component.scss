@@ -62,7 +62,6 @@
   gap: 20px;
 }
 
-// Roleta Principal
 .roulette-wheel {
   position: relative;
   width: 280px;
@@ -116,7 +115,7 @@
     flex-direction: column;
     align-items: center;
     gap: 5px;
-    transform: rotate(-22.5deg); // Compensar a rotação do item
+    transform: rotate(-22.5deg);
   }
 
   .item-image {
@@ -139,7 +138,6 @@
   }
 }
 
-// Ponteiro indicador
 .pointer {
   position: absolute;
   top: -15px;
@@ -156,7 +154,6 @@
   }
 }
 
-// Centro da roleta
 .center-circle {
   position: absolute;
   top: 50%;
@@ -183,7 +180,6 @@
   }
 }
 
-// Efeitos visuais
 .roulette-effects {
   position: absolute;
   top: 0;
@@ -229,7 +225,6 @@
   }
 }
 
-// Barra de progresso
 .progress-container {
   width: 100%;
   max-width: 250px;
@@ -262,7 +257,6 @@
   }
 }
 
-// Animações
 @keyframes wheelSpin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -330,7 +324,6 @@
   50% { opacity: 1; }
 }
 
-// Responsividade
 @media (max-width: 768px) {
   .loading-card {
     padding: 20px;

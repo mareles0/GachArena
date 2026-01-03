@@ -48,7 +48,6 @@ export class FriendsComponent implements OnInit {
   }
 
   async loadFriends() {
-    // obter raw friendships e enriquecer com dados do outro usuário
     const raw = await this.friendService.getFriends(this.currentUserId);
     const enriched = await Promise.all(raw.map(async (f) => {
       const otherId = f.userId === this.currentUserId ? f.friendId : f.userId;
@@ -65,7 +64,6 @@ export class FriendsComponent implements OnInit {
   }
 
   async loadPendingRequests() {
-    // carregar solicitações pendentes e mostrar o remetente (quem enviou)
     const raws = await this.friendService.getPendingRequests(this.currentUserId);
     const enriched = await Promise.all(raws.map(async (r) => {
       const sender = await this.userService.getUserById(r.userId);
@@ -92,8 +90,7 @@ export class FriendsComponent implements OnInit {
     try {
       await this.friendService.sendFriendRequest(this.currentUserId, user.id || '', this.currentUserName, user.username, this.currentUserPhoto);
       this.showNotification('Solicitação enviada!', 'success');
-      this.searchResults = [];
-      this.searchTerm = '';
+      setTimeout(() => window.location.reload(), 800);
     } catch (error: any) {
       this.showNotification(error.message || 'Erro ao enviar solicitação', 'error');
     }
@@ -103,8 +100,7 @@ export class FriendsComponent implements OnInit {
     try {
       await this.friendService.acceptFriendRequest(requestId);
       this.showNotification('Amizade aceita!', 'success');
-      await this.loadFriends();
-      await this.loadPendingRequests();
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       this.showNotification('Erro ao aceitar solicitação', 'error');
     }
@@ -114,7 +110,7 @@ export class FriendsComponent implements OnInit {
     try {
       await this.friendService.rejectFriendRequest(requestId);
       this.showNotification('Solicitação rejeitada', 'info');
-      await this.loadPendingRequests();
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       this.showNotification('Erro ao rejeitar solicitação', 'error');
     }
@@ -125,7 +121,7 @@ export class FriendsComponent implements OnInit {
     try {
       await this.friendService.removeFriend(friendshipId);
       this.showNotification('Amigo removido', 'info');
-      await this.loadFriends();
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       this.showNotification('Erro ao remover amigo', 'error');
     }

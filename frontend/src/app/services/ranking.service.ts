@@ -11,9 +11,9 @@ export interface RankingEntry {
   username: string;
   photoURL: string;
   profileBackground?: string;
-  rarestItem: any; // UserItem
+  rarestItem: any;
   totalItems: number;
-  score: number; // Calculado baseado nos pontos dos itens
+  score: number;
 }
 
 @Injectable({

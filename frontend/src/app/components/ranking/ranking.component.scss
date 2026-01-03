@@ -383,7 +383,6 @@
   }
 }
 
-// Estilos para o modal de detalhes do item
 .item-details-overlay {
   position: fixed;
   top: 0;
@@ -550,7 +549,6 @@
   }
 }
 
-// Estilos para itens clicáveis
 .clickable {
   cursor: pointer;
   transition: transform 0.2s ease;
@@ -560,7 +558,6 @@
   }
 }
 
-// Animações
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -581,7 +578,6 @@
   }
 }
 
-// Melhorar a responsividade do modal
 @media (max-width: 576px) {
   .item-details-modal {
     width: 95%;

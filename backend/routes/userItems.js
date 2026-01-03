@@ -2,7 +2,6 @@ const express = require('express');
 const admin = require('firebase-admin');
 const router = express.Router();
 
-// Get user items by userId
 router.get('/user/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -14,7 +13,6 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
-// Get user item by id
 router.get('/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -29,7 +27,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Update user item
 router.put('/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -41,7 +38,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete user item
 router.delete('/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -52,7 +48,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Remove item from user (decrement quantity or delete)
 router.post('/:id/remove', async (req, res) => {
   try {
     const id = req.params.id;

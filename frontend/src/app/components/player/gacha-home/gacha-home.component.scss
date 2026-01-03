@@ -1,7 +1,6 @@
 .bg-video {
   position: absolute;
   inset: 0;
-  /* removed zoom to allow responsive images */
   height: 100%;
   z-index: -1;
     pointer-events: none;
@@ -444,7 +443,6 @@
   }
 }
 
-// Botão Pular Revelação
 .skip-btn {
   position: absolute !important;
   top: 20px !important;
@@ -669,7 +667,6 @@
       }
     }
 
-    // Container para exibição sequencial de um item por vez
     .current-item-display {
       display: flex;
       justify-content: center;
@@ -689,7 +686,6 @@
         cursor: pointer;
         transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
-        // Estados de animação
         &.item-exiting {
           animation: itemExitAnimation 0.6s cubic-bezier(0.6, 0.04, 0.98, 0.335) forwards;
         }
@@ -736,7 +732,7 @@
           margin: 0 auto 1rem;
           display: block;
           animation: itemImageFloat 3s ease-in-out infinite;
-          background: #ffffff;
+          background: rgba(0, 0, 0, 0.6);
           border-radius: 20px;
           padding: 1rem;
           box-shadow: 0 8px 24px rgba(0,0,0,0.4);
@@ -762,6 +758,7 @@
           font-size: 0.95rem;
           margin-bottom: 1rem;
           color: #fff;
+          background: rgba(0, 0, 0, 0.7);
           box-shadow: 0 6px 20px rgba(0,0,0,0.25);
           text-transform: uppercase;
           letter-spacing: 1.5px;
@@ -779,9 +776,9 @@
             align-items: center;
             gap: 0.75rem;
             font-size: 1.3rem;
-            color: #1a1a1a;
+            color: #fff;
             font-weight: 700;
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 140, 0, 0.25));
+            background: rgba(0, 0, 0, 0.7);
             padding: 0.8rem 1.5rem;
             border-radius: 25px;
             border: 2px solid rgba(255, 215, 0, 0.6);
@@ -791,12 +788,10 @@
               color: #ffd700;
               font-size: 1.5rem;
               filter: drop-shadow(0 2px 4px rgba(255, 215, 0, 0.5));
-              animation: sparkle 2s ease-in-out infinite;
             }
           }
         }
 
-        // Efeito de clique visual
         &::after {
           content: 'Clique para próximo →';
           position: absolute;
@@ -813,7 +808,6 @@
           z-index: 2;
         }
 
-        // Esconder o texto quando for último item
         &.last-item::after {
           display: none;
         }
@@ -848,7 +842,6 @@
       padding: 1rem;
       -webkit-overflow-scrolling: touch;
 
-      // Grid para 5 caixas - 1 fileira
       &.grid-5 {
         grid-template-columns: repeat(5, 1fr);
         
@@ -861,7 +854,6 @@
         }
       }
 
-      // Grid para 10 caixas - 2 fileiras de 5
       &.grid-10 {
         grid-template-columns: repeat(5, 1fr);
         
@@ -979,7 +971,6 @@
         100% { transform: scale(1); }
       }
 
-      // Animações de transição sequencial
       @keyframes fadeOut {
         0% { 
           opacity: 1; 
@@ -1037,7 +1028,6 @@
         60% { transform: translateY(-2px); }
       }
 
-      // Classes de animação
       .fade-out {
         animation: fadeOut 0.3s ease-out forwards;
       }
@@ -1047,12 +1037,10 @@
         animation-fill-mode: both;
       }
 
-      // Efeito de mistério - glow pulsante
       .mystery-reveal {
         animation: mysteryGlow 2s ease-in-out infinite;
       }
 
-      /* Forçar scrollbar visível quando aplicável (apenas estilo) */
       .multi-items-grid::-webkit-scrollbar { width: 10px; }
       .multi-items-grid::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 8px; }
       .multi-items-grid { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
@@ -1068,7 +1056,6 @@
         }
       }
 
-      // Responsividade para diferentes tamanhos de tela
       @media (max-width: 768px) {
         .multi-items-grid {
           padding: 0.5rem;
@@ -1137,7 +1124,6 @@
   }
 }
 
-// Classes de raridade
 .rarity-comum {
   background: #9e9e9e;
   color: white;
@@ -1164,7 +1150,6 @@
   animation: rainbow 3s linear infinite;
 }
 
-// Animações
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -1214,7 +1199,6 @@
   }
 }
 
-// Drop Rates Container
 .drop-rates-container {
   background: transparent;
   border-radius: 12px;
@@ -1293,7 +1277,6 @@
   }
 }
 
-// Responsividade
 @media (max-width: 768px) {
   .gacha-home-container {
     padding: 1rem;
@@ -1571,11 +1554,8 @@
   }
 } 
 
-// Removido - não mais necessário com tela cheia
-// .portal-animation-modal, .portal-header, .portal-subtitle, .portal-animation-container, .portal-footer foram simplificados
 
 
-// Animações para transição sequencial de itens
 @keyframes itemExit {
   0% {
     transform: scale(1) translateY(0px);
@@ -1638,7 +1618,6 @@
   }
 }
 
-// Novas animações para revelação sequencial aprimorada
 @keyframes itemExitAnimation {
   0% {
     transform: translateY(0) scale(1) rotateY(0deg);
@@ -1730,35 +1709,30 @@
   }
 }
 
-// Classe para animação de saída
 .item-exiting {
   animation: itemExit 0.5s ease-in forwards;
   pointer-events: none;
   z-index: 1;
 }
 
-// Classe para animação de entrada
 .item-entering {
   animation: itemEnter 0.6s ease-out forwards;
   animation-delay: 0.1s;
   z-index: 2;
 }
 
-// Classe para efeito de brilho durante transição
 .item-transitioning {
   .item-image {
     animation: magicBurst 0.5s ease-out;
   }
 }
 
-// Animação especial para o primeiro item
 .first-item {
   animation: cardFadeIn 1s ease-out;
 }
 
-// Classe para efeito misterioso
 .mysterious-card {
-  transform: scale(1) !important; // Garante que não há transform durante mistério
+  transform: scale(1) !important;
   
   .rarity-glow {
     background: rgba(108, 117, 125, 0.1) !important;
@@ -1775,19 +1749,16 @@
     opacity: 0.7;
   }
   
-  // Preserva as cores de raridade na borda e box-shadow
   border-color: var(--rarity-color) !important;
   box-shadow: 0 0 15px var(--rarity-glow) !important;
   
-  // Remove qualquer animação durante o estado misterioso
   animation: none !important;
 }
 
-// Classe para revelação independente do card
 .card-revealing {
   animation: cardReveal 1.5s ease-out forwards !important;
-  animation-delay: 0.7s; // Delay para começar após a entrada terminar
-  z-index: 3; // Garante que fique na frente durante revelação
+  animation-delay: 0.7s;
+  z-index: 3;
   
   .rarity-glow {
     animation: glowReveal 1.5s ease-out forwards !important;
@@ -1805,7 +1776,6 @@
   }
 }
 
-// Animação de fade para cards de resultado
 @keyframes cardFadeIn {
   from {
     opacity: 0;
@@ -1821,7 +1791,6 @@
   animation: cardFadeIn 0.8s ease-out;
 }
 
-// Animação staggered para grid de itens
 .multi-item-card {
   opacity: 0;
   animation: cardFadeIn 0.6s ease-out forwards;

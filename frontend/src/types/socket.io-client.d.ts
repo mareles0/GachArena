@@ -1,6 +1,3 @@
-// Tipagens mínimas para compatibilidade com Angular 12 / TypeScript 4.3.
-// O pacote socket.io-client usa `exports` com `types`, mas o TS 4.3 não resolve isso bem.
-
 declare module 'socket.io-client' {
   export interface Socket {
     id?: string;
@@ -19,7 +16,6 @@ declare module 'socket.io-client' {
   }
 
   export interface SocketOptions {
-    // Mantém espaço para opções adicionais sem quebrar builds
     [key: string]: any;
   }
 

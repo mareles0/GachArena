@@ -11,6 +11,7 @@ Personagens variados e raridades
 
 Sistema de drop simples e expansível
 
+
 # 🚀 Objetivo
 
-Servir como base para projetos, estudos ou experimentos envolvendo sistemas de gacha.
+Projeto de estagio.

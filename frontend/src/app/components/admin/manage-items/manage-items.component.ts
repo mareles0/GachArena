@@ -1,22 +1,25 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { BoxService } from 'src/app/services/box.service';
 import { ItemService } from 'src/app/services/item.service';
 import { StorageService } from 'src/app/services/storage.service';
+import { EventService } from 'src/app/services/event.service';
 import { Box } from 'src/app/models/box.model';
 import { Item } from 'src/app/models/item.model';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-manage-items',
   templateUrl: './manage-items.component.html',
   styleUrls: ['./manage-items.component.scss']
 })
-export class ManageItemsComponent implements OnInit {
+export class ManageItemsComponent implements OnInit, OnDestroy {
   boxes: Box[] = [];
   items: Item[] = [];
   selectedBox: Box | null = null;
   loading: boolean = false;
   showForm: boolean = false;
   editingItem: Item | null = null;
+  private eventSubscription?: Subscription;
 
   itemForm = {
     name: '',
@@ -30,7 +33,6 @@ export class ManageItemsComponent implements OnInit {
   selectedFile: File | null = null;
   uploadingImage: boolean = false;
 
-  // Sistema de notificações
   notification = {
     show: false,
     message: '',
@@ -40,11 +42,27 @@ export class ManageItemsComponent implements OnInit {
   constructor(
     private boxService: BoxService,
     private itemService: ItemService,
-    private storageService: StorageService
+    private storageService: StorageService,
+    private eventService: EventService
   ) { }
 
   async ngOnInit() {
     await this.loadBoxes();
+    
+    this.eventSubscription = this.eventService.events$.subscribe((event) => {
+      if (event === 'itemsChanged' && this.selectedBox) {
+        this.loadItems();
+      }
+      if (event === 'boxesChanged') {
+        this.loadBoxes();
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.eventSubscription) {
+      this.eventSubscription.unsubscribe();
+    }
   }
 
   showNotification(message: string, type: 'success' | 'error' | 'info' = 'success') {
@@ -150,7 +168,6 @@ export class ManageItemsComponent implements OnInit {
       let imageUrl = this.itemForm.imageUrl;
       
       if (this.selectedFile) {
-        // Se estiver editando e tiver uma imagem antiga, deletar do Storage
         if (this.editingItem && this.editingItem.imageUrl) {
           try {
             await this.storageService.deleteImage(this.editingItem.imageUrl);
@@ -160,7 +177,6 @@ export class ManageItemsComponent implements OnInit {
           }
         }
         
-        // Upload da nova imagem
         imageUrl = await this.storageService.uploadItemImage(
           this.selectedFile,
           this.itemForm.name,
@@ -189,7 +205,7 @@ export class ManageItemsComponent implements OnInit {
       }
 
       this.closeForm();
-      await this.loadItems();
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       console.error('Erro ao salvar item:', error);
       this.showNotification('❌ Erro ao salvar item: ' + error, 'error');
@@ -204,7 +220,6 @@ export class ManageItemsComponent implements OnInit {
     }
 
     try {
-      // Deletar imagem do Storage se existir
       if (item.imageUrl) {
         try {
           await this.storageService.deleteImage(item.imageUrl);
@@ -216,7 +231,7 @@ export class ManageItemsComponent implements OnInit {
       
       await this.itemService.deleteItem(item.id);
       this.showNotification('✅ Item deletado com sucesso!', 'success');
-      await this.loadItems();
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       console.error('Erro ao deletar item:', error);
       this.showNotification('❌ Erro ao deletar item', 'error');
@@ -254,8 +269,7 @@ export class ManageItemsComponent implements OnInit {
     try {
       await this.itemService.deleteAllItems();
       this.showNotification('✅ Todos os itens foram deletados!', 'success');
-      this.items = [];
-      await this.loadBoxes();
+      setTimeout(() => window.location.reload(), 800);
     } catch (error) {
       console.error('Erro ao deletar itens:', error);
       this.showNotification('❌ Erro ao deletar itens', 'error');

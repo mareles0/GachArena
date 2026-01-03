@@ -10,21 +10,55 @@ import { EventService } from './event.service';
 })
 export class ItemService {
   private db = getFirestore();
+  private itemsCache: Item[] | null = null;
+  private itemsByBoxCache: Map<string, Item[]> = new Map();
+  private cacheTimestamp: number = 0;
+  private CACHE_DURATION = 30000;
 
-  constructor(private http: HttpClient, private eventService: EventService) { }
+  constructor(private http: HttpClient, private eventService: EventService) {
+    this.eventService.events$.subscribe((event) => {
+      if (event === 'itemsChanged' || event === 'boxesChanged') {
+        this.clearCache();
+      }
+    });
+  }
+
+  private clearCache() {
+    this.itemsCache = null;
+    this.itemsByBoxCache.clear();
+    this.cacheTimestamp = 0;
+  }
+
+  private isCacheValid(): boolean {
+    return (Date.now() - this.cacheTimestamp) < this.CACHE_DURATION;
+  }
 
   async createItem(item: Omit<Item, 'id' | 'createdAt'>): Promise<string> {
     const result = await this.http.post(`${environment.backendUrl}/items`, item).toPromise() as any;
-    this.eventService.itemsChanged();
+    this.clearCache();
     return result.id;
   }
 
-  async getAllItems(): Promise<Item[]> {
-    return await this.http.get(`${environment.backendUrl}/items`).toPromise() as Item[];
+  async getAllItems(forceRefresh: boolean = false): Promise<Item[]> {
+    if (!forceRefresh && this.isCacheValid() && this.itemsCache) {
+      return this.itemsCache;
+    }
+    
+    const items = await this.http.get(`${environment.backendUrl}/items`).toPromise() as Item[];
+    this.itemsCache = items;
+    this.cacheTimestamp = Date.now();
+    return items;
   }
 
-  async getItemsByBox(boxId: string): Promise<Item[]> {
-    return await this.http.get(`${environment.backendUrl}/items/by-box/${boxId}`).toPromise() as Item[];
+  async getItemsByBox(boxId: string, forceRefresh: boolean = false): Promise<Item[]> {
+    if (!forceRefresh && this.isCacheValid() && this.itemsByBoxCache.has(boxId)) {
+      return this.itemsByBoxCache.get(boxId)!;
+    }
+    
+    const items = await this.http.get(`${environment.backendUrl}/items/by-box/${boxId}`).toPromise() as Item[];
+    this.itemsByBoxCache.set(boxId, items);
+    this.cacheTimestamp = Date.now();
+    return items;
   }
 
   async getItemById(itemId: string): Promise<Item | null> {
@@ -34,10 +68,9 @@ export class ItemService {
 
   async updateItem(itemId: string, data: Partial<Item>): Promise<void> {
     await this.http.put(`${environment.backendUrl}/items/${itemId}`, data).toPromise();
-    this.eventService.itemsChanged();
+    this.clearCache();
   }
 
-  // Função auxiliar para calcular pontos baseado na raridade e rarityLevel
   private calculateItemPoints(rarity: string, rarityLevel?: number): number {
     const rarityPoints: any = {
       'COMUM': 10,
@@ -49,7 +82,6 @@ export class ItemService {
 
     let points = rarityPoints[rarity] || 10;
 
-    // Aplicar multiplicador baseado no rarityLevel se existir
     if (rarityLevel && typeof rarityLevel === 'number') {
       const rarityMultiplier = 1 + ((1000 - rarityLevel) / 1000);
       points = Math.round(points * rarityMultiplier);
@@ -59,7 +91,6 @@ export class ItemService {
   }
 
   async migrateItemsWithoutPoints(forceRecalculate: boolean = false): Promise<void> {
-    // Busca todos os documentos diretamente do Firestore para verificar campos brutos
     const querySnapshot = await getDocs(collection(this.db, 'items'));
     const itemsToUpdate: any[] = [];
     const allItems: any[] = [];
@@ -78,14 +109,12 @@ export class ItemService {
         hasPointsField: data.hasOwnProperty('points')
       });
 
-      // Se for modo forçado, recalcular todos os itens
       if (forceRecalculate) {
         itemsToUpdate.push({
           id: doc.id,
           ...data
         });
       } else {
-        // Modo normal: só itens sem pontos válidos
         const needsMigration = !data.hasOwnProperty('points') ||
                               data.points === null ||
                               data.points === undefined ||
@@ -106,11 +135,9 @@ export class ItemService {
     if (itemsToUpdate.length === 0 && !forceRecalculate) {
       console.log('Nenhum item precisa de migracao. Verificando se ha itens com points = 0...');
 
-      // Verificar especificamente itens com points = 0
       const itemsWithZeroPoints = allItems.filter(item => item.points === 0);
       if (itemsWithZeroPoints.length > 0) {
         console.log('Encontrados itens com points = 0. Forcando migracao...', itemsWithZeroPoints);
-        // Adicionar itens com points = 0 à lista de atualização
         querySnapshot.forEach(doc => {
           const data = doc.data();
           if (data.points === 0) {
@@ -127,7 +154,6 @@ export class ItemService {
       }
     }
 
-    // Define pontos baseados na raridade
     const rarityPoints: any = {
       'COMUM': 10,
       'RARO': 25,
@@ -147,9 +173,8 @@ export class ItemService {
       let points = rarityPoints[itemData.rarity] || 10;
       console.log(`Pontos base calculados: ${points} para raridade ${itemData.rarity}`);
 
-      // Aplicar multiplicador baseado no rarityLevel PARA TODOS os itens
       if (itemData.rarityLevel && typeof itemData.rarityLevel === 'number') {
-        const rarityMultiplier = 1 + ((1000 - itemData.rarityLevel) / 1000); // 1.0 a 2.0
+        const rarityMultiplier = 1 + ((1000 - itemData.rarityLevel) / 1000);
         const oldPoints = points;
         points = Math.round(points * rarityMultiplier);
         console.log(`Aplicando multiplicador: ${oldPoints} x ${rarityMultiplier.toFixed(3)} = ${points} (rarityLevel: ${itemData.rarityLevel})`);
@@ -168,13 +193,11 @@ export class ItemService {
   async migrateUserItemsPoints(): Promise<void> {
     console.log('Iniciando migracao de pontos para userItems...');
 
-    // Buscar todos os userItems
     const querySnapshot = await getDocs(collection(this.db, 'userItems'));
     const userItemsToUpdate: any[] = [];
 
     querySnapshot.forEach(doc => {
       const data = doc.data();
-      // Verificar se não tem pontos ou pontos = 0
       if (!data.hasOwnProperty('points') || data.points === null || data.points === undefined || data.points === 0) {
         userItemsToUpdate.push({
           id: doc.id,
@@ -191,7 +214,6 @@ export class ItemService {
     }
 
     for (const userItemData of userItemsToUpdate) {
-      // Se não tem item aninhado, buscar pelo itemId
       let itemRarity = userItemData.item?.rarity;
       if (!itemRarity && userItemData.itemId) {
         const item = await this.getItemById(userItemData.itemId);
@@ -236,26 +258,21 @@ export class ItemService {
     const item = await this.getItemById(itemId);
     if (!item) throw new Error('Item não encontrado');
 
-    // Para itens lendários e míticos, garantir rarityLevel único
     let finalRarityLevel: number;
     if (item.rarity === 'LENDARIO' || item.rarity === 'MITICO') {
       if (rarityLevel) {
         finalRarityLevel = rarityLevel;
       } else {
-        // Gerar rarityLevel único
         finalRarityLevel = this.generateUniqueRarityLevel(itemId, userId);
       }
     } else {
-      // Para outros itens, usar o rarityLevel fornecido ou gerar aleatório
       finalRarityLevel = rarityLevel ?? Math.floor(Math.random() * 1000) + 1;
     }
 
-    // Calcular pontos baseado na raridade e rarityLevel
     const points = this.calculateItemPoints(item.rarity, finalRarityLevel);
 
-    // Para itens lendários e míticos, cada cópia é tratada como item único
     if (item.rarity === 'LENDARIO' || item.rarity === 'MITICO') {
-      // Criar entrada única para cada item lendário/mítico
+
       const uniqueId = `${userId}_${itemId}_${Date.now()}_${finalRarityLevel}`;
       const docRef = doc(this.db, 'userItems', uniqueId);
 
@@ -271,7 +288,6 @@ export class ItemService {
       await setDoc(docRef, userItemData);
       return finalRarityLevel;
     } else {
-      // Para itens comuns, raros e épicos, manter o sistema atual
       const userItemId = `${userId}_${itemId}`;
       const docRef = doc(this.db, 'userItems', userItemId);
       const docSnap = await getDoc(docRef);
@@ -282,7 +298,7 @@ export class ItemService {
           quantity: currentData['quantity'] + 1,
           points: Math.max(currentData['points'] || 0, points)
         });
-        return 0; // No rarity level for common items
+        return 0;
       } else {
         const userItemData: Omit<UserItem, 'id'> = {
           userId,
@@ -319,8 +335,6 @@ export class ItemService {
       const item = await this.getItemById(data.itemId);
       return { id, ...data, item } as UserItem;
     } catch (error) {
-      // 404 é comum quando um trade antigo referencia um userItem que foi transferido/deletado.
-      // Não devemos quebrar a tela inteira por isso.
       console.warn('[ItemService] getUserItemById falhou para', id, error);
       return null;
     }
@@ -333,11 +347,9 @@ export class ItemService {
     if (boxItems.length === 0) return null;
 
     boxItems.sort((a, b) => {
-      // Calcular score baseado na raridade e rarityLevel
       let scoreA = a.item.points || 0;
       let scoreB = b.item.points || 0;
       
-      // Para itens lendários e míticos, aplicar multiplicador do rarityLevel
       if ((a.item.rarity === 'LENDARIO' || a.item.rarity === 'MITICO') && a.rarityLevel) {
         const rarityMultiplierA = 1 + ((1000 - a.rarityLevel) / 1000);
         scoreA = scoreA * rarityMultiplierA;
@@ -348,15 +360,13 @@ export class ItemService {
         scoreB = scoreB * rarityMultiplierB;
       }
       
-      return scoreB - scoreA; // Ordenação decrescente
+      return scoreB - scoreA;
     });
 
     return boxItems[0];
   }
 
-  // Gerar um rarityLevel único para um item usando timestamp + random
   private generateUniqueRarityLevel(itemId: string, userId: string): number {
-    // Combina timestamp com random para garantir unicidade
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 1000);
     const combined = (timestamp + random) % 1000 + 1;
@@ -367,17 +377,14 @@ export class ItemService {
     const items = await this.getItemsByBox(boxId);
     if (items.length === 0) throw new Error('Nenhum item disponível nesta caixa');
     
-    // Usar as taxas de drop configuradas para cada item
     const totalDropRate = items.reduce((sum, item) => sum + (item.dropRate || 0), 0);
     
     if (totalDropRate === 0) {
       throw new Error('As taxas de drop dos itens não foram configuradas corretamente');
     }
 
-    // Gerar número aleatório entre 0 e o total de taxas
     const random = Math.random() * totalDropRate;
     
-    // Selecionar item baseado na taxa de drop
     let currentSum = 0;
     for (const item of items) {
       currentSum += (item.dropRate || 0);
@@ -386,7 +393,6 @@ export class ItemService {
       }
     }
 
-    // Fallback (não deveria acontecer, mas por segurança)
     return items[items.length - 1];
   }
 

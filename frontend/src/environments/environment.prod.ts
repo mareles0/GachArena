@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  backendUrl: 'https://your-backend-url/api', // Replace with actual deployed backend URL
+  backendUrl: 'https:
   firebaseConfig: {
     apiKey: "AIzaSyBblx0dqYPJ7zJ8IaXDYFfCvYHRmBa2kdk",
     authDomain: "gacharena-bd17c.firebaseapp.com",
