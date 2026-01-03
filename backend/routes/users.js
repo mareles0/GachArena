@@ -6,7 +6,20 @@ router.post('/:uid', async (req, res) => {
   try {
     const uid = req.params.uid;
     const userData = req.body;
-    await admin.firestore().collection('users').doc(uid).set(userData);
+    const userRef = admin.firestore().collection('users').doc(uid);
+    const existing = await userRef.get();
+
+    // Para jogador novo: começa com 10 tickets normais e 10 premium.
+    // Usamos merge para não apagar campos já existentes (ex.: tickets, contadores).
+    const payload = { ...userData };
+    if (!existing.exists) {
+      if (payload.normalTickets === undefined) payload.normalTickets = 10;
+      if (payload.premiumTickets === undefined) payload.premiumTickets = 10;
+      if (payload.boxesOpened === undefined) payload.boxesOpened = 0;
+      if (payload.gachaPulls === undefined) payload.gachaPulls = 0;
+    }
+
+    await userRef.set(payload, { merge: true });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -151,6 +151,14 @@
   color: #ffffff;
 }
 
+.friend-card .actions-right {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .friend-card video, .friend-card img.friend-bg-gif{
   position: absolute;
   inset: 0;
@@ -221,19 +229,31 @@ button {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  position: relative;
+  z-index: 3;
 
   &.btn-add, &.btn-accept {
     background: linear-gradient(135deg, #8b5cf6, #6366f1);
     color: white;
-    &:hover { transform: scale(1.05); }
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+    &:hover {
+      transform: translateY(-1px) scale(1.03);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.45);
+    }
   }
 
   &.btn-reject, &.btn-remove {
     background: #ef4444;
     color: white;
     margin-left: 0.5rem;
-    &:hover { background: #dc2626; }
-    z-index: 0;
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+    &:hover {
+      background: #dc2626;
+      transform: translateY(-1px) scale(1.03);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.45);
+    }
   }
 }
 

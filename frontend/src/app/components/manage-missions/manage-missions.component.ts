@@ -165,13 +165,30 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
           imageUrl: '' 
         }];
       }
-      this.editingMission.rewardNormal = Number(this.editingMission.rewardNormal || 0);
-      this.editingMission.rewardPremium = Number(this.editingMission.rewardPremium || 0);
-      if (this.editingMission.dailyRewards && this.editingMission.dailyRewards.length) {
-        this.editingMission.dailyRewards = this.editingMission.dailyRewards.map(d => ({
+      // Normaliza e sanitiza o payload antes de enviar ao backend.
+      const missionToSave: any = { ...this.editingMission };
+      delete missionToSave.createdAt;
+
+      missionToSave.rewardNormal = Number(missionToSave.rewardNormal || 0);
+      missionToSave.rewardPremium = Number(missionToSave.rewardPremium || 0);
+      missionToSave.reward = {
+        ...(missionToSave.reward && typeof missionToSave.reward === 'object' ? missionToSave.reward : {}),
+        normalTickets: missionToSave.rewardNormal,
+        premiumTickets: missionToSave.rewardPremium
+      };
+
+      if (!missionToSave.goal) {
+        missionToSave.goal = { type: 'LOGIN_DAYS', target: 7 };
+      }
+
+      if (missionToSave.type !== 'DAILY') {
+        delete missionToSave.dailyRewards;
+      } else if (missionToSave.dailyRewards && missionToSave.dailyRewards.length) {
+        missionToSave.dailyRewards = missionToSave.dailyRewards.map((d: any) => ({
           day: Number(d.day || 0),
           label: d.label || (`Day ${d.day}`),
-          reward: { 
+          reward: {
+            ...(d.reward && typeof d.reward === 'object' ? d.reward : {}),
             normalTickets: Number(d.rewardNormal || 0),
             premiumTickets: Number(d.rewardPremium || 0)
           },
@@ -182,16 +199,23 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
       }
 
       if (this.editingMission.id) {
-        await this.missionService.updateMission(this.editingMission.id, this.editingMission);
+        await this.missionService.updateMission(this.editingMission.id, missionToSave);
         this.showNotification('Missão atualizada!', 'success');
       } else {
-        const newId = await this.missionService.createMission(this.editingMission as any);
+        const newId = await this.missionService.createMission(missionToSave);
         this.editingMission.id = newId;
         this.showNotification('Missão criada!', 'success');
       }
       setTimeout(() => window.location.reload(), 800);
     } catch (error) {
-      this.showNotification('Erro ao salvar missão', 'error');
+      console.error('[ManageMissions] Erro ao salvar missão:', error);
+      const anyErr: any = error as any;
+      const message =
+        anyErr?.error?.error ||
+        anyErr?.error?.message ||
+        anyErr?.message ||
+        'Erro ao salvar missão';
+      this.showNotification(message, 'error');
     }
   }
 
@@ -325,7 +349,16 @@ export class ManageMissionsComponent implements OnInit, OnDestroy {
 
   requiresAmount(): boolean {
     const req = this.editingMission.requirement;
-    return req === 'TOTAL_POWER' || req === 'ITEM_COUNT' || req === 'OPEN_BOXES' || req === 'GACHA_PULLS' || req === 'COMPLETE_TRADES';
+    return req === 'TOTAL_POWER'
+      || req === 'ITEM_COUNT'
+      || req === 'OPEN_BOXES'
+      || req === 'GACHA_PULLS'
+      || req === 'COMPLETE_TRADES'
+      || req === 'RARITY_COMMON'
+      || req === 'RARITY_RARE'
+      || req === 'RARITY_EPIC'
+      || req === 'RARITY_LEGENDARY'
+      || req === 'RARITY_MYTHIC';
   }
 
   showNotification(message: string, type: 'success' | 'error' | 'info') {

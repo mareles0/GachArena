@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  backendUrl: 'https:
+  backendUrl: 'https://gacharena-1.onrender.com/api',
   firebaseConfig: {
     apiKey: "AIzaSyBblx0dqYPJ7zJ8IaXDYFfCvYHRmBa2kdk",
     authDomain: "gacharena-bd17c.firebaseapp.com",

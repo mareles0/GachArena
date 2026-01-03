@@ -3,8 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --host 0.0.0.0",
-    "build": "ng build",
+    "start": "node --openssl-legacy-provider node_modules/@angular/cli/bin/ng serve --host 0.0.0.0",
+    "build": "node --openssl-legacy-provider node_modules/@angular/cli/bin/ng build",
+    "build:prod": "node --openssl-legacy-provider node_modules/@angular/cli/bin/ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "firebase": "firebase",

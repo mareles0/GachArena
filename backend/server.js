@@ -27,8 +27,13 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
+    origin: [
+      'http://localhost:4200',
+      'https://gacharena-bd17c.web.app',
+      'https://gacharena-bd17c.firebaseapp.com'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
   }
 });
 
@@ -41,7 +46,14 @@ io.on('connection', (socket) => {
   });
 });
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:4200',
+    'https://gacharena-bd17c.web.app',
+    'https://gacharena-bd17c.firebaseapp.com'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');

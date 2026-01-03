@@ -1,6 +1,8 @@
 .navbar {
-  position: relative;
-  z-index: 1000;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  width: 100%;
 
   &.low-z {
     z-index: 50 !important;

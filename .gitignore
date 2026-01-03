@@ -50,7 +50,10 @@ Thumbs.db
 .angular/cache
 
 # Environment files
-/src/environments/environment*.ts
+# (NÃO ignorar environment.ts/environment.prod.ts: o Angular precisa deles no build)
+# Ignore apenas variantes locais, se existirem.
+/src/environments/environment.local.ts
+/src/environments/environment.*.local.ts
 
 # Firebase service account keys
 /src/environments/serviceAccountKey.json
@@ -62,7 +65,9 @@ Thumbs.db
 /backend/.env.production
 
 # Local frontend config
-/frontend/src/environments/environment*.ts
+# (mesma regra: não ignorar environment.ts/environment.prod.ts)
+/frontend/src/environments/environment.local.ts
+/frontend/src/environments/environment.*.local.ts
 /frontend/src/app/config/*.ts
 /frontend/src/app/config/*.json
 

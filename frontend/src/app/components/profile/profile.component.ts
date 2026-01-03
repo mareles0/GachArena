@@ -38,6 +38,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
   isFriend = false;
   showTradeModal = false;
 
+  friendRequestSent = false;
+  friendRequestSending = false;
+
   isOwner = false;
   level?: number | null = null;
   
@@ -71,6 +74,10 @@ export class ProfileComponent implements OnInit, OnDestroy {
     if (me && this.userId) {
       this.isFriend = await this.friendService.areFriends(me.uid, this.userId);
       this.isOwner = me.uid === this.userId;
+
+      if (!this.isOwner && !this.isFriend) {
+        this.friendRequestSent = await this.friendService.hasPendingRequest(me.uid, this.userId);
+      }
     }
     
     this.eventSubscription = this.eventService.events$.subscribe(event => {
@@ -217,7 +224,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
   async sendFriendRequest() {
     const me = this.auth.currentUser;
     if (!me || !this.userId) return;
+
+    if (this.friendRequestSending || this.friendRequestSent || this.isFriend) {
+      return;
+    }
+
     try {
+      this.friendRequestSending = true;
       const meDoc = await this.userService.getUserById(me.uid);
       const myName = meDoc?.username || me.email || '';
 
@@ -225,11 +238,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
       const targetName = targetDoc?.username || '';
 
       await this.friendService.sendFriendRequest(me.uid, this.userId, myName, targetName, (me as any).profileIcon || me.photoURL || '');
-      alert('Solicitação enviada');
-      setTimeout(() => window.location.reload(), 800);
+      this.friendRequestSent = true;
     } catch (err:any) {
       console.error('Erro ao enviar solicitação', err);
       alert(err?.message || 'Erro ao enviar solicitação');
+    } finally {
+      this.friendRequestSending = false;
     }
   }
 

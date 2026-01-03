@@ -9,21 +9,28 @@ function normalizeTicketReward(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function pickMaxRewardValue(...values) {
+  return Math.max(...values.map(v => normalizeTicketReward(v)));
+}
+
 function extractRewardFromMission(mission) {
-  let normalTickets = 0;
-  let premiumTickets = 0;
-
   if (!mission) {
-    return { normalTickets, premiumTickets };
+    return { normalTickets: 0, premiumTickets: 0 };
   }
 
-  if (mission.reward && typeof mission.reward === 'object') {
-    normalTickets += normalizeTicketReward(mission.reward.normalTickets);
-    premiumTickets += normalizeTicketReward(mission.reward.premiumTickets);
-  }
-
-  normalTickets += normalizeTicketReward(mission.rewardNormal);
-  premiumTickets += normalizeTicketReward(mission.rewardPremium);
+  // Compatibilidade: alguns registros usam reward.{normalTickets,premiumTickets},
+  // outros usam rewardNormal/rewardPremium e/ou normalTickets/premiumTickets no root.
+  // Evitar duplicar quando mais de um formato estiver presente.
+  const normalTickets = pickMaxRewardValue(
+    mission.reward && typeof mission.reward === 'object' ? mission.reward.normalTickets : 0,
+    mission.rewardNormal,
+    mission.normalTickets
+  );
+  const premiumTickets = pickMaxRewardValue(
+    mission.reward && typeof mission.reward === 'object' ? mission.reward.premiumTickets : 0,
+    mission.rewardPremium,
+    mission.premiumTickets
+  );
 
   return { normalTickets, premiumTickets };
 }
@@ -36,15 +43,17 @@ function extractDailyReward(mission, day) {
       return null;
     }
 
-    let normalTickets = 0;
-    let premiumTickets = 0;
-
-    if (entry.reward && typeof entry.reward === 'object') {
-      normalTickets += normalizeTicketReward(entry.reward.normalTickets);
-      premiumTickets += normalizeTicketReward(entry.reward.premiumTickets);
-    }
-    normalTickets += normalizeTicketReward(entry.rewardNormal);
-    premiumTickets += normalizeTicketReward(entry.rewardPremium);
+    // Evitar duplicar quando reward e rewardNormal coexistirem.
+    let normalTickets = pickMaxRewardValue(
+      entry.reward && typeof entry.reward === 'object' ? entry.reward.normalTickets : 0,
+      entry.rewardNormal,
+      entry.normalTickets
+    );
+    let premiumTickets = pickMaxRewardValue(
+      entry.reward && typeof entry.reward === 'object' ? entry.reward.premiumTickets : 0,
+      entry.rewardPremium,
+      entry.premiumTickets
+    );
 
     if (normalTickets === 0 && premiumTickets === 0) {
       return extractRewardFromMission(mission);
@@ -54,6 +63,45 @@ function extractDailyReward(mission, day) {
   }
 
   return extractRewardFromMission(mission);
+}
+
+function normalizeMissionForClient(mission) {
+  if (!mission || typeof mission !== 'object') {
+    return mission;
+  }
+
+  const normalized = { ...mission };
+  const reward = extractRewardFromMission(normalized);
+  normalized.reward = {
+    ...(normalized.reward && typeof normalized.reward === 'object' ? normalized.reward : {}),
+    normalTickets: reward.normalTickets,
+    premiumTickets: reward.premiumTickets
+  };
+
+  if (Array.isArray(normalized.dailyRewards)) {
+    normalized.dailyRewards = normalized.dailyRewards.map((d) => {
+      const entry = { ...d };
+      const entryReward = {
+        normalTickets: pickMaxRewardValue(
+          entry.reward && typeof entry.reward === 'object' ? entry.reward.normalTickets : 0,
+          entry.rewardNormal,
+          entry.normalTickets
+        ),
+        premiumTickets: pickMaxRewardValue(
+          entry.reward && typeof entry.reward === 'object' ? entry.reward.premiumTickets : 0,
+          entry.rewardPremium,
+          entry.premiumTickets
+        )
+      };
+      entry.reward = {
+        ...(entry.reward && typeof entry.reward === 'object' ? entry.reward : {}),
+        ...entryReward
+      };
+      return entry;
+    });
+  }
+
+  return normalized;
 }
 
 router.post('/', async (req, res) => {
@@ -76,7 +124,7 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const snapshot = await db.collection('missions').get();
-    const missions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const missions = snapshot.docs.map(doc => normalizeMissionForClient({ id: doc.id, ...doc.data() }));
     res.json(missions);
   } catch (error) {
     console.error('Erro ao buscar missões:', error);
@@ -87,7 +135,7 @@ router.get('/', async (req, res) => {
 router.get('/active', async (req, res) => {
   try {
     const snapshot = await db.collection('missions').where('active', '==', true).get();
-    const missions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const missions = snapshot.docs.map(doc => normalizeMissionForClient({ id: doc.id, ...doc.data() }));
     res.json(missions);
   } catch (error) {
     console.error('Erro ao buscar missões ativas:', error);
@@ -101,7 +149,7 @@ router.get('/:id', async (req, res) => {
     if (!doc.exists) {
       return res.status(404).json({ error: 'Missão não encontrada' });
     }
-    res.json({ id: doc.id, ...doc.data() });
+    res.json(normalizeMissionForClient({ id: doc.id, ...doc.data() }));
   } catch (error) {
     console.error('Erro ao buscar missão:', error);
     res.status(500).json({ error: 'Erro ao buscar missão' });
@@ -143,7 +191,7 @@ router.get('/user/:userId', async (req, res) => {
 
     const missionsWithDetails = await Promise.all(userMissions.map(async (um) => {
       const missionDoc = await db.collection('missions').doc(um.missionId).get();
-      const mission = missionDoc.exists ? { id: missionDoc.id, ...missionDoc.data() } : null;
+      const mission = missionDoc.exists ? normalizeMissionForClient({ id: missionDoc.id, ...missionDoc.data() }) : null;
       return { ...um, mission };
     }));
 
@@ -186,7 +234,9 @@ router.post('/user/:userId/start/:missionId', async (req, res) => {
       completed: isAutoComplete ? true : false,
       claimed: false,
       claimedDays: [],
-      nextAvailableAt: isDaily ? admin.firestore.Timestamp.fromDate(tomorrow) : null,
+      // Missão diária: permitir coletar o dia 1 imediatamente.
+      // O nextAvailableAt só deve ser definido após a primeira coleta.
+      nextAvailableAt: isDaily ? null : null,
       lastDailyClaimAt: null,
       createdAt: admin.firestore.Timestamp.now()
     };
@@ -308,6 +358,12 @@ router.put('/user-mission/:userMissionId/claim-daily', async (req, res) => {
 
       const nextAvailableTs = umData.nextAvailableAt;
       const lastClaimTs = umData.lastDailyClaimAt;
+
+      // Compatibilidade: se o UserMission antigo foi criado com nextAvailableAt no futuro,
+      // ainda assim o dia 1 deve ser coletável na primeira vez.
+      if (claimedDays.length === 0 && dayNumber === 1 && !lastClaimTs) {
+        console.log('[Missions] Primeira coleta (dia 1) - permitindo independentemente de nextAvailableAt');
+      } else {
       
       console.log('[Missions] Validando disponibilidade:', {
         dayNumber,
@@ -354,6 +410,8 @@ router.put('/user-mission/:userMissionId/claim-daily', async (req, res) => {
         if (lastClaimDate.getTime() === today.getTime()) {
           throw { statusCode: 400, message: 'Você já coletou uma recompensa diária hoje. Volte amanhã!' };
         }
+      }
+
       }
 
       const dailyReward = extractDailyReward(mission, dayNumber);
@@ -418,7 +476,7 @@ router.put('/user-mission/:userMissionId/claim-daily', async (req, res) => {
     io && io.emit('appEvent', { type: 'ticketsChanged' });
   } catch (error) {
     console.error('Erro ao coletar dia:', error);
-    res.status(500).json({ error: error.message });
+    res.status(error.statusCode || 500).json({ error: error.message || 'Erro ao coletar dia' });
   }
 });
 

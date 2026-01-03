@@ -48,6 +48,22 @@ export class FriendService {
     }
   }
 
+  async hasPendingRequest(fromUserId: string, toUserId: string): Promise<boolean> {
+    try {
+      const q = query(
+        collection(db, 'friends'),
+        where('userId', '==', fromUserId),
+        where('friendId', '==', toUserId),
+        where('status', '==', 'PENDING')
+      );
+      const existing = await getDocs(q);
+      return !existing.empty;
+    } catch (error) {
+      console.error('Erro ao verificar solicitação pendente:', error);
+      return false;
+    }
+  }
+
   async getPendingRequests(userId: string): Promise<Friend[]> {
     try {
       const q = query(

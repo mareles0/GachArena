@@ -27,7 +27,16 @@
         <p class="short-desc" *ngIf="profile?.description">{{ profile?.description }}</p>
 
         <div class="hero-actions">
-          <button *ngIf="auth.currentUser?.uid !== userId && !isFriend" class="btn btn-outline" (click)="sendFriendRequest()">Enviar solicitação</button>
+          <button
+            *ngIf="auth.currentUser?.uid !== userId && !isFriend && !friendRequestSent"
+            class="btn btn-outline"
+            [disabled]="friendRequestSending"
+            (click)="sendFriendRequest()">
+            {{ friendRequestSending ? 'Enviando...' : 'Enviar solicitação' }}
+          </button>
+          <div *ngIf="auth.currentUser?.uid !== userId && !isFriend && friendRequestSent" class="request-sent">
+            Pedido enviado
+          </div>
           <button *ngIf="auth.currentUser?.uid !== userId && isFriend" class="btn btn-primary" (click)="openTrade()">Propor troca</button>
         </div>
       </div>

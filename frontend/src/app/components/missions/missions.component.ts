@@ -22,6 +22,7 @@ export class MissionsComponent implements OnInit, OnDestroy {
   private unsubscribeAuth?: () => void;
   private eventSubscription?: Subscription;
   private reloadQueued = false;
+  private autoStartInProgress = false;
   
   dailyMissionData = new Map<string, {
     nextUnclaimedDay: number | null;
@@ -41,6 +42,18 @@ export class MissionsComponent implements OnInit, OnDestroy {
     private eventService: EventService,
     private ticketService: TicketService
   ) { }
+
+  getMissionNormalReward(mission?: Mission): number {
+    const anyMission = mission as any;
+    const value = mission?.reward?.normalTickets ?? anyMission?.rewardNormal ?? 0;
+    return Number(value || 0);
+  }
+
+  getMissionPremiumReward(mission?: Mission): number {
+    const anyMission = mission as any;
+    const value = mission?.reward?.premiumTickets ?? anyMission?.rewardPremium ?? 0;
+    return Number(value || 0);
+  }
 
   async ngOnInit() {
     console.log('[Missions] ngOnInit iniciado');
@@ -95,12 +108,37 @@ export class MissionsComponent implements OnInit, OnDestroy {
       console.log('[Missions] userMissions:', userMissions);
       console.log('[Missions] activeMissions:', activeMissions);
 
-      this.userMissions = (userMissions || []).filter(um => um.mission && um.mission.id);
-      
+      let filteredUserMissions = (userMissions || []).filter(um => um.mission && um.mission.id);
+
+      // Auto-iniciar todas as missões ativas (inclui DAILY) para o usuário.
+      // Isso evita que jogador novo precise clicar em "iniciar".
+      const startedMissionIds = new Set(filteredUserMissions.map(um => um.missionId));
+      const missingActive = (activeMissions || []).filter(m => !!m.id && !startedMissionIds.has(m.id!));
+
+      if (missingActive.length > 0 && !this.autoStartInProgress) {
+        this.autoStartInProgress = true;
+        console.log('[Missions] Auto-iniciando missões ativas faltantes:', missingActive.map(m => m.id));
+
+        await Promise.all(
+          missingActive.map(m =>
+            this.missionService.startMission(this.currentUserId, m.id!).catch((err) => {
+              console.warn('[Missions] Falha ao auto-iniciar missão:', m.id, err);
+              return '';
+            })
+          )
+        );
+
+        const refreshed = await this.missionService.getUserMissions(this.currentUserId);
+        filteredUserMissions = (refreshed || []).filter(um => um.mission && um.mission.id);
+        this.autoStartInProgress = false;
+      }
+
+      this.userMissions = filteredUserMissions;
+
       await this.updateMissionsProgress();
-      
-      const startedMissionIds = this.userMissions.map(um => um.missionId);
-      this.availableMissions = (activeMissions || []).filter(m => !startedMissionIds.includes(m.id || ''));
+
+      const startedMissionIdsAfter = this.userMissions.map(um => um.missionId);
+      this.availableMissions = (activeMissions || []).filter(m => !startedMissionIdsAfter.includes(m.id || ''));
 
       this.calculateDailyMissionData();
       
@@ -307,6 +345,13 @@ export class MissionsComponent implements OnInit, OnDestroy {
     
     const na = um.nextAvailableAt as any;
     const lastClaim = um.lastDailyClaimAt as any;
+
+    // Compatibilidade: alguns usuários novos podem ter vindo com nextAvailableAt setado para amanhã.
+    // Para o primeiro dia (sem coletas ainda), deve aparecer como disponível.
+    if ((um.claimedDays || []).length === 0 && nextDay === 1 && !lastClaim) {
+      console.log('[Missions] Dia 1 (primeira coleta) - disponível');
+      return true;
+    }
     
     if (!na && !lastClaim) {
       if (claimedDaysCount === 0) {

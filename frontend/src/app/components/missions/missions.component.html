@@ -161,13 +161,13 @@
           </div>
 
           <div class="card-rewards">
-            <div *ngIf="(um.mission?.reward?.normalTickets || 0) > 0" class="reward-item">
+            <div *ngIf="getMissionNormalReward(um.mission) > 0" class="reward-item">
               <img src="https://static.wikitide.net/cravesagawiki/4/46/Platinum_Gacha_Ticket.png" alt="Normal">
-              <span>×{{ um.mission?.reward?.normalTickets }}</span>
+              <span>×{{ getMissionNormalReward(um.mission) }}</span>
             </div>
-            <div *ngIf="(um.mission?.reward?.premiumTickets || 0) > 0" class="reward-item">
+            <div *ngIf="getMissionPremiumReward(um.mission) > 0" class="reward-item">
               <img src="https://static.wikitide.net/cravesagawiki/f/fe/SR_or_Higher_Gacha_Ticket.png" alt="Premium">
-              <span>×{{ um.mission?.reward?.premiumTickets }}</span>
+              <span>×{{ getMissionPremiumReward(um.mission) }}</span>
             </div>
           </div>
 
