@@ -73,3 +73,46 @@
 #botao-login:hover {
     background-color: rgba(0, 0, 0, 0.2);
 }
+
+// Mobile Responsiveness
+@media (max-width: 480px) {
+    #container1 {
+        width: 95%;
+        padding: 40px 20px;
+    }
+
+    .info-text {
+        font-size: 13px;
+    }
+
+    .email-text {
+        font-size: 15px;
+    }
+
+    #botao-reenviar,
+    #botao-login {
+        padding: 8px;
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 380px) {
+    #container1 {
+        width: 98%;
+        padding: 35px 15px;
+    }
+
+    .info-text {
+        font-size: 12px;
+    }
+
+    .email-text {
+        font-size: 14px;
+    }
+
+    #botao-reenviar,
+    #botao-login {
+        padding: 7px;
+        font-size: 14px;
+    }
+}

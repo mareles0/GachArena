@@ -23,7 +23,12 @@
 
   <!-- HEADER -->
   <div class="header">
-    <h1><i class="bi bi-list-task"></i> Gerenciar Missões</h1>
+    <div class="d-flex justify-content-between align-items-center w-100">
+      <h1><i class="bi bi-list-task"></i> Gerenciar Missões</h1>
+      <button (click)="loadMissions()" class="btn btn-secondary me-2" [disabled]="isLoading" *ngIf="!isEditing">
+        <i class="bi bi-arrow-clockwise"></i> Atualizar
+      </button>
+    </div>
     <div class="create-buttons" *ngIf="!isEditing">
       <button (click)="startCreate('regular')" class="btn-create">+ Nova Missão Regular</button>
       <button (click)="startCreate('daily')" class="btn-create btn-daily">+ Nova Missão Diária</button>

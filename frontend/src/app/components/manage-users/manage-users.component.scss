@@ -420,4 +420,128 @@ table {
   margin-right: 0.5rem;
 }
 
+// Mobile Responsiveness
+@media (max-width: 768px) {
+  .manage-container {
+    padding: 1rem;
+
+    h1 {
+      font-size: 1.75rem;
+    }
+
+    .search-input {
+      max-width: 100%;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.95rem;
+    }
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+
+    thead {
+      display: none;
+    }
+
+    tbody {
+      display: block;
+    }
+
+    tr {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.5);
+
+      td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+        &:before {
+          content: attr(data-label);
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+    }
+
+    .btn-action {
+      margin: 0.25rem;
+    }
+  }
+
+  .modal-content {
+    width: 95%;
+    max-width: none;
+  }
+
+  .notification-container {
+    right: 10px;
+    left: 10px;
+    top: 10px;
+  }
+
+  .notification {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .manage-container {
+    padding: 0.75rem;
+
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    .search-input {
+      padding: 0.6rem 0.75rem;
+      font-size: 0.9rem;
+    }
+  }
+
+  .modal-header {
+    padding: 1rem;
+
+    h3 {
+      font-size: 1.1rem;
+    }
+  }
+
+  .modal-body {
+    padding: 1rem;
+
+    .form-group label {
+      font-size: 0.9rem;
+    }
+
+    input, select, textarea {
+      padding: 0.6rem 0.8rem;
+      font-size: 0.9rem;
+    }
+  }
+
+  table tr td {
+    font-size: 0.9rem;
+    padding: 0.4rem 0;
+
+    &:before {
+      font-size: 0.85rem;
+    }
+  }
+}
+
 

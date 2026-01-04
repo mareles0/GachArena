@@ -742,6 +742,16 @@
     font-size: 1rem;
   }
   
+  .filter-buttons {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .filter-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+  
   .daily-info-header {
     flex-direction: column;
     gap: 1rem;
@@ -759,8 +769,93 @@
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 1rem;
   }
+
+  .day-cell {
+    padding: 1.25rem 0.75rem;
+  }
   
   .available-grid {
     grid-template-columns: 1fr;
+  }
+
+  .notification-toast {
+    right: 15px;
+    top: 80px;
+    min-width: 250px;
+    padding: 0.85rem 1.25rem;
+  }
+
+  .mission-card {
+    padding: 1.25rem;
+  }
+
+  .mission-card .mission-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .mission-card .mission-content {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .mission-card .btn-start,
+  .mission-card .btn-complete {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .missions-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .missions-header .subtitle {
+    font-size: 0.9rem;
+  }
+
+  .filter-buttons {
+    gap: 0.35rem;
+  }
+
+  .filter-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    flex: 1;
+    min-width: 80px;
+
+    i {
+      font-size: 1rem;
+    }
+  }
+
+  .daily-mission-panel {
+    padding: 1.25rem;
+  }
+
+  .daily-info-header .info-left h2 {
+    font-size: 1.25rem;
+  }
+
+  .days-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .day-cell {
+    padding: 1rem 0.5rem;
+  }
+
+  .day-header {
+    font-size: 0.9rem;
+  }
+
+  .notification-toast {
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
   }
 }

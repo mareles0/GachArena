@@ -202,7 +202,23 @@ export class MissionService {
       return result!;
     } catch (error) {
       console.error('Erro ao calcular progresso:', error);
-      return { progress: 0, currentValue: 0, targetValue: 0, completed: false };
+      throw error;
+    }
+  }
+
+  async batchCalculateProgress(userId: string, missionIds: string[]): Promise<Record<string, { progress: number; currentValue: number; targetValue: number; completed: boolean }>> {
+    try {
+      if (!missionIds || missionIds.length === 0) {
+        return {};
+      }
+      const result = await this.http.post<Record<string, { progress: number; currentValue: number; targetValue: number; completed: boolean }>>(
+        `${environment.backendUrl}/missions/user/${userId}/batch-progress`,
+        { missionIds }
+      ).toPromise();
+      return result || {};
+    } catch (error) {
+      console.error('Erro ao calcular progresso em lote:', error);
+      return {};
     }
   }
 

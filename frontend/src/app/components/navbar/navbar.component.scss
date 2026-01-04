@@ -165,3 +165,59 @@
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
   }
 }
+
+// Mobile Responsiveness
+@media (max-width: 768px) {
+  .navbar {
+    .navbar-brand {
+      font-size: 1.25rem;
+      i { font-size: 1.5rem; }
+    }
+
+    .ticket-display {
+      padding: 0.35rem 0.75rem;
+      
+      .ticket-icon {
+        width: 22px;
+        height: 22px;
+      }
+
+      .ticket-amount {
+        font-size: 1rem;
+        min-width: 20px;
+      }
+    }
+
+    .nav-compact {
+      gap: 0.4rem;
+      margin-left: 0.25rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    .navbar-brand {
+      font-size: 1.1rem;
+      i { font-size: 1.3rem; }
+    }
+
+    .ticket-display {
+      padding: 0.25rem 0.5rem;
+      
+      .ticket-icon {
+        width: 20px;
+        height: 20px;
+      }
+
+      .ticket-amount {
+        font-size: 0.9rem;
+      }
+    }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+    }
+  }
+}

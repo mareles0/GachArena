@@ -203,36 +203,56 @@ export class MissionsComponent implements OnInit, OnDestroy {
     
     this.progressCache.clear();
     
-    for (const um of this.userMissions) {
-      if (um.mission?.type !== 'DAILY' && !um.completed && um.mission?.id) {
-        console.log('[Missions] Calculando progresso para missão:', um.mission.id, um.mission.title);
-        try {
-          const progressData = await this.missionService.calculateProgress(this.currentUserId, um.mission.id);
+    // Coletar IDs das missões não-diárias e não completadas
+    const missionIdsToCalc = this.userMissions
+      .filter(um => um.mission?.type !== 'DAILY' && !um.completed && um.mission?.id)
+      .map(um => um.mission!.id!);
+
+    if (missionIdsToCalc.length === 0) {
+      console.log('[Missions] Nenhuma missão para calcular progresso');
+      return;
+    }
+
+    console.log('[Missions] Calculando progresso em lote para', missionIdsToCalc.length, 'missões:', missionIdsToCalc);
+
+    try {
+      // Uma única chamada batch
+      const progressResults = await this.missionService.batchCalculateProgress(this.currentUserId, missionIdsToCalc);
+      console.log('[Missions] Resultados do batch:', progressResults);
+
+      // Aplicar resultados
+      for (const um of this.userMissions) {
+        if (um.mission?.type === 'DAILY' || um.completed || !um.mission?.id) {
+          if (um.id) {
+            this.progressCache.set(um.id, um.progress || 0);
+          }
+          continue;
+        }
+
+        const progressData = progressResults[um.mission.id];
+        if (progressData) {
           um.progress = progressData.progress;
-          console.log('[Missions] Progresso calculado:', um.mission.id, '=', um.progress, '%');
-          
+          console.log('[Missions] Progresso atualizado:', um.mission.id, '=', um.progress, '%');
+
           if (um.id) {
             this.progressCache.set(um.id, um.progress);
           }
-          
+
           if (progressData.completed && !um.completed && um.id) {
             console.log('[Missions] Missão completada, marcando como concluída:', um.mission.id);
             await this.missionService.completeMission(um.id);
             um.completed = true;
           }
-        } catch (error: any) {
-          console.error('[Missions] Erro ao calcular progresso da missão:', um.mission?.id, error);
-          if (error?.status === 404) {
-            console.warn('[Missions] Missão não encontrada no backend, setando progresso como 0');
-            um.progress = 0;
-            if (um.id) {
-              this.progressCache.set(um.id, 0);
-            }
+        } else {
+          console.warn('[Missions] Sem resultado de progresso para missão:', um.mission.id);
+          um.progress = 0;
+          if (um.id) {
+            this.progressCache.set(um.id, 0);
           }
         }
-      } else if (um.id) {
-        this.progressCache.set(um.id, um.progress || 0);
       }
+    } catch (error: any) {
+      console.error('[Missions] Erro ao calcular progresso em lote:', error);
     }
     
     console.log('[Missions] updateMissionsProgress finalizado');
@@ -409,7 +429,9 @@ export class MissionsComponent implements OnInit, OnDestroy {
     try {
       let naMs: number;
       
-      if (na.seconds !== undefined) {
+      if (na._seconds !== undefined) {
+        naMs = na._seconds * 1000;
+      } else if (na.seconds !== undefined) {
         naMs = na.seconds * 1000;
       } else if (na.toMillis) {
         naMs = na.toMillis();
@@ -461,7 +483,9 @@ export class MissionsComponent implements OnInit, OnDestroy {
     try {
       let naMs: number;
       
-      if (na.seconds !== undefined) {
+      if (na._seconds !== undefined) {
+        naMs = na._seconds * 1000;
+      } else if (na.seconds !== undefined) {
         naMs = na.seconds * 1000;
       } else if (na.toMillis) {
         naMs = na.toMillis();

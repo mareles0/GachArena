@@ -226,15 +226,20 @@
 
 .rank-position {
   text-align: center;
+  position: relative;
+  z-index: 1;
 
   .medal {
-    font-size: 2rem;
+    font-size: 2.5rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
   }
 
   .number {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: bold;
-    color: #6b7280;
+    color: #ffffff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 15px rgba(255, 255, 255, 0.3);
   }
 }
 
@@ -608,6 +613,162 @@
           flex-direction: column;
           align-items: flex-start;
           gap: 0.25rem;
+        }
+      }
+    }
+  }
+
+  .ranking-container {
+    padding: 1rem;
+  }
+
+  .ranking-header {
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    .view-toggle {
+      width: 100%;
+      
+      button {
+        flex: 1;
+        padding: 0.5rem 0.5rem;
+        font-size: 0.9rem;
+        
+        i {
+          margin-right: 0.25rem;
+        }
+      }
+    }
+  }
+
+  .box-filter .form-select {
+    max-width: 100%;
+    font-size: 0.9rem;
+  }
+
+  .ranking-item {
+    padding: 1rem;
+    gap: 1rem;
+    grid-template-columns: 50px 1fr;
+
+    .rank-position {
+      .medal {
+        font-size: 2rem;
+      }
+
+      .number {
+        font-size: 1.5rem;
+      }
+    }
+
+    .player-info {
+      gap: 0.75rem;
+
+      .player-avatar {
+        width: 40px;
+        height: 40px;
+      }
+
+      .player-details {
+        h3 {
+          font-size: 1rem;
+        }
+
+        p {
+          font-size: 0.8rem;
+        }
+      }
+    }
+
+    .rarest-item {
+      margin-top: 0.75rem;
+      padding: 0.5rem 0.75rem;
+
+      img {
+        width: 40px;
+        height: 40px;
+      }
+
+      .item-info {
+        .item-name {
+          font-size: 0.8rem;
+        }
+
+        .item-rarity {
+          font-size: 0.7rem;
+        }
+      }
+    }
+
+    .score {
+      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+
+      .score-value {
+        font-size: 1.25rem;
+      }
+
+      .score-label {
+        font-size: 0.7rem;
+      }
+    }
+  }
+
+  .notification-container {
+    right: 10px;
+    top: 10px;
+    left: 10px;
+  }
+
+  .notification {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .ranking-header {
+    h1 {
+      font-size: 1.35rem;
+    }
+
+    .view-toggle button {
+      padding: 0.4rem 0.35rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  .ranking-item {
+    padding: 0.75rem;
+    gap: 0.75rem;
+    grid-template-columns: 45px 1fr;
+
+    .rank-position {
+      .medal {
+        font-size: 1.75rem;
+      }
+
+      .number {
+        font-size: 1.35rem;
+      }
+    }
+
+    .player-info {
+      gap: 0.5rem;
+
+      .player-avatar {
+        width: 35px;
+        height: 35px;
+      }
+
+      .player-details {
+        h3 {
+          font-size: 0.95rem;
+        }
+
+        p {
+          font-size: 0.75rem;
         }
       }
     }

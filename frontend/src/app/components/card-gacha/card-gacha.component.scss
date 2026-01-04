@@ -817,13 +817,34 @@
 
   .cards-container {
     gap: 25px;
+    padding: 1rem;
+  }
+
+  .loading-card {
+    width: 280px;
+    height: 380px;
+
+    .loading-orb {
+      width: 100px;
+      height: 100px;
+    }
+
+    .loading-rings {
+      width: 160px;
+      height: 160px;
+    }
+
+    .loading-text {
+      font-size: 16px;
+      letter-spacing: 3px;
+    }
   }
 }
 
 @media (max-width: 480px) {
   .mode-x1 .gacha-card {
     width: 240px;
-    aspect-ratio: 1 / 1;
+    height: 320px;
   }
 
   .mode-x5 .gacha-card {
@@ -834,6 +855,32 @@
   .mode-x10 .gacha-card {
     width: 110px;
     height: 150px;
+  }
+
+  .cards-container {
+    gap: 15px;
+    padding: 0.75rem;
+    min-height: 400px;
+  }
+
+  .loading-card {
+    width: 240px;
+    height: 320px;
+
+    .loading-orb {
+      width: 80px;
+      height: 80px;
+    }
+
+    .loading-rings {
+      width: 140px;
+      height: 140px;
+    }
+
+    .loading-text {
+      font-size: 14px;
+      letter-spacing: 2px;
+    }
   }
 }
 

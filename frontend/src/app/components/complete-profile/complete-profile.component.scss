@@ -96,3 +96,54 @@ input:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+// Mobile Responsiveness
+@media (max-width: 480px) {
+    #container1 {
+        width: 95%;
+        padding: 30px 15px;
+    }
+
+    .info-text {
+        font-size: 13px;
+    }
+
+    .email-text {
+        font-size: 13px;
+    }
+
+    input {
+        padding: 8px;
+        font-size: 15px;
+    }
+
+    #botao-salvar {
+        padding: 10px;
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 380px) {
+    #container1 {
+        width: 98%;
+        padding: 25px 12px;
+    }
+
+    .info-text {
+        font-size: 12px;
+    }
+
+    .email-text {
+        font-size: 12px;
+    }
+
+    input {
+        padding: 7px;
+        font-size: 14px;
+    }
+
+    #botao-salvar {
+        padding: 9px;
+        font-size: 14px;
+    }
+}

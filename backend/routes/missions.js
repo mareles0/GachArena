@@ -508,6 +508,180 @@ router.put('/user-mission/:userMissionId/complete', async (req, res) => {
   }
 });
 
+// Endpoint batch: calcula progresso de todas as missões não-diárias do usuário em uma única chamada
+router.post('/user/:userId/batch-progress', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { missionIds } = req.body; // array de missionIds para calcular
+
+    console.log('[Batch Progress] Requisição recebida:', { userId, missionIdsCount: missionIds?.length });
+
+    if (!Array.isArray(missionIds) || missionIds.length === 0) {
+      console.log('[Batch Progress] Nenhuma missão para calcular');
+      return res.json({});
+    }
+
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      console.log('[Batch Progress] Usuário não encontrado:', userId);
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    const userData = userDoc.data();
+    console.log('[Batch Progress] Dados do usuário:', {
+      totalPower: userData.totalPower,
+      boxesOpened: userData.boxesOpened,
+      gachaPulls: userData.gachaPulls
+    });
+
+    // Firestore limita 'in' a 10 itens, então processar em batches de 10
+    const results = {};
+    const batchSize = 10;
+    
+    for (let i = 0; i < missionIds.length; i += batchSize) {
+      const batchIds = missionIds.slice(i, i + batchSize);
+      
+      // Carregar missões do batch atual
+      const missionsSnapshot = await db.collection('missions').where(admin.firestore.FieldPath.documentId(), 'in', batchIds).get();
+      const missionsMap = new Map();
+      missionsSnapshot.docs.forEach(doc => missionsMap.set(doc.id, doc.data()));
+
+      // Carregar dados que podem ser reutilizados para múltiplas missões (uma vez por batch)
+      const userItemsSnapshot = await db.collection('userItems').where('userId', '==', userId).get();
+      const userItemsCount = userItemsSnapshot.size;
+      
+      const tradesSnapshot1 = await db.collection('trades').where('status', '==', 'accepted').where('userId1', '==', userId).get();
+      const tradesSnapshot2 = await db.collection('trades').where('status', '==', 'accepted').where('userId2', '==', userId).get();
+      const completedTradesCount = tradesSnapshot1.size + tradesSnapshot2.size;
+
+      // Cache de itens por raridade para evitar múltiplas queries
+      const itemsByRarity = new Map();
+
+      for (const missionId of batchIds) {
+        const mission = missionsMap.get(missionId);
+        if (!mission) {
+          console.log('[Batch Progress] Missão não encontrada:', missionId);
+          results[missionId] = { progress: 0, completed: false };
+          continue;
+        }
+
+        const requirement = mission.requirement;
+        const requirementAmount = mission.requirementAmount || 0;
+        let currentValue = 0;
+        let progress = 0;
+
+        console.log('[Batch Progress] Calculando missão:', {
+          missionId,
+          title: mission.title,
+          requirement,
+          requirementAmount
+        });
+
+        switch (requirement) {
+          case 'TOTAL_POWER':
+            currentValue = userData.totalPower || 0;
+            progress = Math.min(100, Math.round((currentValue / requirementAmount) * 100));
+            console.log('[Batch Progress] TOTAL_POWER:', { currentValue, requirementAmount, progress });
+            break;
+
+          case 'ITEM_COUNT':
+            currentValue = userItemsCount;
+            progress = Math.min(100, Math.round((currentValue / requirementAmount) * 100));
+            console.log('[Batch Progress] ITEM_COUNT:', { currentValue, requirementAmount, progress });
+            break;
+
+          case 'OPEN_BOXES':
+            currentValue = userData.boxesOpened || 0;
+            progress = Math.min(100, Math.round((currentValue / requirementAmount) * 100));
+            console.log('[Batch Progress] OPEN_BOXES:', { currentValue, requirementAmount, progress });
+            break;
+
+          case 'GACHA_PULLS':
+            currentValue = userData.gachaPulls || 0;
+            progress = Math.min(100, Math.round((currentValue / requirementAmount) * 100));
+            console.log('[Batch Progress] GACHA_PULLS:', { currentValue, requirementAmount, progress });
+            break;
+
+          case 'COMPLETE_TRADES':
+            currentValue = completedTradesCount;
+            progress = Math.min(100, Math.round((currentValue / requirementAmount) * 100));
+            console.log('[Batch Progress] COMPLETE_TRADES:', { currentValue, requirementAmount, progress });
+            break;
+
+          case 'RARITY_COMMON':
+          case 'RARITY_RARE':
+          case 'RARITY_EPIC':
+          case 'RARITY_LEGENDARY':
+          case 'RARITY_MYTHIC':
+            const rarity = requirement.replace('RARITY_', '');
+            
+            // Usar cache se já calculamos itens dessa raridade neste batch
+            if (!itemsByRarity.has(rarity)) {
+              let rarityCount = 0;
+              for (const doc of userItemsSnapshot.docs) {
+                const itemData = doc.data();
+                
+                // Tentar pegar a raridade do item embutido primeiro
+                let itemRarity = itemData.item?.rarity;
+                
+                // Se não tiver item embutido, buscar na collection
+                if (!itemRarity && itemData.itemId) {
+                  const itemDoc = await db.collection('items').doc(itemData.itemId).get();
+                  if (itemDoc.exists) {
+                    itemRarity = itemDoc.data().rarity;
+                  }
+                }
+                
+                // Normalizar raridades (português -> inglês)
+                const normalizedRarity = itemRarity === 'COMUM' ? 'COMMON'
+                  : itemRarity === 'RARO' ? 'RARE'
+                  : itemRarity === 'EPICO' ? 'EPIC'
+                  : itemRarity === 'LENDARIO' ? 'LEGENDARY' 
+                  : itemRarity === 'MITICO' ? 'MYTHIC' 
+                  : itemRarity;
+                
+                if (normalizedRarity === rarity) {
+                  rarityCount += itemData.quantity || 1;
+                  console.log('[Batch Progress] Item encontrado:', { 
+                    itemId: itemData.itemId, 
+                    itemRarity, 
+                    normalizedRarity,
+                    quantity: itemData.quantity || 1 
+                  });
+                }
+              }
+              itemsByRarity.set(rarity, rarityCount);
+              console.log('[Batch Progress] Contou itens de raridade', rarity, ':', rarityCount);
+            }
+            
+            currentValue = itemsByRarity.get(rarity);
+            progress = requirementAmount > 0 
+              ? Math.min(100, Math.round((currentValue / requirementAmount) * 100))
+              : (currentValue > 0 ? 100 : 0);
+            console.log('[Batch Progress] RARITY:', { rarity, currentValue, requirementAmount, progress });
+            break;
+
+          default:
+            console.log('[Batch Progress] Requirement desconhecido:', requirement);
+            progress = 0;
+        }
+
+        results[missionId] = {
+          progress,
+          currentValue,
+          targetValue: requirementAmount,
+          completed: progress >= 100
+        };
+      }
+    }
+
+    console.log('[Batch Progress] Resultados finais:', results);
+    res.json(results);
+  } catch (error) {
+    console.error('Erro ao calcular progresso em lote:', error);
+    res.status(500).json({ error: 'Erro ao calcular progresso em lote' });
+  }
+});
+
 router.post('/user/:userId/calculate-progress/:missionId', async (req, res) => {
   try {
     const { userId, missionId } = req.params;
@@ -576,19 +750,37 @@ router.post('/user/:userId/calculate-progress/:missionId', async (req, res) => {
           .where('userId', '==', userId)
           .get();
         
-        let hasRarity = false;
+        let rarityCount = 0;
         for (const doc of itemsSnapshot.docs) {
           const itemData = doc.data();
-          if (itemData.itemId) {
+          
+          // Tentar pegar a raridade do item embutido primeiro
+          let itemRarity = itemData.item?.rarity;
+          
+          // Se não tiver item embutido, buscar na collection
+          if (!itemRarity && itemData.itemId) {
             const itemDoc = await db.collection('items').doc(itemData.itemId).get();
-            if (itemDoc.exists && itemDoc.data().rarity === rarity) {
-              hasRarity = true;
-              break;
+            if (itemDoc.exists) {
+              itemRarity = itemDoc.data().rarity;
             }
           }
+          
+          // Normalizar raridades (português -> inglês)
+          const normalizedRarity = itemRarity === 'COMUM' ? 'COMMON'
+            : itemRarity === 'RARO' ? 'RARE'
+            : itemRarity === 'EPICO' ? 'EPIC'
+            : itemRarity === 'LENDARIO' ? 'LEGENDARY' 
+            : itemRarity === 'MITICO' ? 'MYTHIC' 
+            : itemRarity;
+          
+          if (normalizedRarity === rarity) {
+            rarityCount += itemData.quantity || 1;
+          }
         }
-        currentValue = hasRarity ? 1 : 0;
-        progress = hasRarity ? 100 : 0;
+        currentValue = rarityCount;
+        progress = requirementAmount > 0 
+          ? Math.min(100, Math.round((currentValue / requirementAmount) * 100))
+          : (currentValue > 0 ? 100 : 0);
         break;
 
       default:

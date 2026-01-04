@@ -262,4 +262,46 @@ input:focus {
         width: 95%;
         padding: 30px 15px;
     }
+
+    .cadastro-container {
+        margin-left: 20px;
+    }
+
+    .google-button {
+        width: 45px;
+        padding: 8px;
+    }
+}
+
+@media (max-width: 380px) {
+    #container1 {
+        width: 98%;
+        padding: 25px 12px;
+    }
+
+    #voltar {
+        top: 15px;
+        left: 15px;
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    input {
+        padding: 8px;
+        font-size: 14px;
+    }
+
+    #botao-login {
+        padding: 8px;
+        font-size: 15px;
+    }
+
+    .cadastro-container {
+        margin-left: 10px;
+    }
+
+    .divider span {
+        font-size: 13px;
+        padding: 0 8px;
+    }
 }

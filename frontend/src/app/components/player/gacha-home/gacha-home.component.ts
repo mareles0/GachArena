@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild, ChangeDetectorRef, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from 'src/app/services/auth.service';
 import { BoxService } from 'src/app/services/box.service';
 import { ItemService } from 'src/app/services/item.service';
@@ -8,6 +9,7 @@ import { EventService } from 'src/app/services/event.service';
 import { Box } from 'src/app/models/box.model';
 import { Ticket } from 'src/app/models/ticket.model';
 import { Item } from 'src/app/models/item.model';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-gacha-home',
@@ -90,8 +92,11 @@ export class GachaHomeComponent implements OnInit {
     private authService: AuthService,
     private boxService: BoxService,
     private itemService: ItemService,
-    private ticketService: TicketService,    private eventService: EventService,    private router: Router
-    , private cd: ChangeDetectorRef
+    private ticketService: TicketService,
+    private eventService: EventService,
+    private router: Router,
+    private cd: ChangeDetectorRef,
+    private http: HttpClient
   ) { }
 
   async ngOnInit() {
@@ -280,7 +285,7 @@ export class GachaHomeComponent implements OnInit {
 
     this.isMultiOpening = true;
     this.multiResults = [];
-    const totalOpens = required.normal + required.premium;
+    const count = required.normal || required.premium;
 
     const hasAnimation = !!this.selectedBox?.openingAnimationSrc;
 
@@ -292,50 +297,25 @@ export class GachaHomeComponent implements OnInit {
     }
 
     try {
-      if (this.selectedBox.type === 'NORMAL') {
-        const used = await this.ticketService.useTicket(this.userId, 'NORMAL', required.normal);
-        if (!used) {
-          throw new Error('Falha ao usar tickets normais');
-        }
-        
-        const promises = Array.from({ length: required.normal }, async (_, i) => {
-          try {
-            const item = await this.itemService.drawRandomItem(this.selectedBox!.id);
-            await this.itemService.addItemToUser(this.userId, item.id);
-            console.log(`[GachaHome] Item ${i+1} obtido:`, item.name);
-            return item;
-          } catch (itemError) {
-            console.error(`[GachaHome] Erro ao processar item ${i+1}:`, itemError);
-            return null;
-          }
-        });
+      // Usar tickets primeiro
+      const ticketType = this.selectedBox.type === 'NORMAL' ? 'NORMAL' : 'PREMIUM';
+      const used = await this.ticketService.useTicket(this.userId, ticketType, count);
+      if (!used) {
+        throw new Error(`Falha ao usar ${count} tickets ${ticketType}`);
+      }
 
-        const results = await Promise.all(promises);
-        this.multiResults = results.filter((item): item is Item => item !== null);
-      } else {
-        const used = await this.ticketService.useTicket(this.userId, 'PREMIUM', required.premium);
-        if (!used) {
-          throw new Error('Falha ao usar tickets premium');
-        }
-        
-        const promises = Array.from({ length: required.premium }, async (_, i) => {
-          try {
-            const item = await this.itemService.drawRandomItem(this.selectedBox!.id);
-            await this.itemService.addItemToUser(this.userId, item.id);
-            console.log(`[GachaHome] Item ${i+1} obtido:`, item.name);
-            return item;
-          } catch (itemError) {
-            console.error(`[GachaHome] Erro ao processar item premium ${i+1}:`, itemError);
-            return null;
-          }
-        });
+      // Chamar endpoint batch que processa tudo de forma atômica
+      const response = await this.http.post<{ success: boolean; items: Item[] }>(
+        `${environment.backendUrl}/boxes/open-multiple`,
+        { userId: this.userId, boxId: this.selectedBox.id, count }
+      ).toPromise();
 
-        const results = await Promise.all(promises);
-        this.multiResults = results.filter((item): item is Item => item !== null);
+      if (response && response.items) {
+        this.multiResults = response.items;
+        console.log(`[GachaHome] ${this.multiResults.length} itens obtidos via batch`);
       }
 
       this.tickets = await this.ticketService.getUserTickets(this.userId);
-      this.showNotification(`🎉 Você abriu ${totalOpens} caixas e ganhou ${this.multiResults.length} itens!`, 'success');
       
       this.eventService.boxesOpened();
       this.eventService.itemsChanged();
