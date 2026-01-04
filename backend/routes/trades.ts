@@ -1,11 +1,11 @@
-const express = require('express');
-const admin = require('firebase-admin');
-const router = express.Router();
+import express, { Request, Response } from 'express';
+import admin from 'firebase-admin';
 
+const router = express.Router();
 const db = admin.firestore();
 
-async function enrichTradesWithUserItems(trades) {
-  const allIds = new Set();
+async function enrichTradesWithUserItems(trades: any[]): Promise<any[]> {
+  const allIds = new Set<string>();
   for (const t of trades) {
     for (const id of (t.offeredUserItemIds || [])) allIds.add(id);
     for (const id of (t.requestedUserItemIds || [])) allIds.add(id);
@@ -18,19 +18,19 @@ async function enrichTradesWithUserItems(trades) {
 
   const refs = ids.map(id => db.collection('userItems').doc(id));
   const userItemSnaps = await db.getAll(...refs);
-  const userItemsById = new Map();
+  const userItemsById = new Map<string, any>();
 
-  const missingItemIds = new Set();
+  const missingItemIds = new Set<string>();
   for (const snap of userItemSnaps) {
     if (!snap.exists) continue;
     const data = snap.data();
     userItemsById.set(snap.id, { id: snap.id, ...data });
-    if (!data.item && data.itemId) {
+    if (!data?.item && data?.itemId) {
       missingItemIds.add(data.itemId);
     }
   }
 
-  const itemById = new Map();
+  const itemById = new Map<string, any>();
   if (missingItemIds.size > 0) {
     const itemRefs = Array.from(missingItemIds).map(itemId => db.collection('items').doc(itemId));
     const itemSnaps = await db.getAll(...itemRefs);
@@ -48,13 +48,13 @@ async function enrichTradesWithUserItems(trades) {
   }
 
   return trades.map(t => {
-    const offeredItems = (t.offeredUserItemIds || []).map(id => userItemsById.get(id)).filter(Boolean);
-    const requestedItems = (t.requestedUserItemIds || []).map(id => userItemsById.get(id)).filter(Boolean);
+    const offeredItems = (t.offeredUserItemIds || []).map((id: string) => userItemsById.get(id)).filter(Boolean);
+    const requestedItems = (t.requestedUserItemIds || []).map((id: string) => userItemsById.get(id)).filter(Boolean);
     return { ...t, offeredItems, requestedItems };
   });
 }
 
-router.post('/', async (req, res) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
     const trade = req.body;
     const tradeData = {
@@ -66,26 +66,26 @@ router.post('/', async (req, res) => {
 
     const docRef = await db.collection('trades').add(tradeData);
     res.status(201).json({ id: docRef.id });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao criar trade:', error);
     res.status(500).json({ error: 'Erro ao criar trade' });
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request, res: Response) => {
   try {
     const doc = await db.collection('trades').doc(req.params.id).get();
     if (!doc.exists) {
       return res.status(404).json({ error: 'Trade não encontrado' });
     }
     res.json({ id: doc.id, ...doc.data() });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao buscar trade:', error);
     res.status(500).json({ error: 'Erro ao buscar trade' });
   }
 });
 
-router.get('/user/:userId/sent', async (req, res) => {
+router.get('/user/:userId/sent', async (req: Request, res: Response) => {
   try {
     const snapshot = await db.collection('trades').where('fromUserId', '==', req.params.userId).get();
     let trades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -95,13 +95,13 @@ router.get('/user/:userId/sent', async (req, res) => {
     }
 
     res.json(trades);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao buscar trades enviados:', error);
     res.status(500).json({ error: 'Erro ao buscar trades enviados' });
   }
 });
 
-router.get('/user/:userId/received', async (req, res) => {
+router.get('/user/:userId/received', async (req: Request, res: Response) => {
   try {
     const snapshot = await db.collection('trades').where('toUserId', '==', req.params.userId).get();
     let trades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -111,13 +111,13 @@ router.get('/user/:userId/received', async (req, res) => {
     }
 
     res.json(trades);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao buscar trades recebidos:', error);
     res.status(500).json({ error: 'Erro ao buscar trades recebidos' });
   }
 });
 
-router.put('/:id/accept', async (req, res) => {
+router.put('/:id/accept', async (req: Request, res: Response) => {
   try {
     const tradeId = req.params.id;
     console.log('[Trades] Aceitando trade:', tradeId);
@@ -131,6 +131,9 @@ router.put('/:id/accept', async (req, res) => {
       }
 
       const trade = tradeDoc.data();
+      if (!trade) {
+        throw new Error('Dados do trade não encontrados');
+      }
       console.log('[Trades] Trade data:', { 
         status: trade.status, 
         fromUserId: trade.fromUserId, 
@@ -148,16 +151,19 @@ router.put('/:id/accept', async (req, res) => {
 
       const allUserItemIds = [...(trade.offeredUserItemIds || []), ...(trade.requestedUserItemIds || [])];
       console.log('[Trades] Buscando userItems:', allUserItemIds);
-      const userItemDocs = await Promise.all(allUserItemIds.map(id => transaction.get(db.collection('userItems').doc(id))));
+      const userItemDocs = await Promise.all(allUserItemIds.map((id: string) => transaction.get(db.collection('userItems').doc(id))));
       console.log('[Trades] UserItems encontrados:', userItemDocs.length);
 
-      const destRefsToRead = [];
+      const destRefsToRead: Array<{ ref: any; destId: string }> = [];
       for (const id of trade.offeredUserItemIds) {
         const doc = userItemDocs.find(d => d.id === id);
         if (!doc || !doc.exists) {
           throw new Error('Item oferecido não encontrado: ' + id);
         }
         const data = doc.data();
+        if (!data) {
+          throw new Error('Dados do item não encontrados: ' + id);
+        }
         if (data.userId !== fromUserId) {
           throw new Error('O usuário não possui o item oferecido: ' + id);
         }
@@ -168,11 +174,14 @@ router.put('/:id/accept', async (req, res) => {
       }
 
       for (const id of trade.requestedUserItemIds) {
-        const doc = userItemDocs.find(d => d.id === id);
+        const doc = userItemDocs.find((d: any) => d.id === id);
         if (!doc || !doc.exists) {
           throw new Error('Item solicitado não encontrado: ' + id);
         }
         const data = doc.data();
+        if (!data) {
+          throw new Error('Dados do item não encontrados: ' + id);
+        }
         if (data.userId !== toUserId) {
           throw new Error('O usuário não possui o item solicitado: ' + id);
         }
@@ -184,7 +193,7 @@ router.put('/:id/accept', async (req, res) => {
 
       console.log('[Trades] Lendo destRefs:', destRefsToRead.length);
       const destDocs = await Promise.all(destRefsToRead.map(item => transaction.get(item.ref)));
-      const destDocsMap = new Map();
+      const destDocsMap = new Map<string, any>();
       destRefsToRead.forEach((item, idx) => {
         destDocsMap.set(item.destId, destDocs[idx]);
       });
@@ -200,8 +209,10 @@ router.put('/:id/accept', async (req, res) => {
 
       for (const id of trade.offeredUserItemIds) {
         const ref = db.collection('userItems').doc(id);
-        const doc = userItemDocs.find(d => d.id === id);
+        const doc = userItemDocs.find((d: any) => d.id === id);
+        if (!doc) continue;
         const data = doc.data();
+        if (!data) continue;
 
         if (data.quantity && data.quantity > 1) {
           transaction.update(ref, { quantity: data.quantity - 1 });
@@ -209,7 +220,8 @@ router.put('/:id/accept', async (req, res) => {
           const destRef = db.collection('userItems').doc(destId);
           const destDoc = destDocsMap.get(destId);
           if (destDoc && destDoc.exists) {
-            transaction.update(destRef, { quantity: destDoc.data().quantity + 1 });
+            const destData = destDoc.data();
+            transaction.update(destRef, { quantity: (destData?.quantity || 0) + 1 });
           } else {
             transaction.set(destRef, {
               userId: toUserId,
@@ -226,8 +238,10 @@ router.put('/:id/accept', async (req, res) => {
 
       for (const id of trade.requestedUserItemIds) {
         const ref = db.collection('userItems').doc(id);
-        const doc = userItemDocs.find(d => d.id === id);
+        const doc = userItemDocs.find((d: any) => d.id === id);
+        if (!doc) continue;
         const data = doc.data();
+        if (!data) continue;
 
         if (data.quantity && data.quantity > 1) {
           transaction.update(ref, { quantity: data.quantity - 1 });
@@ -235,7 +249,8 @@ router.put('/:id/accept', async (req, res) => {
           const destRef = db.collection('userItems').doc(destId);
           const destDoc = destDocsMap.get(destId);
           if (destDoc && destDoc.exists) {
-            transaction.update(destRef, { quantity: destDoc.data().quantity + 1 });
+            const destData = destDoc.data();
+            transaction.update(destRef, { quantity: (destData?.quantity || 0) + 1 });
           } else {
             transaction.set(destRef, {
               userId: fromUserId,
@@ -252,8 +267,8 @@ router.put('/:id/accept', async (req, res) => {
 
       if (fromUserDoc.exists) {
         const fromUserData = fromUserDoc.data();
-        const currentShowcased = fromUserData.showcasedCards || [];
-        const filteredShowcased = currentShowcased.filter((userItemId) => !transferredUserItemIds.has(userItemId));
+        const currentShowcased = fromUserData?.showcasedCards || [];
+        const filteredShowcased = currentShowcased.filter((userItemId: string) => !transferredUserItemIds.has(userItemId));
         if (filteredShowcased.length !== currentShowcased.length) {
           transaction.update(fromUserRef, { showcasedCards: filteredShowcased });
         }
@@ -261,8 +276,8 @@ router.put('/:id/accept', async (req, res) => {
 
       if (toUserDoc.exists) {
         const toUserData = toUserDoc.data();
-        const currentShowcased = toUserData.showcasedCards || [];
-        const filteredShowcased = currentShowcased.filter((userItemId) => !transferredUserItemIds.has(userItemId));
+        const currentShowcased = toUserData?.showcasedCards || [];
+        const filteredShowcased = currentShowcased.filter((userItemId: string) => !transferredUserItemIds.has(userItemId));
         if (filteredShowcased.length !== currentShowcased.length) {
           transaction.update(toUserRef, { showcasedCards: filteredShowcased });
         }
@@ -280,13 +295,13 @@ router.put('/:id/accept', async (req, res) => {
       io.emit('appEvent', { type: 'tradesChanged' });
       io.emit('appEvent', { type: 'itemsChanged' });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao aceitar trade:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-router.put('/:id/reject', async (req, res) => {
+router.put('/:id/reject', async (req: Request, res: Response) => {
   try {
     await db.collection('trades').doc(req.params.id).update({
       status: 'REJECTED',
@@ -297,13 +312,13 @@ router.put('/:id/reject', async (req, res) => {
     if (io) {
       io.emit('appEvent', { type: 'tradesChanged' });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao rejeitar trade:', error);
     res.status(500).json({ error: 'Erro ao rejeitar trade' });
   }
 });
 
-router.put('/:id/cancel', async (req, res) => {
+router.put('/:id/cancel', async (req: Request, res: Response) => {
   try {
     await db.collection('trades').doc(req.params.id).update({
       status: 'CANCELLED',
@@ -314,20 +329,20 @@ router.put('/:id/cancel', async (req, res) => {
     if (io) {
       io.emit('appEvent', { type: 'tradesChanged' });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao cancelar trade:', error);
     res.status(500).json({ error: 'Erro ao cancelar trade' });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: Request, res: Response) => {
   try {
     await db.collection('trades').doc(req.params.id).delete();
     res.json({ message: 'Trade deletado com sucesso' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao deletar trade:', error);
     res.status(500).json({ error: 'Erro ao deletar trade' });
   }
 });
 
-module.exports = router;
+export default router;

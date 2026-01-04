@@ -1,8 +1,10 @@
-const express = require('express');
-const admin = require('firebase-admin');
-const router = express.Router();
+import { Router, Response } from 'express';
+import admin from 'firebase-admin';
+import type { AuthedRequest } from '../middleware/firebaseAuth';
 
-router.post('/:uid', async (req, res) => {
+const router = Router();
+
+router.post('/:uid', async (req: AuthedRequest, res: Response) => {
   try {
     const uid = req.params.uid;
     const userData = req.body;
@@ -11,7 +13,7 @@ router.post('/:uid', async (req, res) => {
 
     // Para jogador novo: começa com 10 tickets normais e 10 premium.
     // Usamos merge para não apagar campos já existentes (ex.: tickets, contadores).
-    const payload = { ...userData };
+    const payload: any = { ...userData };
     if (!existing.exists) {
       if (payload.normalTickets === undefined) payload.normalTickets = 10;
       if (payload.premiumTickets === undefined) payload.premiumTickets = 10;
@@ -21,12 +23,12 @@ router.post('/:uid', async (req, res) => {
 
     await userRef.set(payload, { merge: true });
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/:uid', async (req, res) => {
+router.get('/:uid', async (req: AuthedRequest, res: Response) => {
   try {
     const uid = req.params.uid;
     const doc = await admin.firestore().collection('users').doc(uid).get();
@@ -35,22 +37,22 @@ router.get('/:uid', async (req, res) => {
     } else {
       res.status(404).json({ error: 'User not found' });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', async (req: AuthedRequest, res: Response) => {
   try {
     const snapshot = await admin.firestore().collection('users').get();
     const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.json(users);
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.put('/:uid', async (req, res) => {
+router.put('/:uid', async (req: AuthedRequest, res: Response) => {
   try {
     const uid = req.params.uid;
     const data = req.body;
@@ -58,12 +60,12 @@ router.put('/:uid', async (req, res) => {
     const io = req.app.get('io');
     io && io.emit('appEvent', { type: 'userDataChanged' });
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.post('/:uid/tickets', async (req, res) => {
+router.post('/:uid/tickets', async (req: AuthedRequest, res: Response) => {
   try {
     const uid = req.params.uid;
     const { amount, type } = req.body;
@@ -74,29 +76,30 @@ router.post('/:uid/tickets', async (req, res) => {
     io && io.emit('appEvent', { type: 'ticketsChanged' });
     io && io.emit('appEvent', { type: 'userDataChanged' });
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
-router.get('/:uid/tickets', async (req, res) => {
+
+router.get('/:uid/tickets', async (req: AuthedRequest, res: Response) => {
   try {
     const uid = req.params.uid;
     const doc = await admin.firestore().collection('users').doc(uid).get();
     if (doc.exists) {
       const data = doc.data();
       res.json({
-        normalTickets: data.normalTickets || 0,
-        premiumTickets: data.premiumTickets || 0
+        normalTickets: data?.normalTickets || 0,
+        premiumTickets: data?.premiumTickets || 0
       });
     } else {
       res.json({ normalTickets: 0, premiumTickets: 0 });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.post('/:uid/use-ticket', async (req, res) => {
+router.post('/:uid/use-ticket', async (req: AuthedRequest, res: Response) => {
   try {
     const uid = req.params.uid;
     const { type, count = 1 } = req.body;
@@ -106,7 +109,7 @@ router.post('/:uid/use-ticket', async (req, res) => {
     if (doc.exists) {
       const data = doc.data();
       const field = type === 'PREMIUM' ? 'premiumTickets' : 'normalTickets';
-      if (data[field] >= count) {
+      if (data && data[field] >= count) {
         await docRef.update({ 
           [field]: admin.firestore.FieldValue.increment(-count),
           boxesOpened: admin.firestore.FieldValue.increment(count),
@@ -120,9 +123,10 @@ router.post('/:uid/use-ticket', async (req, res) => {
     } else {
       res.status(404).json({ error: 'User not found' });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Users] Erro ao usar ticket:', error);
     res.status(500).json({ error: error.message });
   }
 });
-module.exports = router;
+
+export default router;

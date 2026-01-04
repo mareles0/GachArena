@@ -3,7 +3,7 @@ export interface User {
   email: string;
   username: string;
   photoURL?: string;
-  userType: 'ADMINISTRADOR' | 'VIP' | 'PLAYER';
+  userType: 'ADMINISTRADOR' | 'VIP' | 'PLAYER' | 'JOGADOR';
   normalTickets: number;
   premiumTickets: number;
   isBanned?: boolean;

@@ -1,6 +1,11 @@
-const express = require('express');
-const admin = require('firebase-admin');
-const multer = require('multer');
+import express, { Request, Response } from 'express';
+import admin from 'firebase-admin';
+import multer from 'multer';
+
+interface MulterRequest extends Request {
+  file?: any;
+}
+
 const router = express.Router();
 
 const upload = multer({
@@ -12,7 +17,7 @@ const upload = multer({
 
 const bucket = admin.storage().bucket();
 
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', upload.single('file'), async (req: MulterRequest, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Nenhum arquivo enviado' });
@@ -58,7 +63,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-router.delete('/delete', async (req, res) => {
+router.delete('/delete', async (req: Request, res: Response) => {
   try {
     const { imageUrl } = req.body;
     if (!imageUrl) {
@@ -80,4 +85,4 @@ router.delete('/delete', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

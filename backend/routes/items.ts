@@ -1,8 +1,10 @@
-const express = require('express');
-const admin = require('firebase-admin');
-const router = express.Router();
+import { Router, Response } from 'express';
+import admin from 'firebase-admin';
+import type { AuthedRequest } from '../middleware/firebaseAuth';
 
-router.post('/', async (req, res) => {
+const router = Router();
+
+router.post('/', async (req: AuthedRequest, res: Response) => {
   try {
     const item = req.body;
     const itemData = {
@@ -13,12 +15,12 @@ router.post('/', async (req, res) => {
     const io = req.app.get('io');
     io && io.emit('appEvent', { type: 'itemsChanged' });
     res.json({ id: docRef.id });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', async (req: AuthedRequest, res: Response) => {
   try {
     const snapshot = await admin.firestore().collection('items').get();
     const items = snapshot.docs.map(doc => ({
@@ -27,12 +29,12 @@ router.get('/', async (req, res) => {
       points: doc.data().points ?? 0
     }));
     res.json(items);
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/by-box/:boxId', async (req, res) => {
+router.get('/by-box/:boxId', async (req: AuthedRequest, res: Response) => {
   try {
     const boxId = req.params.boxId;
     const snapshot = await admin.firestore().collection('items').where('boxId', '==', boxId).get();
@@ -42,12 +44,12 @@ router.get('/by-box/:boxId', async (req, res) => {
       points: doc.data().points ?? 0
     }));
     res.json(items);
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: AuthedRequest, res: Response) => {
   try {
     const id = req.params.id;
     const doc = await admin.firestore().collection('items').doc(id).get();
@@ -55,17 +57,17 @@ router.get('/:id', async (req, res) => {
       res.json({
         id: doc.id,
         ...doc.data(),
-        points: doc.data().points ?? 0
+        points: doc.data()?.points ?? 0
       });
     } else {
       res.status(404).json({ error: 'Item not found' });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: AuthedRequest, res: Response) => {
   try {
     const id = req.params.id;
     const data = req.body;
@@ -73,22 +75,21 @@ router.put('/:id', async (req, res) => {
     const io = req.app.get('io');
     io && io.emit('appEvent', { type: 'itemsChanged' });
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: AuthedRequest, res: Response) => {
   try {
     const id = req.params.id;
     await admin.firestore().collection('items').doc(id).delete();
     const io = req.app.get('io');
     io && io.emit('appEvent', { type: 'itemsChanged' });
     res.json({ success: true });
-    res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-module.exports = router;
+export default router;

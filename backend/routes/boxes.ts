@@ -1,10 +1,11 @@
-const express = require('express');
-const admin = require('firebase-admin');
+import express, { Request, Response } from 'express';
+import admin from 'firebase-admin';
+
 const router = express.Router();
 
 // Helper function para calcular pontos de itens
-function calculateItemPoints(rarity, rarityLevel) {
-  const basePoints = {
+function calculateItemPoints(rarity: string, rarityLevel: number): number {
+  const basePoints: { [key: string]: number } = {
     'COMUM': 10,
     'RARO': 30,
     'EPICO': 60,
@@ -21,7 +22,7 @@ function calculateItemPoints(rarity, rarityLevel) {
   return base;
 }
 
-router.post('/', async (req, res) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
     const box = req.body;
     const boxData = {
@@ -32,22 +33,22 @@ router.post('/', async (req, res) => {
     const io = req.app.get('io');
     io && io.emit('appEvent', { type: 'boxesChanged' });
     res.json({ id: docRef.id });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/active', async (req, res) => {
+router.get('/active', async (req: Request, res: Response) => {
   try {
     const snapshot = await admin.firestore().collection('boxes').where('active', '==', true).get();
     const boxes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.json(boxes);
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/by-type/:type', async (req, res) => {
+router.get('/by-type/:type', async (req: Request, res: Response) => {
   try {
     const type = req.params.type;
     const snapshot = await admin.firestore().collection('boxes')
@@ -56,22 +57,22 @@ router.get('/by-type/:type', async (req, res) => {
       .get();
     const boxes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.json(boxes);
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const snapshot = await admin.firestore().collection('boxes').get();
     const boxes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.json(boxes);
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     const doc = await admin.firestore().collection('boxes').doc(id).get();
@@ -80,12 +81,12 @@ router.get('/:id', async (req, res) => {
     } else {
       res.status(404).json({ error: 'Box not found' });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     const data = req.body;
@@ -93,12 +94,12 @@ router.put('/:id', async (req, res) => {
     const io = req.app.get('io');
     io && io.emit('appEvent', { type: 'boxesChanged' });
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     await admin.firestore().collection('boxes').doc(id).delete();
@@ -106,13 +107,13 @@ router.delete('/:id', async (req, res) => {
     io && io.emit('appEvent', { type: 'boxesChanged' });
     io && io.emit('appEvent', { type: 'itemsChanged' });
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Endpoint para abertura múltipla de caixas (processa tudo de forma atômica)
-router.post('/open-multiple', async (req, res) => {
+router.post('/open-multiple', async (req: Request, res: Response) => {
   try {
     const { userId, boxId, count } = req.body;
     
@@ -129,7 +130,7 @@ router.post('/open-multiple', async (req, res) => {
     }
 
     const itemsSnapshot = await db.collection('items').where('boxId', '==', boxId).get();
-    const items = itemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const items = itemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
     
     if (items.length === 0) {
       return res.status(400).json({ error: 'Nenhum item disponível nesta caixa' });
@@ -141,7 +142,7 @@ router.post('/open-multiple', async (req, res) => {
     }
 
     // Sortear os itens
-    const drawnItems = [];
+    const drawnItems: any[] = [];
     for (let i = 0; i < count; i++) {
       const random = Math.random() * totalDropRate;
       let currentSum = 0;
@@ -158,7 +159,7 @@ router.post('/open-multiple', async (req, res) => {
     }
 
     // Agrupar itens por ID para processar em batch
-    const itemCounts = new Map();
+    const itemCounts = new Map<string, number>();
     drawnItems.forEach(item => {
       const currentCount = itemCounts.get(item.id) || 0;
       itemCounts.set(item.id, currentCount + 1);
@@ -166,7 +167,7 @@ router.post('/open-multiple', async (req, res) => {
 
     // Processar adição de itens em batch (usando Firestore batch para atomicidade)
     const batch = db.batch();
-    const addedUserItems = [];
+    const addedUserItems: any[] = [];
 
     for (const [itemId, qty] of itemCounts.entries()) {
       const item = items.find(i => i.id === itemId);
@@ -206,7 +207,7 @@ router.post('/open-multiple', async (req, res) => {
           const currentData = userItemDoc.data();
           batch.update(userItemRef, {
             quantity: admin.firestore.FieldValue.increment(qty),
-            points: Math.max(currentData.points || 0, points)
+            points: Math.max((currentData && currentData.points) || 0, points)
           });
         } else {
           batch.set(userItemRef, {
@@ -230,10 +231,10 @@ router.post('/open-multiple', async (req, res) => {
       items: drawnItems,
       addedUserItems
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao abrir múltiplas caixas:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-module.exports = router;
+export default router;

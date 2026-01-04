@@ -1,19 +1,20 @@
-const express = require('express');
-const admin = require('firebase-admin');
+import express, { Request, Response } from 'express';
+import admin from 'firebase-admin';
+
 const router = express.Router();
 
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
     const snapshot = await admin.firestore().collection('userItems').where('userId', '==', userId).get();
     const userItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.json(userItems);
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     const doc = await admin.firestore().collection('userItems').doc(id).get();
@@ -22,33 +23,33 @@ router.get('/:id', async (req, res) => {
     } else {
       res.status(404).json({ error: 'User item not found' });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     const data = req.body;
     await admin.firestore().collection('userItems').doc(id).update(data);
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     await admin.firestore().collection('userItems').doc(id).delete();
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.post('/:id/remove', async (req, res) => {
+router.post('/:id/remove', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     const { quantity } = req.body;
@@ -56,16 +57,16 @@ router.post('/:id/remove', async (req, res) => {
     const doc = await docRef.get();
     if (doc.exists) {
       const data = doc.data();
-      if (data.quantity > quantity) {
+      if (data && data.quantity > quantity) {
         await docRef.update({ quantity: data.quantity - quantity });
       } else {
         await docRef.delete();
       }
     }
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-module.exports = router;
+export default router;

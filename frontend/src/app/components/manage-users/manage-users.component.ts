@@ -25,7 +25,7 @@ export class ManageUsersComponent implements OnInit, OnDestroy {
   ticketType: 'normal' | 'premium' = 'normal';
 
   showRoleModal = false;
-  newUserType: 'PLAYER' | 'VIP' | 'ADMINISTRADOR' = 'PLAYER';
+  newUserType: 'PLAYER' | 'JOGADOR' | 'VIP' | 'ADMINISTRADOR' = 'PLAYER';
 
   showInventoryModal = false;
   userItems: UserItem[] = [];

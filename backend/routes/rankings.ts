@@ -1,17 +1,17 @@
-const express = require('express');
-const admin = require('firebase-admin');
-const router = express.Router();
+import express, { Request, Response } from 'express';
+import admin from 'firebase-admin';
 
+const router = express.Router();
 const db = admin.firestore();
 
-router.get('/global/:limit?', async (req, res) => {
+router.get('/global/:limit?', async (req: Request, res: Response) => {
   try {
-    const limitCount = parseInt(req.params.limit) || 50;
+    const limitCount = parseInt(req.params.limit || '50') || 50;
 
     const usersSnapshot = await db.collection('users').get();
-    const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
 
-    const rankingEntries = [];
+    const rankingEntries: any[] = [];
 
     for (const user of users) {
       if (!user.id) continue;
@@ -20,13 +20,13 @@ router.get('/global/:limit?', async (req, res) => {
         const userItemsSnapshot = await db.collection('userItems').where('userId', '==', user.id).get();
         const userItems = userItemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        const userItemsWithDetails = await Promise.all(userItems.map(async (ui) => {
+        const userItemsWithDetails = await Promise.all(userItems.map(async (ui: any) => {
           const itemDoc = await db.collection('items').doc(ui.itemId).get();
           const item = itemDoc.exists ? { id: itemDoc.id, ...itemDoc.data() } : null;
           return { ...ui, item };
         }));
 
-        const userItemsFiltered = userItemsWithDetails.filter(ui => ui.item);
+        const userItemsFiltered = userItemsWithDetails.filter((ui: any) => ui.item);
 
         if (userItemsFiltered.length === 0) {
           continue;
@@ -34,7 +34,7 @@ router.get('/global/:limit?', async (req, res) => {
 
         let totalScore = 0;
 
-        userItemsFiltered.forEach(ui => {
+        userItemsFiltered.forEach((ui: any) => {
           const itemPoints = (ui.item.points || 0) * ui.quantity;
           totalScore += itemPoints;
         });
@@ -42,7 +42,7 @@ router.get('/global/:limit?', async (req, res) => {
         let rarestItem = userItemsFiltered[0];
         let maxRarityScore = 0;
 
-        userItemsFiltered.forEach(ui => {
+        userItemsFiltered.forEach((ui: any) => {
           let rarityScore = ui.item.points || 0;
 
             if ((ui.item.rarity === 'LENDARIO' || ui.item.rarity === 'MITICO') && ui.rarityLevel) {
@@ -74,21 +74,21 @@ router.get('/global/:limit?', async (req, res) => {
     rankingEntries.sort((a, b) => b.score - a.score);
 
     res.json(rankingEntries.slice(0, limitCount));
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao buscar ranking global:', error);
     res.status(500).json({ error: 'Erro ao buscar ranking global' });
   }
 });
 
-router.get('/box/:boxId/:limit?', async (req, res) => {
+router.get('/box/:boxId/:limit?', async (req: Request, res: Response) => {
   try {
     const { boxId } = req.params;
-    const limitCount = parseInt(req.params.limit) || 20;
+    const limitCount = parseInt(req.params.limit || '20') || 20;
 
     const usersSnapshot = await db.collection('users').get();
-    const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
 
-    const rankingEntries = [];
+    const rankingEntries: any[] = [];
 
     for (const user of users) {
       if (!user.id) continue;
@@ -98,22 +98,22 @@ router.get('/box/:boxId/:limit?', async (req, res) => {
         const userItems = userItemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         const userItemsInBox = await Promise.all(userItems
-          .filter(ui => ui.itemId)
-          .map(async (ui) => {
+          .filter((ui: any) => ui.itemId)
+          .map(async (ui: any) => {
             const itemDoc = await db.collection('items').doc(ui.itemId).get();
-            const item = itemDoc.exists ? { id: itemDoc.id, ...itemDoc.data() } : null;
+            const item: any = itemDoc.exists ? { id: itemDoc.id, ...itemDoc.data() } : null;
             return item && item.boxId === boxId ? { ...ui, item } : null;
           })
         );
 
-        const validItemsInBox = userItemsInBox.filter(ui => ui !== null);
+        const validItemsInBox = userItemsInBox.filter((ui: any) => ui !== null);
 
         if (validItemsInBox.length === 0) continue;
 
         let rarestItem = validItemsInBox[0];
         let maxScore = 0;
 
-        validItemsInBox.forEach(ui => {
+        validItemsInBox.forEach((ui: any) => {
           let score = (ui.item.points || 0) + (ui.item.power || 0);
           if ((ui.item.rarity === 'LENDARIO' || ui.item.rarity === 'MITICO') && ui.rarityLevel) {
             const rarityMultiplier = 1 + ((1000 - ui.rarityLevel) / 1000);
@@ -149,10 +149,10 @@ router.get('/box/:boxId/:limit?', async (req, res) => {
     rankingEntries.sort((a, b) => b.score - a.score);
 
     res.json(rankingEntries.slice(0, limitCount));
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao buscar ranking por caixa:', error);
     res.status(500).json({ error: 'Erro ao buscar ranking por caixa' });
   }
 });
 
-module.exports = router;
+export default router;

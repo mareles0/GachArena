@@ -20,6 +20,9 @@ import { ManageItemsComponent } from './components/admin/manage-items/manage-ite
 import { ManageUsersComponent } from './components/manage-users/manage-users.component';
 import { ManageMissionsComponent } from './components/manage-missions/manage-missions.component';
 
+import { AuthGuard } from './guards/auth.guard';
+import { AdminGuard } from './guards/admin.guard';
+
 const routes: Routes = [
   { path: '', component: WelcomeComponent },
   { path: 'login', component: LoginComponent },
@@ -28,18 +31,18 @@ const routes: Routes = [
   { path: 'verificar-email', component: EmailVerificationComponent },
   { path: 'completar-perfil', component: CompleteProfileComponent },
   
-  { path: 'gacha', component: GachaHomeComponent },
-  { path: 'inventario', component: InventoryComponent },
-  { path: 'ranking', component: RankingComponent },
-  { path: 'profile/:id', component: ProfileComponent },
-  { path: 'amigos', component: FriendsComponent },
-  { path: 'trades', component: TradesComponent },
-  { path: 'missoes', component: MissionsComponent },
+  { path: 'gacha', component: GachaHomeComponent, canActivate: [AuthGuard] },
+  { path: 'inventario', component: InventoryComponent, canActivate: [AuthGuard] },
+  { path: 'ranking', component: RankingComponent, canActivate: [AuthGuard] },
+  { path: 'profile/:id', component: ProfileComponent, canActivate: [AuthGuard] },
+  { path: 'amigos', component: FriendsComponent, canActivate: [AuthGuard] },
+  { path: 'trades', component: TradesComponent, canActivate: [AuthGuard] },
+  { path: 'missoes', component: MissionsComponent, canActivate: [AuthGuard] },
   
-  { path: 'admin/caixas', component: ManageBoxesComponent },
-  { path: 'admin/itens', component: ManageItemsComponent },
-  { path: 'admin/usuarios', component: ManageUsersComponent },
-  { path: 'admin/missoes', component: ManageMissionsComponent }
+  { path: 'admin/caixas', component: ManageBoxesComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'admin/itens', component: ManageItemsComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'admin/usuarios', component: ManageUsersComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'admin/missoes', component: ManageMissionsComponent, canActivate: [AuthGuard, AdminGuard] }
 ];
 
 @NgModule({
