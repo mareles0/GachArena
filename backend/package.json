@@ -2,7 +2,7 @@
   "name": "gacharena-backend",
   "version": "1.0.0",
   "description": "Backend API for GachArena using Node.js and Express",
-  "main": "server.js",
+  "main": "dist/server.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
