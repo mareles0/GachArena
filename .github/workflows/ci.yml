@@ -25,9 +25,9 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      - name: Backend - syntax check
+      - name: Backend - typecheck (TypeScript)
         working-directory: backend
-        run: node --check server.js
+        run: npx tsc -p tsconfig.json --noEmit
 
       - name: Frontend - install
         working-directory: frontend
