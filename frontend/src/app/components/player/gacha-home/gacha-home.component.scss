@@ -445,19 +445,19 @@
 
 .skip-btn {
   position: absolute !important;
-  top: 20px !important;
+  top: 80px !important;
   right: 20px !important;
   left: auto !important;
   transform: none !important;
   margin: 0 !important;
   z-index: 1000;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1rem;
   background: linear-gradient(135deg, #ffc107, #ff9800);
   border: 2px solid #ffc107;
   color: #000;
   font-weight: 700;
-  font-size: 1rem;
-  border-radius: 30px;
+  font-size: 0.9rem;
+  border-radius: 25px;
   box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
   transition: all 0.3s ease;
   
@@ -469,7 +469,7 @@
   }
 
   i {
-    margin-right: 0.5rem;
+    margin-right: 0.4rem;
   }
 }
 
@@ -795,7 +795,7 @@
         &::after {
           content: 'Clique para próximo →';
           position: absolute;
-          bottom: 20px;
+          bottom: -40px;
           left: 50%;
           transform: translateX(-50%);
           font-size: 0.9rem;
