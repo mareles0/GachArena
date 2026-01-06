@@ -832,4 +832,216 @@ router.post('/user-mission/:userMissionId/reset-daily', async (req: Request, res
   }
 });
 
+// Endpoint para criar 20 missões regulares de uma vez
+router.post('/bulk/create-regular-missions', async (req: Request, res: Response) => {
+  try {
+    const regularMissions = [
+      // Missões de coletar itens
+      {
+        title: 'Coletor Iniciante',
+        description: 'Colete 15 itens para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'ITEMS_COLLECTED', target: 15 },
+        reward: { normalTickets: 15, premiumTickets: 0 },
+        active: true,
+        icon: '📦'
+      },
+      {
+        title: 'Coletor Dedicado',
+        description: 'Colete 50 itens para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'ITEMS_COLLECTED', target: 50 },
+        reward: { normalTickets: 25, premiumTickets: 5 },
+        active: true,
+        icon: '📦'
+      },
+      {
+        title: 'Coletor Mestre',
+        description: 'Colete 150 itens para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'ITEMS_COLLECTED', target: 150 },
+        reward: { normalTickets: 40, premiumTickets: 10 },
+        active: true,
+        icon: '📦'
+      },
+      {
+        title: 'Coletor Supremo',
+        description: 'Colete 300 itens para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'ITEMS_COLLECTED', target: 300 },
+        reward: { normalTickets: 50, premiumTickets: 20 },
+        active: true,
+        icon: '📦'
+      },
+      // Missões de abrir caixas
+      {
+        title: 'Explorador Curioso',
+        description: 'Abra 15 caixas para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'BOXES_OPENED', target: 15 },
+        reward: { normalTickets: 20, premiumTickets: 0 },
+        active: true,
+        icon: '🎁'
+      },
+      {
+        title: 'Explorador Ávido',
+        description: 'Abra 30 caixas para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'BOXES_OPENED', target: 30 },
+        reward: { normalTickets: 30, premiumTickets: 5 },
+        active: true,
+        icon: '🎁'
+      },
+      {
+        title: 'Explorador Veterano',
+        description: 'Abra 75 caixas para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'BOXES_OPENED', target: 75 },
+        reward: { normalTickets: 50, premiumTickets: 15 },
+        active: true,
+        icon: '🎁'
+      },
+      {
+        title: 'Explorador Lendário',
+        description: 'Abra 150 caixas para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'BOXES_OPENED', target: 150 },
+        reward: { normalTickets: 75, premiumTickets: 25 },
+        active: true,
+        icon: '🎁'
+      },
+      // Missões de poder total
+      {
+        title: 'Poder Crescente',
+        description: 'Atinja 5000 de poder total',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'TOTAL_POWER', target: 5000 },
+        reward: { normalTickets: 15, premiumTickets: 0 },
+        active: true,
+        icon: '⚡'
+      },
+      {
+        title: 'Força Impressionante',
+        description: 'Atinja 10000 de poder total',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'TOTAL_POWER', target: 10000 },
+        reward: { normalTickets: 30, premiumTickets: 10 },
+        active: true,
+        icon: '⚡'
+      },
+      {
+        title: 'Potência Dominante',
+        description: 'Atinja 20000 de poder total',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'TOTAL_POWER', target: 20000 },
+        reward: { normalTickets: 50, premiumTickets: 20 },
+        active: true,
+        icon: '⚡'
+      },
+      {
+        title: 'Poder Infinito',
+        description: 'Atinja 50000 de poder total',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'TOTAL_POWER', target: 50000 },
+        reward: { normalTickets: 100, premiumTickets: 50 },
+        active: true,
+        icon: '⚡'
+      },
+      // Missões de raridades específicas
+      {
+        title: 'Caçador de Raros',
+        description: 'Ganhe 3 itens raros para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'RARITY_COLLECTED', target: 3, rarity: 'RARO' },
+        reward: { normalTickets: 10, premiumTickets: 0 },
+        active: true,
+        icon: '💎'
+      },
+      {
+        title: 'Colecionador de Raros',
+        description: 'Ganhe 10 itens raros para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'RARITY_COLLECTED', target: 10, rarity: 'RARO' },
+        reward: { normalTickets: 25, premiumTickets: 5 },
+        active: true,
+        icon: '💎'
+      },
+      {
+        title: 'Caçador de Épicos',
+        description: 'Ganhe 2 itens épicos para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'RARITY_COLLECTED', target: 2, rarity: 'EPICO' },
+        reward: { normalTickets: 20, premiumTickets: 5 },
+        active: true,
+        icon: '💜'
+      },
+      {
+        title: 'Colecionador de Épicos',
+        description: 'Ganhe 5 itens épicos para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'RARITY_COLLECTED', target: 5, rarity: 'EPICO' },
+        reward: { normalTickets: 40, premiumTickets: 15 },
+        active: true,
+        icon: '💜'
+      },
+      {
+        title: 'Caçador de Lendários',
+        description: 'Ganhe 3 itens lendários para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'RARITY_COLLECTED', target: 3, rarity: 'LENDARIO' },
+        reward: { normalTickets: 50, premiumTickets: 20 },
+        active: true,
+        icon: '🌟'
+      },
+      {
+        title: 'Sortudo Supremo',
+        description: 'Ganhe 1 item mítico para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'RARITY_COLLECTED', target: 1, rarity: 'MITICO' },
+        reward: { normalTickets: 100, premiumTickets: 50 },
+        active: true,
+        icon: '✨'
+      },
+      // Missões de amizades
+      {
+        title: 'Fazendo Amigos',
+        description: 'Adicione 3 amigos para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'FRIENDS_ADDED', target: 3 },
+        reward: { normalTickets: 10, premiumTickets: 0 },
+        active: true,
+        icon: '👥'
+      },
+      {
+        title: 'Círculo Social',
+        description: 'Adicione 10 amigos para desbloquear',
+        type: 'ACHIEVEMENT',
+        goal: { type: 'FRIENDS_ADDED', target: 10 },
+        reward: { normalTickets: 30, premiumTickets: 10 },
+        active: true,
+        icon: '👥'
+      }
+    ];
+
+    const createdMissions = [];
+    for (const mission of regularMissions) {
+      const payload: any = { ...mission };
+      payload.createdAt = admin.firestore.Timestamp.now();
+      const docRef = await db.collection('missions').add(payload);
+      createdMissions.push({ id: docRef.id, ...mission });
+    }
+
+    const io = req.app.get('io');
+    io && io.emit('appEvent', { type: 'missionsChanged' });
+    
+    res.status(201).json({ 
+      message: `${createdMissions.length} missões regulares criadas com sucesso`,
+      missions: createdMissions 
+    });
+  } catch (error: any) {
+    console.error('Erro ao criar missões regulares:', error);
+    res.status(500).json({ error: 'Erro ao criar missões regulares' });
+  }
+});
+
 export default router;
