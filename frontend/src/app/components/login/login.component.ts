@@ -36,7 +36,11 @@ export class LoginComponent implements OnInit {
       await this.authService.login(this.email, this.password);
       this.router.navigate(['/gacha']);
     } catch (error: any) {
-      this.errorMessage = error;
+      if (error === 'USER_NOT_REGISTERED') {
+        this.errorMessage = 'Esta conta não está registrada no sistema. Por favor, registre-se primeiro.';
+      } else {
+        this.errorMessage = error;
+      }
     } finally {
       this.loading = false;
     }
@@ -58,7 +62,11 @@ export class LoginComponent implements OnInit {
         }
       }
     } catch (error: any) {
-      this.errorMessage = error;
+      if (error === 'USER_NOT_REGISTERED') {
+        this.errorMessage = 'Esta conta não está registrada no sistema. Por favor, registre-se primeiro.';
+      } else {
+        this.errorMessage = error;
+      }
     } finally {
       this.loading = false;
     }

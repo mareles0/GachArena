@@ -12,6 +12,8 @@ import {
   onAuthStateChanged
 } from 'firebase/auth';
 import { auth } from '../firebase.config';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -19,7 +21,10 @@ import { auth } from '../firebase.config';
 export class AuthService {
   public currentUser: User | null = null;
 
-  constructor(private router: Router) {
+  constructor(
+    private router: Router,
+    private http: HttpClient
+  ) {
     onAuthStateChanged(auth, (user) => {
       console.log('[AuthService] Estado de autenticação mudou:', user?.uid);
       this.currentUser = user;
@@ -41,10 +46,27 @@ export class AuthService {
   async login(email: string, password: string) {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Verificar se o email foi verificado
       if (result.user && !result.user.emailVerified) {
         await signOut(auth);
         throw 'Por favor, verifique seu email antes de fazer login.';
       }
+      
+      // Verificar se o usuário existe no Firestore (banco de dados)
+      if (result.user) {
+        try {
+          await this.http.get(`${environment.backendUrl}/users/${result.user.uid}`).toPromise();
+        } catch (error: any) {
+          // Se o usuário não existe no Firestore, fazer logout e não permitir login
+          await signOut(auth);
+          if (error.status === 404) {
+            throw 'USER_NOT_REGISTERED';
+          }
+          throw 'Erro ao verificar dados do usuário. Tente novamente.';
+        }
+      }
+      
       this.currentUser = result.user;
       console.log('[AuthService] Login bem-sucedido:', result.user.uid);
       return result;
@@ -109,10 +131,28 @@ export class AuthService {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
+      
+      // Verificar se o usuário existe no Firestore (banco de dados)
+      if (result.user) {
+        try {
+          await this.http.get(`${environment.backendUrl}/users/${result.user.uid}`).toPromise();
+        } catch (error: any) {
+          // Se o usuário não existe no Firestore, fazer logout e não permitir login
+          await signOut(auth);
+          if (error.status === 404) {
+            throw 'USER_NOT_REGISTERED';
+          }
+          throw 'Erro ao verificar dados do usuário. Tente novamente.';
+        }
+      }
+      
       this.currentUser = result.user;
       console.log('[AuthService] Login com Google bem-sucedido:', result.user.uid);
       return result;
     } catch (error: any) {
+      if (typeof error === 'string') {
+        throw error;
+      }
       throw this.handleError(error);
     }
   }
