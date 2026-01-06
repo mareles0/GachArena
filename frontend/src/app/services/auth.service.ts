@@ -157,6 +157,18 @@ export class AuthService {
     }
   }
 
+  async registerWithGoogle() {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      this.currentUser = result.user;
+      console.log('[AuthService] Registro com Google bem-sucedido:', result.user.uid);
+      return result;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
   private handleError(error: any): string {
     switch (error.code) {
       case 'auth/email-already-in-use':

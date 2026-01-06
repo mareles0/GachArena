@@ -69,7 +69,7 @@ export class RegisterComponent implements OnInit {
     try {
       this.loading = true;
       this.errorMessage = '';
-      await this.authService.loginWithGoogle();
+      await this.authService.registerWithGoogle();
       this.router.navigate(['/completar-perfil']);
     } catch (error: any) {
       this.errorMessage = error;
