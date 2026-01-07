@@ -8,6 +8,35 @@
     </video>
 
 
+  <!-- Update card (appears only once) -->
+  <div class="update-overlay" *ngIf="showUpdateCard">
+    <div class="update-card game-style animate-pop">
+      <div class="update-card-left">
+        <div class="update-badge">v{{ announcementVersion }}</div>
+        <div class="update-illustration">
+          <i class="bi bi-shop"></i>
+        </div>
+      </div>
+      <div class="update-card-right">
+        <h2 class="update-title">Atualização 1.1</h2>
+        <p class="update-sub"><strong>Mercado de Troca</strong> — troque itens por tickets</p>
+        <p class="update-desc">Use o Mercado de Troca para trocar itens por tickets e combinar itens para melhorar seus ganhos.</p>
+
+        <div class="update-card-actions">
+          <button class="btn btn-cta" (click)="goToTradeUp()"><i class="bi bi-shop me-2"></i> Ir ao Mercado</button>
+          <button class="btn btn-outline-light ms-2" (click)="dismissAnnouncement()">Fechar</button>
+        </div>
+
+        <div class="update-card-footer mt-3 d-flex align-items-center gap-3">
+          <label class="form-check form-check-inline align-items-center mb-0">
+            <input class="form-check-input" type="checkbox" [(ngModel)]="dontShowAgain" (change)="onDontShowChange()">
+            <span class="form-check-label">Não mostrar novamente</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="notification-toast" *ngIf="notification.show" 
        [class.success]="notification.type === 'success'"
        [class.error]="notification.type === 'error'"

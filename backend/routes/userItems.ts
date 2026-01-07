@@ -32,7 +32,23 @@ router.put('/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     const data = req.body;
-    await admin.firestore().collection('userItems').doc(id).update(data);
+    const docRef = admin.firestore().collection('userItems').doc(id);
+    await docRef.update(data);
+
+    // Recalcular totalPower do usuário afetado
+    const doc = await docRef.get();
+    if (doc.exists) {
+      const d = doc.data();
+      if (d && d.userId) {
+        const { recalcAndUpdateUserTotalPower } = await import('../helpers/userStats');
+        const totalPower = await recalcAndUpdateUserTotalPower(d.userId);
+        const io = req.app.get('io');
+        io && io.emit('appEvent', { type: 'missionsChanged' });
+        io && io.emit('appEvent', { type: 'userDataChanged' });
+        console.log('[UserItems] totalPower recalculado (PUT):', totalPower, 'for user', d.userId);
+      }
+    }
+
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -42,7 +58,26 @@ router.put('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
-    await admin.firestore().collection('userItems').doc(id).delete();
+    const docRef = admin.firestore().collection('userItems').doc(id);
+    const doc = await docRef.get();
+    let userId: string | undefined;
+    if (doc.exists) {
+      const d = doc.data();
+      userId = d?.userId;
+    }
+
+    await docRef.delete();
+
+    // Recalcular totalPower se possível
+    if (userId) {
+      const { recalcAndUpdateUserTotalPower } = await import('../helpers/userStats');
+      const totalPower = await recalcAndUpdateUserTotalPower(userId);
+      const io = req.app.get('io');
+      io && io.emit('appEvent', { type: 'missionsChanged' });
+      io && io.emit('appEvent', { type: 'userDataChanged' });
+      console.log('[UserItems] totalPower recalculado (DELETE):', totalPower, 'for user', userId);
+    }
+
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -55,14 +90,27 @@ router.post('/:id/remove', async (req: Request, res: Response) => {
     const { quantity } = req.body;
     const docRef = admin.firestore().collection('userItems').doc(id);
     const doc = await docRef.get();
+    let userId: string | undefined;
     if (doc.exists) {
       const data = doc.data();
+      userId = data?.userId;
       if (data && data.quantity > quantity) {
         await docRef.update({ quantity: data.quantity - quantity });
       } else {
         await docRef.delete();
       }
     }
+
+    // Recalcular totalPower se possível
+    if (userId) {
+      const { recalcAndUpdateUserTotalPower } = await import('../helpers/userStats');
+      const totalPower = await recalcAndUpdateUserTotalPower(userId);
+      const io = req.app.get('io');
+      io && io.emit('appEvent', { type: 'missionsChanged' });
+      io && io.emit('appEvent', { type: 'userDataChanged' });
+      console.log('[UserItems] totalPower recalculado (REMOVE):', totalPower, 'for user', userId);
+    }
+
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

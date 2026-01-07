@@ -1,15 +1,18 @@
 .navbar {
-  position: sticky;
+  --navbar-height: 64px;
+  position: fixed;
   top: 0;
-  z-index: 1030;
+  left: 0;
+  right: 0;
+  z-index: 19999 !important; /* ensure navbar stays above page content but below notifications */
   width: 100%;
 
   &.low-z {
-    z-index: 50 !important;
+    z-index: 19990 !important; /* keep above background but below notifications */
   }
 
   &.high-z {
-    z-index: 100 !important;
+    z-index: 19995 !important; /* keep above background but below notifications */
   }
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
@@ -25,11 +28,21 @@
     }
   }
 
+  /* Make container fluid handle wrapping so navbar background grows with content */
+  .container-fluid {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
+  }
+
   .nav-link {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     transition: all 0.2s;
+    white-space: normal; /* allow wrapping if needed */
+    padding: 0.5rem 0.75rem;
 
     &:hover {
       transform: translateY(-2px);
@@ -39,6 +52,29 @@
       font-weight: bold;
       border-bottom: 2px solid white;
     }
+  }
+
+  /* Fixed navbar size and base layout (allow wrapping) */
+  min-height: var(--navbar-height, 64px);
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+
+  display: flex;
+  flex-wrap: wrap; /* allow multiple rows */
+  align-items: center;
+  background: rgba(17, 24, 39, 0.95) !important; /* ensure background covers all rows */
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  z-index: inherit; /* keep inherited z-index */
+
+  .navbar-collapse {
+    overflow-x: visible;
+  }
+
+  .navbar-nav {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 1rem;
   }
 
   .user-avatar {

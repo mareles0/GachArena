@@ -558,7 +558,7 @@ router.post('/user/:userId/batch-progress', async (req: Request, res: Response) 
         }
 
         const requirement = mission.requirement;
-        const requirementAmount = mission.requirementAmount || 0;
+        const requirementAmount = (mission.requirementAmount || (mission.goal && mission.goal.target) || 0);
         let currentValue = 0;
         let progress = 0;
 
@@ -568,6 +568,13 @@ router.post('/user/:userId/batch-progress', async (req: Request, res: Response) 
           requirement,
           requirementAmount
         });
+
+        // Se não há alvo definido, não avance automaticamente
+        if (!requirementAmount || requirementAmount <= 0) {
+          console.log('[Batch Progress] Nenhum requirementAmount válido; definindo progress=0');
+          results[missionId] = { progress: 0, currentValue: 0, targetValue: requirementAmount, completed: false };
+          continue;
+        }
 
         switch (requirement) {
           case 'TOTAL_POWER':
@@ -686,7 +693,7 @@ router.post('/user/:userId/calculate-progress/:missionId', async (req: Request, 
       return res.status(404).json({ error: 'Dados da missão não encontrados' });
     }
     const requirement = mission.requirement;
-    const requirementAmount = mission.requirementAmount || 0;
+    const requirementAmount = (mission.requirementAmount || (mission.goal && mission.goal.target) || 0);
 
     const userDoc = await db.collection('users').doc(userId).get();
     if (!userDoc.exists) {
@@ -696,6 +703,12 @@ router.post('/user/:userId/calculate-progress/:missionId', async (req: Request, 
     const userData = userDoc.data();
     let currentValue = 0;
     let progress = 0;
+
+    // Proteção: se não há requisito bem definido, não marcar como completo
+    if (!requirementAmount || requirementAmount <= 0) {
+      console.log('[Missions] calculate-progress: requirementAmount inválido para missionId=', missionId);
+      return res.json({ progress: 0, currentValue: 0, targetValue: requirementAmount, completed: false });
+    }
 
     switch (requirement) {
       case 'TOTAL_POWER':

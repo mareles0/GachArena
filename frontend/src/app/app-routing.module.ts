@@ -8,6 +8,7 @@ import { EmailVerificationComponent } from './components/email-verification/emai
 import { CompleteProfileComponent } from './components/complete-profile/complete-profile.component';
 import { ProfileComponent } from './components/profile/profile.component';
 import { TradesComponent } from './components/trades/trades.component';
+import { TradeUpComponent } from './components/trade-up/trade-up.component';
 
 import { GachaHomeComponent } from './components/player/gacha-home/gacha-home.component';
 import { InventoryComponent } from './components/player/inventory/inventory.component';
@@ -37,6 +38,7 @@ const routes: Routes = [
   { path: 'profile/:id', component: ProfileComponent, canActivate: [AuthGuard] },
   { path: 'amigos', component: FriendsComponent, canActivate: [AuthGuard] },
   { path: 'trades', component: TradesComponent, canActivate: [AuthGuard] },
+  { path: 'trade-up', component: TradeUpComponent, canActivate: [AuthGuard] },
   { path: 'missoes', component: MissionsComponent, canActivate: [AuthGuard] },
   
   { path: 'admin/caixas', component: ManageBoxesComponent, canActivate: [AuthGuard, AdminGuard] },

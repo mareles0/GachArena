@@ -46,6 +46,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
   
   private eventSubscription?: Subscription;
 
+
+
   constructor(
     private route: ActivatedRoute,
     private profileService: ProfileService,
@@ -246,6 +248,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
       this.friendRequestSending = false;
     }
   }
+
+
 
   openTrade() { this.showTradeModal = true; }
   closeTrade(result:boolean) { this.showTradeModal = false; if (result) alert('Proposta enviada'); }

@@ -32,6 +32,7 @@ import { ManageBoxesComponent } from './components/admin/manage-boxes/manage-box
 import { ManageItemsComponent } from './components/admin/manage-items/manage-items.component';
 import { ManageUsersComponent } from './components/manage-users/manage-users.component';
 import { ManageMissionsComponent } from './components/manage-missions/manage-missions.component';
+import { TradeUpComponent } from './components/trade-up/trade-up.component';
 
 @NgModule({
   declarations: [
@@ -59,7 +60,8 @@ import { ManageMissionsComponent } from './components/manage-missions/manage-mis
     ManageMissionsComponent,
     ProfileComponent,
     TradeModalComponent,
-    TradesComponent
+    TradesComponent,
+    TradeUpComponent
   ],
   imports: [
     BrowserModule,

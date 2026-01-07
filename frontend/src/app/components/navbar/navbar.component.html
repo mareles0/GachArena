@@ -65,6 +65,7 @@
             <i class="bi bi-arrow-left-right"></i> Trocas
           </a>
         </li>
+        <li class="nav-item" *ngIf="isLoggedIn"><a class="nav-link" routerLink="/trade-up" routerLinkActive="active"><i class="bi bi-shop"></i> Mercado de Troca</a></li>
 
         <!-- Admin Menu -->
         <li class="nav-item dropdown" *ngIf="isLoggedIn && isAdmin">

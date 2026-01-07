@@ -6,6 +6,7 @@ import { BoxService } from 'src/app/services/box.service';
 import { ItemService } from 'src/app/services/item.service';
 import { TicketService } from 'src/app/services/ticket.service';
 import { EventService } from 'src/app/services/event.service';
+import { UserService } from 'src/app/services/user.service';
 import { Box } from 'src/app/models/box.model';
 import { Ticket } from 'src/app/models/ticket.model';
 import { Item } from 'src/app/models/item.model';
@@ -88,12 +89,64 @@ export class GachaHomeComponent implements OnInit {
     type: 'success' as 'success' | 'error' | 'info'
   };
 
+  // Announcement/display update card (v1.1)
+  announcementKey: string = 'gachaMarket_v1_1_seen';
+  announcementVersion: string = '1.1';
+  showUpdateCard: boolean = false;
+  dontShowAgain: boolean = false; // UI checkbox (users can explicitly opt out)
+
+  async checkAnnouncementSeen() {
+    try {
+      const local = localStorage.getItem(this.announcementKey);
+      if (local === 'true') {
+        this.dontShowAgain = true;
+        return;
+      }
+
+      // show the update card (persistent until user chooses not to see again)
+      this.showUpdateCard = true;
+    } catch (err) {
+      console.error('[GachaHome] checkAnnouncementSeen erro:', err);
+    }
+  }
+
+  async dismissAnnouncement() {
+    try {
+      // Temporarily close the card for this session — it will reappear next visit unless "Não mostrar novamente" is selected
+      this.showUpdateCard = false;
+      this.showNotification('Fechado — selecione "Não mostrar novamente" para ocultar permanentemente.', 'info');
+    } catch (err) {
+      console.error('[GachaHome] dismissAnnouncement erro:', err);
+    }
+  }
+
+  onDontShowChange() {
+    try {
+      if (this.dontShowAgain) {
+        localStorage.setItem(this.announcementKey, 'true');
+        this.showUpdateCard = false; // hide permanently
+        this.showNotification('A mensagem não aparecerá mais. Você pode reativá-la removendo a preferência.', 'success');
+      } else {
+        localStorage.removeItem(this.announcementKey);
+        this.showNotification('A mensagem será exibida novamente nas próximas visitas.', 'info');
+      }
+    } catch (err) {
+      console.error('[GachaHome] onDontShowChange erro:', err);
+    }
+  }
+
+  goToTradeUp() {
+    this.dismissAnnouncement();
+    this.router.navigate(['/trade-up']);
+  }
+
   constructor(
     private authService: AuthService,
     private boxService: BoxService,
     private itemService: ItemService,
     private ticketService: TicketService,
     private eventService: EventService,
+    private userService: UserService,
     private router: Router,
     private cd: ChangeDetectorRef,
     private http: HttpClient
@@ -108,6 +161,9 @@ export class GachaHomeComponent implements OnInit {
 
     this.userId = user.uid;
     await this.loadData();
+
+    // Check announcement display (only once behavior)
+    this.checkAnnouncementSeen();
   }
 
   showNotification(message: string, type: 'success' | 'error' | 'info' = 'success') {

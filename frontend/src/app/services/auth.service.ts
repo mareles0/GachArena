@@ -69,6 +69,8 @@ export class AuthService {
       
       this.currentUser = result.user;
       console.log('[AuthService] Login bem-sucedido:', result.user.uid);
+      // Prefetch para acelerar páginas críticas
+      this.prefetchUserData(result.user.uid).catch(err => console.warn('[AuthService] Prefetch error:', err));
       return result;
     } catch (error: any) {
       if (typeof error === 'string') {
@@ -113,6 +115,20 @@ export class AuthService {
     return this.currentUser?.emailVerified || false;
   }
 
+  public async prefetchUserData(userId: string) {
+    try {
+      console.log('[AuthService] Prefetching data for', userId);
+      const p1 = this.http.get(`${environment.backendUrl}/missions`).toPromise().catch(() => null);
+      const p2 = this.http.get(`${environment.backendUrl}/userItems/user/${userId}`).toPromise().catch(() => null);
+      const p3 = this.http.get(`${environment.backendUrl}/users/${userId}/tickets`).toPromise().catch(() => null);
+      const p4 = this.http.get(`${environment.backendUrl}/items?limit=50`).toPromise().catch(() => null);
+      await Promise.all([p1, p2, p3, p4]);
+      console.log('[AuthService] Prefetch complete');
+    } catch (err) {
+      console.warn('[AuthService] Prefetch failed', err);
+    }
+  }
+
   async getCurrentUser(): Promise<User | null> {
     return new Promise((resolve) => {
       if (this.currentUser) {
@@ -121,6 +137,10 @@ export class AuthService {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
           unsubscribe();
           this.currentUser = user;
+          // Prefetch on auth state change (login)
+          if (user && user.uid) {
+            this.prefetchUserData(user.uid).catch(err => console.warn('[AuthService] Prefetch error:', err));
+          }
           resolve(user);
         });
       }
@@ -148,6 +168,8 @@ export class AuthService {
       
       this.currentUser = result.user;
       console.log('[AuthService] Login com Google bem-sucedido:', result.user.uid);
+      // Prefetch
+      this.prefetchUserData(result.user.uid).catch(err => console.warn('[AuthService] Prefetch error:', err));
       return result;
     } catch (error: any) {
       if (typeof error === 'string') {
@@ -163,6 +185,8 @@ export class AuthService {
       const result = await signInWithPopup(auth, provider);
       this.currentUser = result.user;
       console.log('[AuthService] Registro com Google bem-sucedido:', result.user.uid);
+      // Prefetch
+      this.prefetchUserData(result.user.uid).catch(err => console.warn('[AuthService] Prefetch error:', err));
       return result;
     } catch (error: any) {
       throw this.handleError(error);

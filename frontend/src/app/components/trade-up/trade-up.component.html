@@ -1,0 +1,100 @@
+<div class="trade-up-wrapper">
+  <img src="https://i.pinimg.com/originals/23/3d/74/233d74f3fd24e51ed5e9dba0992fc868.gif" class="bg-gif" alt="" aria-hidden="true">
+  <div class="bg-overlay"></div>
+
+  <div class="notification-container" *ngIf="notification.show">
+    <div class="notification" [ngClass]="notification.type">
+      <i class="bi" [class.bi-check-circle-fill]="notification.type === 'success'"
+                 [class.bi-x-circle-fill]="notification.type === 'error'"
+                 [class.bi-info-circle-fill]="notification.type === 'info'"></i>
+      <span>{{ notification.message }}</span>
+      <button class="close-btn" (click)="notification.show = false">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="trade-up-container">
+    <h2>Mercado de Troca</h2>
+    <p>Troque seus itens comuns, raros e épicos por tickets!</p>
+
+    <div class="warning permanent">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <strong>Atenção:</strong> A troca é permanente e irreversível. É necessário selecionar pelo menos <strong>10</strong> itens.
+    </div>
+
+    <div class="trade-info">
+      <div class="info-item">
+        <strong>Regras de Troca:</strong>
+        <ul>
+          <li>10 Comuns = 5 Tickets Normais</li>
+          <li>10 Raros = 10 Tickets Normais</li>
+          <li>10 Épicos = 5 Tickets Premium</li>
+          <li>Misture quantidades para combinações!</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="trade-sections">
+      <div class="available-items">
+        <h3>Itens Disponíveis</h3>
+        <div class="items-grid">
+          <div *ngFor="let userItem of userItems" class="item-card" (click)="addToSelection(userItem)"
+               [ngClass]="{'selected': isSelected(userItem.id), 'rarity-comum': userItem.item.rarity === 'COMUM', 'rarity-raro': userItem.item.rarity === 'RARO', 'rarity-epico': userItem.item.rarity === 'EPICO'}">
+            <img [src]="userItem.item.imageUrl || 'assets/default-card.png'" alt="" class="item-image">
+            <div class="selected-badge" *ngIf="selectedQuantity(userItem.id) > 0">{{ selectedQuantity(userItem.id) }}</div>
+            <div class="item-info">
+              <div class="item-name">{{ userItem.item.name }}</div>
+              <div class="item-rarity">{{ userItem.item.rarity }}</div>
+              <div class="item-quantity">Qtd: {{ userItem.quantity }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="selected-items">
+        <h3>Itens Selecionados</h3>
+        <div class="selected-list">
+          <div *ngFor="let sel of selectedItems; let i = index" class="selected-item" [ngClass]="{'rarity-comum': sel.userItem.item.rarity === 'COMUM', 'rarity-raro': sel.userItem.item.rarity === 'RARO', 'rarity-epico': sel.userItem.item.rarity === 'EPICO'}">
+            <img [src]="sel.userItem.item.imageUrl || 'assets/default-card.png'" alt="" class="item-image">
+            <div class="item-info">
+              <div class="item-name">{{ sel.userItem.item.name }}</div>
+              <div class="item-rarity">{{ sel.userItem.item.rarity }}</div>
+              <div class="item-available">Disponível: {{ sel.userItem.quantity }}</div>
+            </div>
+            <div class="quantity-controls">
+              <button (click)="updateQuantity(i, sel.quantity - 1)" [disabled]="sel.quantity <= 1">-</button>
+              <input type="number" [value]="sel.quantity" (input)="updateQuantity(i, $event)" min="1" [max]="sel.userItem.quantity">
+              <button (click)="updateQuantity(i, sel.quantity + 1)" [disabled]="sel.quantity >= sel.userItem.quantity">+</button>
+            </div>
+            <button class="remove-btn" (click)="removeFromSelection(i)">Remover</button>
+          </div>
+        </div>
+
+        <div *ngIf="selectedItems.length > 0" class="trade-summary">
+          <h4>Resumo da Troca</h4>
+          <div class="selected-count">Itens selecionados: <strong>{{ getTotalItemsSelected() }}</strong> (mín. 10)</div>
+          <div *ngIf="error" class="error-banner">
+            <i class="bi bi-exclamation-circle-fill"></i> {{ error }}
+          </div>
+          <div *ngIf="getTotalItemsSelected() < 10" class="min-warning">
+            <i class="bi bi-exclamation-circle-fill"></i> Selecione ao menos <strong>10</strong> itens para prosseguir.
+          </div>
+          <div class="tickets-preview">
+            <div class="ticket-item">
+              <img src="https://static.wikitide.net/cravesagawiki/4/46/Platinum_Gacha_Ticket.png" alt="Ticket Normal" class="ticket-icon">
+              <span>{{ getTotalTickets().normal }} Normais</span>
+            </div>
+            <div class="ticket-item">
+              <img src="https://static.wikitide.net/cravesagawiki/f/fe/SR_or_Higher_Gacha_Ticket.png" alt="Ticket Premium" class="ticket-icon">
+              <span>{{ getTotalTickets().premium }} Premium</span>
+            </div>
+          </div>
+          <button class="trade-btn" (click)="performTradeUp()" [disabled]="loading || (getTotalTickets().normal === 0 && getTotalTickets().premium === 0) || getTotalItemsSelected() < 10">
+            {{ loading ? 'Trocando...' : 'Realizar Troca' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

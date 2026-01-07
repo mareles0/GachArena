@@ -68,6 +68,11 @@ app.get('/', (req, res) => {
   res.json({ message: 'GachArena Backend API' });
 });
 
+// Health check for trade-up (no auth) to help debug 404s
+app.get('/tradeup-health', (req, res) => {
+  res.json({ status: 'ok', msg: 'tradeUp route module loaded (no auth)' });
+});
+
 // Auth middleware: todas as rotas /api exigem token Firebase.
 app.use('/api', authenticateFirebaseToken, attachIsAdmin);
 
@@ -81,6 +86,7 @@ import missionRoutes from './routes/missions';
 import rankingRoutes from './routes/rankings';
 import storageRoutes from './routes/storage';
 import tradeRoutes from './routes/trades';
+import tradeUpRoutes from './routes/tradeUp';
 
 // Regras de acesso para /users
 app.use('/api/users', (req: AuthedRequest, res, next) => {
@@ -137,6 +143,7 @@ app.use('/api/missions', missionRoutes);
 app.use('/api/rankings', rankingRoutes);
 app.use('/api/storage', storageRoutes);
 app.use('/api/trades', tradeRoutes);
+app.use('/api/tradeUp', tradeUpRoutes);
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
